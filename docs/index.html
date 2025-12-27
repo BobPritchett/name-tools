@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>name-tools - Name Parsing & Formatting Library</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>name-tools</h1>
+            <p class="subtitle">A utility library for parsing, formatting, and manipulating person names</p>
+            <div class="badges">
+                <a href="https://www.npmjs.com/package/name-tools" class="badge">
+                    <img src="https://img.shields.io/npm/v/name-tools.svg" alt="npm version">
+                </a>
+                <a href="https://github.com/BobPritchett/name-tools" class="badge">
+                    <img src="https://img.shields.io/github/stars/BobPritchett/name-tools.svg" alt="GitHub stars">
+                </a>
+            </div>
+        </header>
+
+        <main>
+            <section class="demo-section">
+                <h2>Interactive Demo</h2>
+                <div class="demo-box">
+                    <div class="input-group">
+                        <label for="nameInput">Enter a full name:</label>
+                        <input
+                            type="text"
+                            id="nameInput"
+                            placeholder="e.g., Dr. John Robert Smith Jr."
+                            value="Dr. Bob William Pritchett Jr."
+                        >
+                    </div>
+
+                    <div class="results" id="results">
+                        <!-- Results will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <section class="info-section">
+                <h2>Installation</h2>
+                <pre><code>npm install name-tools</code></pre>
+            </section>
+
+            <section class="info-section">
+                <h2>Quick Start</h2>
+                <pre><code>import { parseName, formatLastFirst } from 'name-tools';
+
+const parsed = parseName("Dr. Bob Pritchett Jr.");
+console.log(parsed);
+// { prefix: 'Dr.', first: 'Bob', last: 'Pritchett', suffix: 'Jr.' }
+
+const formatted = formatLastFirst("Bob Pritchett");
+console.log(formatted);
+// "Pritchett, Bob"</code></pre>
+            </section>
+
+            <section class="info-section">
+                <h2>Features</h2>
+                <ul class="features-list">
+                    <li><strong>Parse Names:</strong> Extract components (prefix, first, middle, last, suffix)</li>
+                    <li><strong>Format Names:</strong> Multiple formatting options (Last-First, First-Last, with initials)</li>
+                    <li><strong>Extract Data:</strong> Get first name, last name, initials</li>
+                    <li><strong>Data Sets:</strong> Includes common prefixes (Mr., Dr., etc.) and suffixes (Jr., PhD, etc.)</li>
+                    <li><strong>TypeScript Support:</strong> Full type definitions included</li>
+                    <li><strong>Zero Dependencies:</strong> Lightweight and fast</li>
+                </ul>
+            </section>
+
+            <section class="info-section">
+                <h2>API Reference</h2>
+                <div class="api-list">
+                    <h3>Parsing Functions</h3>
+                    <ul>
+                        <li><code>parseName(fullName: string)</code> - Parse a full name into components</li>
+                        <li><code>getFirstName(fullName: string)</code> - Extract first name</li>
+                        <li><code>getLastName(fullName: string)</code> - Extract last name</li>
+                        <li><code>getInitials(fullName: string)</code> - Get initials</li>
+                    </ul>
+
+                    <h3>Formatting Functions</h3>
+                    <ul>
+                        <li><code>formatFirstLast(name)</code> - Format as "First Last"</li>
+                        <li><code>formatLastFirst(name)</code> - Format as "Last, First"</li>
+                        <li><code>formatWithMiddleInitial(name)</code> - Format with middle initial</li>
+                        <li><code>formatFormal(name)</code> - Format as "Title Last"</li>
+                    </ul>
+
+                    <h3>Data & Utilities</h3>
+                    <ul>
+                        <li><code>PREFIXES</code> - Array of common name prefixes</li>
+                        <li><code>SUFFIXES</code> - Array of common name suffixes</li>
+                        <li><code>isPrefix(str: string)</code> - Check if string is a prefix</li>
+                        <li><code>isSuffix(str: string)</code> - Check if string is a suffix</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Built by <a href="https://github.com/BobPritchett">Bob Pritchett</a> |
+               <a href="https://github.com/BobPritchett/name-tools">GitHub</a> |
+               <a href="https://github.com/BobPritchett/name-tools/blob/main/LICENSE">MIT License</a>
+            </p>
+        </footer>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "name": "name-tools",
+  "version": "1.0.0",
+  "description": "A utility library for parsing, formatting, and manipulating person names",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "test": "vitest",
+    "prepublishOnly": "npm run build",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
+  },
+  "keywords": [
+    "name",
+    "parser",
+    "formatter",
+    "person",
+    "names",
+    "utilities"
+  ],
+  "author": "Bob Pritchett",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BobPritchett/name-tools.git"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  }
+}
