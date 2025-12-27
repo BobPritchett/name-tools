@@ -284,8 +284,7 @@
       "input": "Alexandre Dumas d'Artagnan",
       "expected": {
         "first": "Alexandre",
-        "middle": "Dumas",
-        "last": "d'Artagnan"
+        "last": "Dumas d'Artagnan"
       },
       "description": "French author/character"
     },
@@ -365,8 +364,7 @@
       "input": "Old Mac Donald",
       "expected": {
         "first": "Old",
-        "middle": "Mac",
-        "last": "Donald"
+        "last": "Mac Donald"
       },
       "description": "Nursery rhyme character"
     },
