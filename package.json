@@ -2,6 +2,7 @@
   "name": "name-tools",
   "version": "1.0.0",
   "description": "A utility library for parsing, formatting, and manipulating person names",
+  "packageManager": "pnpm@8.0.0",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -11,7 +12,7 @@
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "test": "vitest",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "pnpm run build",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
   },
   "keywords": [

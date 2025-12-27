@@ -20,7 +20,7 @@ A lightweight, zero-dependency utility library for parsing, formatting, and mani
 ## Installation
 
 ```bash
-npm install name-tools
+pnpm add name-tools
 ```
 
 ## Quick Start
@@ -272,16 +272,16 @@ git clone https://github.com/BobPritchett/name-tools.git
 cd name-tools
 
 # Install dependencies
-npm install
+pnpm install
 
 # Build the library
-npm run build
+pnpm run build
 
 # Run tests
-npm test
+pnpm test
 
 # Development mode (watch for changes)
-npm run dev
+pnpm run dev
 ```
 
 ### Project Structure
