@@ -84,6 +84,120 @@
         "suffix": "III"
       },
       "description": "Name with generational suffix"
+    },
+    {
+      "input": "Vincent van Gogh",
+      "expected": {
+        "first": "Vincent",
+        "last": "van Gogh"
+      },
+      "description": "Dutch name with particle 'van'"
+    },
+    {
+      "input": "Wernher von Braun",
+      "expected": {
+        "first": "Wernher",
+        "last": "von Braun"
+      },
+      "description": "German name with particle 'von'"
+    },
+    {
+      "input": "Leonardo da Vinci",
+      "expected": {
+        "first": "Leonardo",
+        "last": "da Vinci"
+      },
+      "description": "Italian name with locative 'da'"
+    },
+    {
+      "input": "Charles de Gaulle",
+      "expected": {
+        "first": "Charles",
+        "last": "de Gaulle"
+      },
+      "description": "French name with particle 'de'"
+    },
+    {
+      "input": "Simone de Beauvoir",
+      "expected": {
+        "first": "Simone",
+        "last": "de Beauvoir"
+      },
+      "description": "French name with particle"
+    },
+    {
+      "input": "Gabriel García Márquez",
+      "expected": {
+        "first": "Gabriel",
+        "last": "García Márquez"
+      },
+      "description": "Spanish compound surname"
+    },
+    {
+      "input": "Jean de La Fontaine",
+      "expected": {
+        "first": "Jean",
+        "last": "de La Fontaine"
+      },
+      "description": "French name with multi-particle 'de La'"
+    },
+    {
+      "input": "Hilma af Klint",
+      "expected": {
+        "first": "Hilma",
+        "last": "af Klint"
+      },
+      "description": "Swedish name with particle 'af'"
+    },
+    {
+      "input": "José Maria de Eça de Queirós",
+      "expected": {
+        "first": "José",
+        "middle": "Maria",
+        "last": "de Eça de Queirós"
+      },
+      "description": "Portuguese compound name with particles"
+    },
+    {
+      "input": "Rembrandt Harmenszoon van Rijn",
+      "expected": {
+        "first": "Rembrandt",
+        "middle": "Harmenszoon",
+        "last": "van Rijn"
+      },
+      "description": "Dutch patronymic with particle"
+    },
+    {
+      "input": "Pablo Ruiz y Picasso",
+      "expected": {
+        "first": "Pablo",
+        "last": "Ruiz y Picasso"
+      },
+      "description": "Spanish name with conjunction 'y'"
+    },
+    {
+      "input": "Oscar de la Hoya",
+      "expected": {
+        "first": "Oscar",
+        "last": "de la Hoya"
+      },
+      "description": "Spanish name with multi-word particle"
+    },
+    {
+      "input": "Ludwig van der Waals",
+      "expected": {
+        "first": "Ludwig",
+        "last": "van der Waals"
+      },
+      "description": "Dutch name with compound particle"
+    },
+    {
+      "input": "Conan O'Brien",
+      "expected": {
+        "first": "Conan",
+        "last": "O'Brien"
+      },
+      "description": "Irish name with apostrophe"
     }
   ],
   "formatExamples": [
