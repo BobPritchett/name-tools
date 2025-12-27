@@ -1,5 +1,5 @@
 // Note: This is a placeholder for the demo.
-// After building the library with `npm run build`, copy dist/index.mjs
+// After building the library with `pnpm run build`, copy dist/index.mjs
 // to docs/name-tools.js to make this demo work on GitHub Pages.
 
 // For now, we'll include inline implementations for demo purposes
@@ -8,6 +8,9 @@
 // Simplified inline implementations for demo
 const PREFIXES = ['Mr', 'Mr.', 'Mrs', 'Mrs.', 'Ms', 'Ms.', 'Miss', 'Dr', 'Dr.', 'Prof', 'Prof.', 'Rev', 'Rev.', 'Hon', 'Hon.', 'Sir', 'Lady', 'Lord'];
 const SUFFIXES = ['Jr', 'Jr.', 'Sr', 'Sr.', 'II', 'III', 'IV', 'V', 'PhD', 'Ph.D.', 'MD', 'M.D.', 'Esq', 'Esq.', 'DDS', 'D.D.S.', 'JD', 'J.D.', 'MBA', 'M.B.A.', 'CPA', 'RN', 'DVM'];
+
+// Global variable to hold examples data
+let examplesData = null;
 
 function isPrefix(str) {
     return PREFIXES.some(prefix => prefix.toLowerCase() === str.toLowerCase());
@@ -184,10 +187,61 @@ function updateResults() {
     }
 }
 
-// Set up event listeners
-document.addEventListener('DOMContentLoaded', () => {
+// Load examples from JSON file
+async function loadExamples() {
+    try {
+        const response = await fetch('examples.json');
+        examplesData = await response.json();
+        populateExampleSelector();
+    } catch (error) {
+        console.error('Failed to load examples:', error);
+    }
+}
+
+// Populate the example selector dropdown
+function populateExampleSelector() {
+    const exampleSelect = document.getElementById('exampleSelect');
+
+    if (!examplesData || !exampleSelect) return;
+
+    // Clear existing options
+    exampleSelect.innerHTML = '<option value="">-- Try an example --</option>';
+
+    // Add example options
+    examplesData.demoExamples.forEach((example, index) => {
+        const option = document.createElement('option');
+        option.value = example;
+        option.textContent = example;
+        exampleSelect.appendChild(option);
+    });
+}
+
+// Handle example selection
+function handleExampleSelect(event) {
     const nameInput = document.getElementById('nameInput');
+    const selectedValue = event.target.value;
+
+    if (selectedValue) {
+        nameInput.value = selectedValue;
+        updateResults();
+    }
+}
+
+// Set up event listeners
+document.addEventListener('DOMContentLoaded', async () => {
+    const nameInput = document.getElementById('nameInput');
+    const exampleSelect = document.getElementById('exampleSelect');
+
+    // Load examples data
+    await loadExamples();
+
+    // Set up input listener
     nameInput.addEventListener('input', updateResults);
+
+    // Set up example selector listener
+    if (exampleSelect) {
+        exampleSelect.addEventListener('change', handleExampleSelect);
+    }
 
     // Initial update
     updateResults();

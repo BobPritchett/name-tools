@@ -5,59 +5,50 @@ import {
   formatWithMiddleInitial,
   formatFormal,
 } from '../src/formatters';
+import { getInitials } from '../src/parsers';
+import examples from '../src/data/examples.json';
 
 describe('formatLastFirst', () => {
-  it('should format simple name', () => {
-    expect(formatLastFirst('Bob Pritchett')).toBe('Pritchett, Bob');
-  });
-
-  it('should format name with middle name', () => {
-    expect(formatLastFirst('Bob William Pritchett')).toBe('Pritchett, Bob William');
-  });
-
-  it('should format name with suffix', () => {
-    expect(formatLastFirst('Bob Pritchett Jr.')).toBe('Pritchett, Bob, Jr.');
-  });
-
-  it('should format full name', () => {
-    expect(formatLastFirst('Dr. Bob William Pritchett Jr.')).toBe('Pritchett, Bob William, Jr.');
+  // Data-driven tests
+  examples.formatExamples.forEach(({ input, formats, description }) => {
+    it(`should format: ${description}`, () => {
+      expect(formatLastFirst(input)).toBe(formats.lastFirst);
+    });
   });
 });
 
 describe('formatFirstLast', () => {
-  it('should format simple name', () => {
-    expect(formatFirstLast('Bob Pritchett')).toBe('Bob Pritchett');
-  });
-
-  it('should format full name with all components', () => {
-    expect(formatFirstLast('Dr. Bob William Pritchett Jr.')).toBe('Dr. Bob William Pritchett Jr.');
+  // Data-driven tests
+  examples.formatExamples.forEach(({ input, formats, description }) => {
+    it(`should format: ${description}`, () => {
+      expect(formatFirstLast(input)).toBe(formats.firstLast);
+    });
   });
 });
 
 describe('formatWithMiddleInitial', () => {
-  it('should format name with middle initial', () => {
-    expect(formatWithMiddleInitial('Bob William Pritchett')).toBe('Bob W. Pritchett');
-  });
-
-  it('should format name with multiple middle initials', () => {
-    expect(formatWithMiddleInitial('John Robert Michael Smith')).toBe('John R. M. Smith');
-  });
-
-  it('should format full name with prefix and suffix', () => {
-    expect(formatWithMiddleInitial('Dr. Bob William Pritchett Jr.')).toBe('Dr. Bob W. Pritchett Jr.');
-  });
-
-  it('should handle name without middle name', () => {
-    expect(formatWithMiddleInitial('Bob Pritchett')).toBe('Bob Pritchett');
+  // Data-driven tests
+  examples.formatExamples.forEach(({ input, formats, description }) => {
+    it(`should format: ${description}`, () => {
+      expect(formatWithMiddleInitial(input)).toBe(formats.withMiddleInitial);
+    });
   });
 });
 
 describe('formatFormal', () => {
-  it('should format name with existing prefix', () => {
-    expect(formatFormal('Dr. Bob Pritchett')).toBe('Dr. Pritchett');
+  // Data-driven tests
+  examples.formatExamples.forEach(({ input, formats, description }) => {
+    it(`should format: ${description}`, () => {
+      expect(formatFormal(input)).toBe(formats.formal);
+    });
   });
+});
 
-  it('should format name without prefix', () => {
-    expect(formatFormal('Bob Pritchett')).toBe('Mr/Ms Pritchett');
+describe('getInitials (formatting context)', () => {
+  // Data-driven tests
+  examples.formatExamples.forEach(({ input, formats, description }) => {
+    it(`should get initials: ${description}`, () => {
+      expect(getInitials(input)).toBe(formats.initials);
+    });
   });
 });

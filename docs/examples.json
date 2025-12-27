@@ -1,0 +1,182 @@
+{
+  "parseExamples": [
+    {
+      "input": "Bob Pritchett",
+      "expected": {
+        "first": "Bob",
+        "last": "Pritchett"
+      },
+      "description": "Simple two-part name"
+    },
+    {
+      "input": "Dr. Bob Pritchett",
+      "expected": {
+        "prefix": "Dr.",
+        "first": "Bob",
+        "last": "Pritchett"
+      },
+      "description": "Name with prefix"
+    },
+    {
+      "input": "Bob Pritchett Jr.",
+      "expected": {
+        "first": "Bob",
+        "last": "Pritchett",
+        "suffix": "Jr."
+      },
+      "description": "Name with suffix"
+    },
+    {
+      "input": "Bob William Pritchett",
+      "expected": {
+        "first": "Bob",
+        "middle": "William",
+        "last": "Pritchett"
+      },
+      "description": "Name with middle name"
+    },
+    {
+      "input": "Dr. Bob William Pritchett Jr.",
+      "expected": {
+        "prefix": "Dr.",
+        "first": "Bob",
+        "middle": "William",
+        "last": "Pritchett",
+        "suffix": "Jr."
+      },
+      "description": "Full name with all components"
+    },
+    {
+      "input": "John Robert Michael Smith",
+      "expected": {
+        "first": "John",
+        "middle": "Robert Michael",
+        "last": "Smith"
+      },
+      "description": "Name with multiple middle names"
+    },
+    {
+      "input": "Mr. James Anderson",
+      "expected": {
+        "prefix": "Mr.",
+        "first": "James",
+        "last": "Anderson"
+      },
+      "description": "Name with Mr. prefix"
+    },
+    {
+      "input": "Mary Elizabeth Johnson PhD",
+      "expected": {
+        "first": "Mary",
+        "middle": "Elizabeth",
+        "last": "Johnson",
+        "suffix": "PhD"
+      },
+      "description": "Name with academic suffix"
+    },
+    {
+      "input": "Prof. Richard Lee Thompson III",
+      "expected": {
+        "prefix": "Prof.",
+        "first": "Richard",
+        "middle": "Lee",
+        "last": "Thompson",
+        "suffix": "III"
+      },
+      "description": "Name with generational suffix"
+    }
+  ],
+  "formatExamples": [
+    {
+      "input": "Bob Pritchett",
+      "formats": {
+        "lastFirst": "Pritchett, Bob",
+        "firstLast": "Bob Pritchett",
+        "withMiddleInitial": "Bob Pritchett",
+        "formal": "Mr/Ms Pritchett",
+        "initials": "BP"
+      },
+      "description": "Simple name formatting"
+    },
+    {
+      "input": "Bob William Pritchett",
+      "formats": {
+        "lastFirst": "Pritchett, Bob William",
+        "firstLast": "Bob William Pritchett",
+        "withMiddleInitial": "Bob W. Pritchett",
+        "formal": "Mr/Ms Pritchett",
+        "initials": "BWP"
+      },
+      "description": "Name with middle name formatting"
+    },
+    {
+      "input": "Dr. Bob William Pritchett Jr.",
+      "formats": {
+        "lastFirst": "Pritchett, Bob William, Jr.",
+        "firstLast": "Dr. Bob William Pritchett Jr.",
+        "withMiddleInitial": "Dr. Bob W. Pritchett Jr.",
+        "formal": "Dr. Pritchett",
+        "initials": "BWP"
+      },
+      "description": "Full name formatting"
+    },
+    {
+      "input": "John Robert Michael Smith",
+      "formats": {
+        "lastFirst": "Smith, John Robert Michael",
+        "firstLast": "John Robert Michael Smith",
+        "withMiddleInitial": "John R. M. Smith",
+        "formal": "Mr/Ms Smith",
+        "initials": "JRMS"
+      },
+      "description": "Multiple middle names formatting"
+    },
+    {
+      "input": "Dr. Alice Johnson",
+      "formats": {
+        "lastFirst": "Johnson, Alice",
+        "firstLast": "Dr. Alice Johnson",
+        "withMiddleInitial": "Dr. Alice Johnson",
+        "formal": "Dr. Johnson",
+        "initials": "AJ"
+      },
+      "description": "Name with prefix formatting"
+    }
+  ],
+  "extractionExamples": [
+    {
+      "input": "Bob Pritchett",
+      "firstName": "Bob",
+      "lastName": "Pritchett",
+      "initials": "BP"
+    },
+    {
+      "input": "Dr. Bob William Pritchett Jr.",
+      "firstName": "Bob",
+      "lastName": "Pritchett",
+      "initials": "BWP"
+    },
+    {
+      "input": "Mary Elizabeth Johnson",
+      "firstName": "Mary",
+      "lastName": "Johnson",
+      "initials": "MEJ"
+    },
+    {
+      "input": "John Robert Michael Smith",
+      "firstName": "John",
+      "lastName": "Smith",
+      "initials": "JRMS"
+    }
+  ],
+  "demoExamples": [
+    "Dr. Bob William Pritchett Jr.",
+    "John Robert Smith",
+    "Mary Elizabeth Johnson PhD",
+    "Mr. James Anderson",
+    "Prof. Richard Thompson III",
+    "Alice Marie Williams",
+    "Dr. Sarah Chen",
+    "Robert Lee Jackson Sr."
+  ]
+}
