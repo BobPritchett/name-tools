@@ -26,24 +26,20 @@
                 <h2>Interactive Demo</h2>
                 <div class="demo-box">
                     <div class="input-group">
-                        <label for="exampleSelect">Try an example:</label>
-                        <select id="exampleSelect">
-                            <option value="">-- Try an example --</option>
-                        </select>
-                    </div>
-
-                    <div class="input-group">
-                        <label for="nameInput">Or enter a full name:</label>
-                        <input
-                            type="text"
+                        <label for="nameInput">Enter full name(s) (one per line):</label>
+                        <textarea
                             id="nameInput"
                             placeholder="e.g., Dr. John Robert Smith Jr."
-                            value="Dr. Bob William Pritchett Jr."
-                        >
+                            rows="1"
+                        >Dr. Bob William Pritchett Jr.</textarea>
                     </div>
 
-                    <div class="results" id="results">
+                    <div id="results">
                         <!-- Results will be populated by JavaScript -->
+                    </div>
+
+                    <div id="demoActions" class="demo-actions" style="display: none;">
+                        <button id="copyJsonBtn" class="btn">Copy to JSON</button>
                     </div>
                 </div>
             </section>

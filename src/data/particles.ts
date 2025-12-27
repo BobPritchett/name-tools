@@ -1,3 +1,5 @@
+import { isInList } from './utils';
+
 /**
  * Surname particles from various languages
  * These words typically indicate the start of a surname and should be kept with the last name
@@ -36,7 +38,7 @@ export const PARTICLES = [
   ...ROMANCE,
   ...CELTIC,
   ...SCANDINAVIAN
-];
+] as const;
 
 /**
  * Multi-word particles that should be kept together
@@ -52,14 +54,13 @@ export const MULTI_WORD_PARTICLES = [
   'van de',
   'de le',
   'da la'
-];
+] as const;
 
 /**
  * Check if a string is a known surname particle
  */
 export function isParticle(str: string): boolean {
-  const cleaned = str.toLowerCase().replace(/\./g, '').trim();
-  return PARTICLES.includes(cleaned);
+  return isInList(PARTICLES, str);
 }
 
 /**

@@ -15,4 +15,5 @@ yarn-error.log*
 
 # Editor directories
 .vscode/
+.cursor/
 .idea/

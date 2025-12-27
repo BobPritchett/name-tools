@@ -4,8 +4,8 @@ import {
   formatFirstLast,
   formatWithMiddleInitial,
   formatFormal,
+  getInitials,
 } from '../src/formatters';
-import { getInitials } from '../src/parsers';
 import examples from '../src/data/examples.json';
 
 describe('formatLastFirst', () => {

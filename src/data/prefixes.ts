@@ -1,3 +1,5 @@
+import { isInList } from './utils';
+
 /**
  * Common name prefixes/titles
  */
@@ -20,11 +22,11 @@ export const PREFIXES = [
   'Sir',
   'Lady',
   'Lord',
-];
+] as const;
 
 /**
  * Check if a string is a known prefix
  */
 export function isPrefix(str: string): boolean {
-  return PREFIXES.some(prefix => prefix.toLowerCase() === str.toLowerCase());
+  return isInList(PREFIXES, str);
 }

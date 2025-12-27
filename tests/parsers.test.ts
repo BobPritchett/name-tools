@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parseName, getFirstName, getLastName, getInitials } from '../src/parsers';
+import { parseName, getFirstName, getLastName } from '../src/parsers';
+import { getInitials } from '../src/formatters';
 import examples from '../src/data/examples.json';
 
 describe('parseName', () => {

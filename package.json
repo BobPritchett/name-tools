@@ -10,10 +10,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "build": "tsup src/index.ts --format cjs,esm --dts && node -e \"require('fs').copyFileSync('dist/index.mjs', 'docs/name-tools.js'); require('fs').copyFileSync('src/data/examples.json', 'docs/examples.json')\"",
     "test": "vitest",
     "prepublishOnly": "pnpm run build",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch --onSuccess \"node -e \\\"require('fs').copyFileSync('dist/index.mjs', 'docs/name-tools.js'); require('fs').copyFileSync('src/data/examples.json', 'docs/examples.json')\\\"\""
   },
   "keywords": [
     "name",

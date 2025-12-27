@@ -1,3 +1,5 @@
+import { isInList } from './utils';
+
 /**
  * Common name suffixes
  */
@@ -25,11 +27,11 @@ export const SUFFIXES = [
   'CPA',
   'RN',
   'DVM',
-];
+] as const;
 
 /**
  * Check if a string is a known suffix
  */
 export function isSuffix(str: string): boolean {
-  return SUFFIXES.some(suffix => suffix.toLowerCase() === str.toLowerCase());
+  return isInList(SUFFIXES, str);
 }

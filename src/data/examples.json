@@ -1,6 +1,35 @@
 {
   "parseExamples": [
     {
+      "input": "Guy de la Bédoyère",
+      "expected": {
+        "first": "Guy",
+        "last": "de la Bédoyère"
+      },
+      "description": "New example"
+    },
+    {
+      "input": "William (Bill) Henry Gates III",
+      "expected": {
+        "first": "William",
+        "last": "Gates",
+        "nickname": "Bill",
+        "suffix": "III",
+        "middle": "Henry"
+      },
+      "description": "New example"
+    },
+    {
+      "input": "Reverend Dr. David Jefferson, Sr., Esq.",
+      "expected": {
+        "first": "David",
+        "last": "Jefferson",
+        "suffix": "Esq., Sr.",
+        "prefix": "Reverend Dr."
+      },
+      "description": "New example"
+    },
+    {
       "input": "Bob Pritchett",
       "expected": {
         "first": "Bob",
@@ -481,15 +510,5 @@
       "lastName": "Smith",
       "initials": "JRMS"
     }
-  ],
-  "demoExamples": [
-    "Dr. Bob William Pritchett Jr.",
-    "John Robert Smith",
-    "Mary Elizabeth Johnson PhD",
-    "Mr. James Anderson",
-    "Prof. Richard Thompson III",
-    "Alice Marie Williams",
-    "Dr. Sarah Chen",
-    "Robert Lee Jackson Sr."
   ]
 }

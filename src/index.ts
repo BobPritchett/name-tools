@@ -16,9 +16,9 @@ export {
   getFirstName,
   getLastName,
   getNickname,
-  getInitials,
-  type ParsedName,
 } from './parsers';
+
+export type { ParsedName } from './types';
 
 // Export formatters
 export {
@@ -26,4 +26,5 @@ export {
   formatFirstLast,
   formatWithMiddleInitial,
   formatFormal,
+  getInitials,
 } from './formatters';

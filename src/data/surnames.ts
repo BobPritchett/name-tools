@@ -1,3 +1,5 @@
+import { isInList } from './utils';
+
 /**
  * Common surnames used for compound surname detection
  * Particularly important for Spanish and Portuguese naming conventions
@@ -53,7 +55,7 @@ export const COMMON_SURNAMES = [
   ...PORTUGUESE,
   ...ITALIAN,
   ...FRENCH
-];
+] as const;
 
 /**
  * Common first names to avoid false positives
@@ -64,20 +66,18 @@ export const COMMON_FIRST_NAMES = [
   'marie', 'jean', 'george', 'paul', 'lee', 'billy',
   'bob', 'thomas', 'robert', 'michael', 'david',
   'martin', 'pierre', 'maria', 'jose', 'josé'
-];
+] as const;
 
 /**
  * Check if a string is a known common surname
  */
 export function isCommonSurname(str: string): boolean {
-  const cleaned = str.toLowerCase().replace(/\./g, '').trim();
-  return COMMON_SURNAMES.includes(cleaned);
+  return isInList(COMMON_SURNAMES, str);
 }
 
 /**
  * Check if a string is a common first name
  */
 export function isCommonFirstName(str: string): boolean {
-  const cleaned = str.toLowerCase().replace(/\./g, '').trim();
-  return COMMON_FIRST_NAMES.includes(cleaned);
+  return isInList(COMMON_FIRST_NAMES, str);
 }

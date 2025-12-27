@@ -1,6 +1,16 @@
 {
   "parseExamples": [
     {
+      "input": "Reverend Dr. David Jefferson, Sr., Esq.",
+      "expected": {
+        "first": "David",
+        "last": "Jefferson",
+        "suffix": "Esq., Sr.",
+        "prefix": "Reverend Dr."
+      },
+      "description": "New example"
+    },
+    {
       "input": "Bob Pritchett",
       "expected": {
         "first": "Bob",
@@ -481,15 +491,5 @@
       "lastName": "Smith",
       "initials": "JRMS"
     }
-  ],
-  "demoExamples": [
-    "Dr. Bob William Pritchett Jr.",
-    "John Robert Smith",
-    "Mary Elizabeth Johnson PhD",
-    "Mr. James Anderson",
-    "Prof. Richard Thompson III",
-    "Alice Marie Williams",
-    "Dr. Sarah Chen",
-    "Robert Lee Jackson Sr."
   ]
 }
