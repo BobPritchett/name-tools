@@ -225,20 +225,14 @@ function populateTestResultsTable() {
             // Create row
             const row = document.createElement('tr');
 
-            // Test name column
-            const nameCell = document.createElement('td');
-            nameCell.className = 'test-name';
-            nameCell.textContent = description;
-            row.appendChild(nameCell);
-
             // Input column
             const inputCell = document.createElement('td');
             inputCell.className = 'test-input';
             inputCell.textContent = input;
             row.appendChild(inputCell);
 
-            // Field columns: prefix, first, middle, last, suffix
-            const fields = ['prefix', 'first', 'middle', 'last', 'suffix'];
+            // Field columns: prefix, first, nickname, middle, last, suffix
+            const fields = ['prefix', 'first', 'nickname', 'middle', 'last', 'suffix'];
 
             fields.forEach(field => {
                 const cell = document.createElement('td');
@@ -248,7 +242,12 @@ function populateTestResultsTable() {
 
                 // Set cell content
                 if (actualValue !== undefined) {
-                    cell.textContent = actualValue;
+                    if (field === 'nickname') {
+                        cell.textContent = `"${actualValue}"`;
+                        cell.className = 'nickname-cell';
+                    } else {
+                        cell.textContent = actualValue;
+                    }
                 } else {
                     cell.textContent = '-';
                     cell.className = 'empty-cell';
@@ -274,9 +273,9 @@ function populateTestResultsTable() {
             const row = document.createElement('tr');
             row.className = 'error-row';
 
-            const nameCell = document.createElement('td');
-            nameCell.textContent = description;
-            row.appendChild(nameCell);
+            const inputCell = document.createElement('td');
+            inputCell.textContent = input;
+            row.appendChild(inputCell);
 
             const errorCell = document.createElement('td');
             errorCell.colSpan = 6;

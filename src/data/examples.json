@@ -198,6 +198,207 @@
         "last": "O'Brien"
       },
       "description": "Irish name with apostrophe"
+    },
+    {
+      "input": "Rembrandt van Rijn",
+      "expected": {
+        "first": "Rembrandt",
+        "last": "van Rijn"
+      },
+      "description": "Dutch painter"
+    },
+    {
+      "input": "Dick Van Dyke",
+      "expected": {
+        "first": "Dick",
+        "last": "Van Dyke"
+      },
+      "description": "American actor with Dutch name"
+    },
+    {
+      "input": "Martin Van Buren",
+      "expected": {
+        "first": "Martin",
+        "last": "Van Buren"
+      },
+      "description": "US President"
+    },
+    {
+      "input": "Pieter van der Goes",
+      "expected": {
+        "first": "Pieter",
+        "last": "van der Goes"
+      },
+      "description": "Dutch compound particle"
+    },
+    {
+      "input": "Kevin De Bruyne",
+      "expected": {
+        "first": "Kevin",
+        "last": "De Bruyne"
+      },
+      "description": "Belgian footballer"
+    },
+    {
+      "input": "Otto von Bismarck",
+      "expected": {
+        "first": "Otto",
+        "last": "von Bismarck"
+      },
+      "description": "German chancellor"
+    },
+    {
+      "input": "Manfred von Richthofen",
+      "expected": {
+        "first": "Manfred",
+        "last": "von Richthofen"
+      },
+      "description": "Red Baron"
+    },
+    {
+      "input": "Johann Wolfgang von Goethe",
+      "expected": {
+        "first": "Johann",
+        "middle": "Wolfgang",
+        "last": "von Goethe"
+      },
+      "description": "German writer"
+    },
+    {
+      "input": "Karl-Theodor zu Guttenberg",
+      "expected": {
+        "first": "Karl-Theodor",
+        "last": "zu Guttenberg"
+      },
+      "description": "German politician"
+    },
+    {
+      "input": "Marc-André ter Stegen",
+      "expected": {
+        "first": "Marc-André",
+        "last": "ter Stegen"
+      },
+      "description": "German goalkeeper"
+    },
+    {
+      "input": "Alexandre Dumas d'Artagnan",
+      "expected": {
+        "first": "Alexandre",
+        "middle": "Dumas",
+        "last": "d'Artagnan"
+      },
+      "description": "French author/character"
+    },
+    {
+      "input": "Pierre Du Pont",
+      "expected": {
+        "first": "Pierre",
+        "last": "Du Pont"
+      },
+      "description": "DuPont founder"
+    },
+    {
+      "input": "Inès de La Fressange",
+      "expected": {
+        "first": "Inès",
+        "last": "de La Fressange"
+      },
+      "description": "French model"
+    },
+    {
+      "input": "Grazia Deledda",
+      "expected": {
+        "first": "Grazia",
+        "last": "Deledda"
+      },
+      "description": "Italian author"
+    },
+    {
+      "input": "Gabriele D'Annunzio",
+      "expected": {
+        "first": "Gabriele",
+        "last": "D'Annunzio"
+      },
+      "description": "Italian poet"
+    },
+    {
+      "input": "Ángel Di María",
+      "expected": {
+        "first": "Ángel",
+        "last": "Di María"
+      },
+      "description": "Argentine footballer"
+    },
+    {
+      "input": "Maureen O'Hara",
+      "expected": {
+        "first": "Maureen",
+        "last": "O'Hara"
+      },
+      "description": "Irish actress"
+    },
+    {
+      "input": "Paul McCartney",
+      "expected": {
+        "first": "Paul",
+        "last": "McCartney"
+      },
+      "description": "Beatle with Scottish name"
+    },
+    {
+      "input": "Malcolm McDowell",
+      "expected": {
+        "first": "Malcolm",
+        "last": "McDowell"
+      },
+      "description": "British actor"
+    },
+    {
+      "input": "Bernie Mac",
+      "expected": {
+        "first": "Bernie",
+        "last": "Mac"
+      },
+      "description": "American comedian"
+    },
+    {
+      "input": "Old Mac Donald",
+      "expected": {
+        "first": "Old",
+        "middle": "Mac",
+        "last": "Donald"
+      },
+      "description": "Nursery rhyme character"
+    },
+    {
+      "input": "Rev. Dr. Martin Luther King, Jr.",
+      "expected": {
+        "prefix": "Rev. Dr.",
+        "first": "Martin",
+        "middle": "Luther",
+        "last": "King",
+        "suffix": "Jr."
+      },
+      "description": "Civil rights leader"
+    },
+    {
+      "input": "Mr. William \"Bill\" Jones, Esq.",
+      "expected": {
+        "prefix": "Mr.",
+        "first": "William",
+        "nickname": "Bill",
+        "last": "Jones",
+        "suffix": "Esq."
+      },
+      "description": "Name with nickname"
+    },
+    {
+      "input": "Harry Potter",
+      "expected": {
+        "first": "Harry",
+        "last": "Potter"
+      },
+      "description": "Simple British name"
     }
   ],
   "formatExamples": [
