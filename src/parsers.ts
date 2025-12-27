@@ -21,7 +21,7 @@ export function parseName(fullName: string): ParsedName {
   }
 
   let text = fullName.trim();
-  const result: ParsedName = { first: '', last: '' };
+  const result: ParsedName = {};
 
   // Step 1: Extract nicknames
   text = extractNickname(text, result);
@@ -60,42 +60,47 @@ function extractNickname(text: string, result: ParsedName): string {
  */
 function extractSuffixes(text: string, result: ParsedName): string {
   let workingText = text;
-
-  // First check for comma-separated suffixes/titles
-  const commaParts = workingText.split(',');
-  if (commaParts.length > 1) {
-    const lastPart = commaParts[commaParts.length - 1].trim();
-    const firstWordOfLast = lastPart.split(/\s+/)[0];
-
-    // Check if it's a suffix or title
-    if (isSuffix(firstWordOfLast) || /queen|king|consort/i.test(lastPart)) {
-      result.suffix = lastPart;
-      commaParts.pop();
-    }
-    workingText = commaParts.join(' ').trim();
-  }
-
-  // Then check for space-separated suffixes
-  const parts = workingText.split(/\s+/);
   const suffixesFound: string[] = [];
 
+  // First, identify all comma-separated parts from the end that are suffixes
+  const parts = workingText.split(',');
   while (parts.length > 1) {
-    const lastWord = parts[parts.length - 1];
-    if (isSuffix(lastWord) && !(result.suffix && result.suffix.includes(lastWord))) {
-      suffixesFound.unshift(lastWord);
+    const lastPart = parts[parts.length - 1].trim();
+    const firstWordOfLast = lastPart.split(/\s+/)[0];
+
+    if (isSuffix(firstWordOfLast) || /queen|king|consort/i.test(lastPart)) {
+      suffixesFound.unshift(lastPart);
       parts.pop();
     } else {
       break;
     }
   }
+  workingText = parts.join(',').trim();
 
-  if (suffixesFound.length > 0) {
-    result.suffix = result.suffix
-      ? result.suffix + ', ' + suffixesFound.join(', ')
-      : suffixesFound.join(', ');
+  // Then check for space-separated suffixes at the end of the remaining text
+  const spaceParts = workingText.split(/\s+/);
+  const spaceSuffixes: string[] = [];
+
+  while (spaceParts.length > 1) {
+    const lastWord = spaceParts[spaceParts.length - 1];
+    // Remove trailing punctuation for suffix check
+    const cleanWord = lastWord.replace(/[,]$/, '');
+    if (isSuffix(cleanWord)) {
+      spaceSuffixes.unshift(lastWord);
+      spaceParts.pop();
+    } else {
+      break;
+    }
   }
 
-  return parts.join(' ');
+  // Combine suffixes found, preserving order (space-separated ones come first in the original string)
+  const allSuffixes = [...spaceSuffixes, ...suffixesFound];
+  if (allSuffixes.length > 0) {
+    result.suffix = allSuffixes.join(', ');
+    workingText = spaceParts.join(' ').trim();
+  }
+
+  return workingText;
 }
 
 /**
@@ -105,11 +110,22 @@ function extractPrefixes(parts: string[], result: ParsedName): string[] {
   const prefixesFound: string[] = [];
 
   while (parts.length > 1) {
-    const firstWord = parts[0];
-    if (isPrefix(firstWord)) {
-      prefixesFound.push(firstWord);
-      parts.shift();
-    } else {
+    let matchFound = false;
+
+    // Try matching multi-word prefixes (up to 5 words)
+    // We check longer matches first to avoid greedy matching of single words
+    // We must leave at least one part for the actual name (parts.length - 1)
+    for (let len = Math.min(parts.length - 1, 5); len >= 1; len--) {
+      const candidate = parts.slice(0, len).join(' ');
+      if (isPrefix(candidate)) {
+        prefixesFound.push(candidate);
+        parts.splice(0, len);
+        matchFound = true;
+        break;
+      }
+    }
+
+    if (!matchFound) {
       break;
     }
   }
@@ -127,42 +143,39 @@ function extractPrefixes(parts: string[], result: ParsedName): string[] {
 function assignNameParts(parts: string[], result: ParsedName): void {
   if (parts.length === 0) return;
 
+  if (parts.length === 1) {
+    result.first = parts[0];
+    return;
+  }
+
   // Default: last word is surname
   let surnameStartIndex = parts.length - 1;
 
   // Scan backward from second-to-last word to find the boundary
-  if (parts.length > 1) {
-    for (let i = parts.length - 2; i >= 0; i--) {
-      const word = parts[i];
+  for (let i = parts.length - 2; i >= 0; i--) {
+    const word = parts[i];
 
-      // Case A: Particle (van, von, de, da, af, y, etc.)
-      if (isParticle(word)) {
-        surnameStartIndex = i;
-        continue; // Keep going left for multi-word particles
-      }
-
-      // Case B: Compound Surname Heuristic
-      if (isCommonSurname(word) && !isCommonFirstName(word) && i > 0) {
-        surnameStartIndex = i;
-        continue;
-      }
-
-      break;
+    // Case A: Particle (van, von, de, da, af, y, etc.)
+    if (isParticle(word)) {
+      surnameStartIndex = i;
+      continue; // Keep going left for multi-word particles
     }
+
+    // Case B: Compound Surname Heuristic
+    if (isCommonSurname(word) && !isCommonFirstName(word) && i > 0) {
+      surnameStartIndex = i;
+      continue;
+    }
+
+    break;
   }
 
   // Assign parts
   if (surnameStartIndex === 0) {
-    // Edge case: entire name is surname
-    if (parts.length === 1) {
-      result.first = parts[0];
-      result.last = parts[0];
-    } else {
-      result.last = parts.join(' ');
-      result.first = parts[0];
-    }
+    // If it starts at 0 and we have multiple parts, it's likely just a last name (e.g. "van Gogh")
+    result.last = parts.join(' ');
   } else {
-    // Normal case
+    // Normal case: everything before surnameStartIndex is first/middle
     result.first = parts[0];
     if (surnameStartIndex > 1) {
       result.middle = parts.slice(1, surnameStartIndex).join(' ');
@@ -174,14 +187,14 @@ function assignNameParts(parts: string[], result: ParsedName): void {
 /**
  * Extract first name from a full name
  */
-export function getFirstName(fullName: string): string {
+export function getFirstName(fullName: string): string | undefined {
   return parseName(fullName).first;
 }
 
 /**
  * Extract last name from a full name
  */
-export function getLastName(fullName: string): string {
+export function getLastName(fullName: string): string | undefined {
   return parseName(fullName).last;
 }
 

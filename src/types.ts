@@ -3,9 +3,9 @@
  */
 export interface ParsedName {
   prefix?: string;
-  first: string;
+  first?: string;
   middle?: string;
-  last: string;
+  last?: string;
   suffix?: string;
   nickname?: string;
 }

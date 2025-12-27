@@ -15,6 +15,14 @@ function ensureParsed(name: string | ParsedName): ParsedName {
 export function formatLastFirst(name: string | ParsedName): string {
   const parsed = ensureParsed(name);
 
+  if (!parsed.last) {
+    const parts: string[] = [];
+    if (parsed.first) parts.push(parsed.first);
+    if (parsed.middle) parts.push(parsed.middle);
+    if (parsed.suffix) parts.push(parsed.suffix);
+    return parts.join(' ');
+  }
+
   let result = parsed.last;
 
   if (parsed.first) {
@@ -102,8 +110,12 @@ export function formatFormal(name: string | ParsedName): string {
 export function getInitials(name: string | ParsedName): string {
   const parsed = ensureParsed(name);
 
+  let initials = '';
+
   // Get first letter of first name
-  let initials = parsed.first.charAt(0).toUpperCase();
+  if (parsed.first && parsed.first.length > 0) {
+    initials += parsed.first.charAt(0).toUpperCase();
+  }
 
   // Get first letters of middle names (excluding particles)
   if (parsed.middle) {
@@ -117,12 +129,14 @@ export function getInitials(name: string | ParsedName): string {
   }
 
   // Get first letter of last name (excluding particles)
-  const lastParts = parsed.last.split(' ');
-  for (const part of lastParts) {
-    // Skip particles, but take the first non-particle word
-    if (!isParticle(part) && part.length > 0) {
-      initials += part.charAt(0).toUpperCase();
-      break; // Only take first non-particle word of surname
+  if (parsed.last) {
+    const lastParts = parsed.last.split(' ');
+    for (const part of lastParts) {
+      // Skip particles, but take the first non-particle word
+      if (!isParticle(part) && part.length > 0) {
+        initials += part.charAt(0).toUpperCase();
+        break; // Only take first non-particle word of surname
+      }
     }
   }
 

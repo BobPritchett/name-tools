@@ -1,57 +1,76 @@
 {
   "parseExamples": [
     {
+      "input": "Guy de la Bédoyère",
+      "expected": {
+        "first": "Guy",
+        "last": "de la Bédoyère"
+      },
+      "description": "New example"
+    },
+    {
+      "input": "William (Bill) Henry Gates III",
+      "expected": {
+        "first": "William",
+        "last": "Gates",
+        "nickname": "Bill",
+        "suffix": "III",
+        "middle": "Henry"
+      },
+      "description": "New example"
+    },
+    {
       "input": "Reverend Dr. David Jefferson, Sr., Esq.",
       "expected": {
         "first": "David",
         "last": "Jefferson",
-        "suffix": "Esq., Sr.",
+        "suffix": "Sr., Esq.",
         "prefix": "Reverend Dr."
       },
       "description": "New example"
     },
     {
-      "input": "Bob Pritchett",
+      "input": "Bob Richardson",
       "expected": {
         "first": "Bob",
-        "last": "Pritchett"
+        "last": "Richardson"
       },
       "description": "Simple two-part name"
     },
     {
-      "input": "Dr. Bob Pritchett",
+      "input": "Dr. Bob Richardson",
       "expected": {
         "prefix": "Dr.",
         "first": "Bob",
-        "last": "Pritchett"
+        "last": "Richardson"
       },
       "description": "Name with prefix"
     },
     {
-      "input": "Bob Pritchett Jr.",
+      "input": "Bob Richardson Jr.",
       "expected": {
         "first": "Bob",
-        "last": "Pritchett",
+        "last": "Richardson",
         "suffix": "Jr."
       },
       "description": "Name with suffix"
     },
     {
-      "input": "Bob William Pritchett",
+      "input": "Bob William Richardson",
       "expected": {
         "first": "Bob",
         "middle": "William",
-        "last": "Pritchett"
+        "last": "Richardson"
       },
       "description": "Name with middle name"
     },
     {
-      "input": "Dr. Bob William Pritchett Jr.",
+      "input": "Dr. Bob William Richardson Jr.",
       "expected": {
         "prefix": "Dr.",
         "first": "Bob",
         "middle": "William",
-        "last": "Pritchett",
+        "last": "Richardson",
         "suffix": "Jr."
       },
       "description": "Full name with all components"
@@ -407,38 +426,81 @@
         "last": "Potter"
       },
       "description": "Simple British name"
+    },
+    {
+      "input": "The Right Honourable Winston Churchill",
+      "expected": {
+        "prefix": "The Right Honourable",
+        "first": "Winston",
+        "last": "Churchill"
+      },
+      "description": "Multi-word prefix"
+    },
+    {
+      "input": "Her Majesty Queen Elizabeth II",
+      "expected": {
+        "prefix": "Her Majesty Queen",
+        "first": "Elizabeth",
+        "last": "",
+        "suffix": "II"
+      },
+      "description": "Her Majesty prefix"
+    },
+    {
+      "input": "Air Chief Marshal Sir Arthur Harris",
+      "expected": {
+        "prefix": "Air Chief Marshal Sir",
+        "first": "Arthur",
+        "last": "Harris"
+      },
+      "description": "Compound military and nobility prefix"
+    },
+    {
+      "input": "The Rt Hon Visc Alanbrooke",
+      "expected": {
+        "prefix": "The Rt Hon Visc",
+        "first": "Alanbrooke"
+      },
+      "description": "The Rt Hon Visc prefix"
+    },
+    {
+      "input": "Beyonce",
+      "expected": {
+        "first": "Beyonce"
+      },
+      "description": "Mononym"
     }
   ],
   "formatExamples": [
     {
-      "input": "Bob Pritchett",
+      "input": "Bob Richardson",
       "formats": {
-        "lastFirst": "Pritchett, Bob",
-        "firstLast": "Bob Pritchett",
-        "withMiddleInitial": "Bob Pritchett",
-        "formal": "Mr/Ms Pritchett",
+        "lastFirst": "Richardson, Bob",
+        "firstLast": "Bob Richardson",
+        "withMiddleInitial": "Bob Richardson",
+        "formal": "Mr/Ms Richardson",
         "initials": "BP"
       },
       "description": "Simple name formatting"
     },
     {
-      "input": "Bob William Pritchett",
+      "input": "Bob William Richardson",
       "formats": {
-        "lastFirst": "Pritchett, Bob William",
-        "firstLast": "Bob William Pritchett",
-        "withMiddleInitial": "Bob W. Pritchett",
-        "formal": "Mr/Ms Pritchett",
+        "lastFirst": "Richardson, Bob William",
+        "firstLast": "Bob William Richardson",
+        "withMiddleInitial": "Bob W. Richardson",
+        "formal": "Mr/Ms Richardson",
         "initials": "BWP"
       },
       "description": "Name with middle name formatting"
     },
     {
-      "input": "Dr. Bob William Pritchett Jr.",
+      "input": "Dr. Bob William Richardson Jr.",
       "formats": {
-        "lastFirst": "Pritchett, Bob William, Jr.",
-        "firstLast": "Dr. Bob William Pritchett Jr.",
-        "withMiddleInitial": "Dr. Bob W. Pritchett Jr.",
-        "formal": "Dr. Pritchett",
+        "lastFirst": "Richardson, Bob William, Jr.",
+        "firstLast": "Dr. Bob William Richardson Jr.",
+        "withMiddleInitial": "Dr. Bob W. Richardson Jr.",
+        "formal": "Dr. Richardson",
         "initials": "BWP"
       },
       "description": "Full name formatting"
@@ -468,15 +530,15 @@
   ],
   "extractionExamples": [
     {
-      "input": "Bob Pritchett",
+      "input": "Bob Richardson",
       "firstName": "Bob",
-      "lastName": "Pritchett",
+      "lastName": "Richardson",
       "initials": "BP"
     },
     {
-      "input": "Dr. Bob William Pritchett Jr.",
+      "input": "Dr. Bob William Richardson Jr.",
       "firstName": "Bob",
-      "lastName": "Pritchett",
+      "lastName": "Richardson",
       "initials": "BWP"
     },
     {
