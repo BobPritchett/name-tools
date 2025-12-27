@@ -193,9 +193,100 @@ async function loadExamples() {
         const response = await fetch('examples.json');
         examplesData = await response.json();
         populateExampleSelector();
+        populateTestResultsTable();
     } catch (error) {
         console.error('Failed to load examples:', error);
     }
+}
+
+// Compare two values and return if they match
+function valuesMatch(actual, expected) {
+    // Handle undefined/null cases
+    if (actual === undefined && expected === undefined) return true;
+    if (actual === undefined || expected === undefined) return false;
+    return actual === expected;
+}
+
+// Populate the test results table
+function populateTestResultsTable() {
+    const tbody = document.getElementById('testResultsBody');
+
+    if (!examplesData || !tbody) return;
+
+    // Clear existing rows
+    tbody.innerHTML = '';
+
+    // Process each parse example
+    examplesData.parseExamples.forEach(({ input, expected, description }) => {
+        try {
+            // Parse the name
+            const actual = parseName(input);
+
+            // Create row
+            const row = document.createElement('tr');
+
+            // Test name column
+            const nameCell = document.createElement('td');
+            nameCell.className = 'test-name';
+            nameCell.textContent = description;
+            row.appendChild(nameCell);
+
+            // Input column
+            const inputCell = document.createElement('td');
+            inputCell.className = 'test-input';
+            inputCell.textContent = input;
+            row.appendChild(inputCell);
+
+            // Field columns: prefix, first, middle, last, suffix
+            const fields = ['prefix', 'first', 'middle', 'last', 'suffix'];
+
+            fields.forEach(field => {
+                const cell = document.createElement('td');
+                const actualValue = actual[field];
+                const expectedValue = expected[field];
+                const matches = valuesMatch(actualValue, expectedValue);
+
+                // Set cell content
+                if (actualValue !== undefined) {
+                    cell.textContent = actualValue;
+                } else {
+                    cell.textContent = '-';
+                    cell.className = 'empty-cell';
+                }
+
+                // Add match/mismatch class
+                if (actualValue !== undefined || expectedValue !== undefined) {
+                    if (matches) {
+                        cell.classList.add('match');
+                    } else {
+                        cell.classList.add('mismatch');
+                        // Add tooltip showing expected value
+                        cell.title = `Expected: ${expectedValue !== undefined ? expectedValue : '(none)'}`;
+                    }
+                }
+
+                row.appendChild(cell);
+            });
+
+            tbody.appendChild(row);
+        } catch (error) {
+            // Handle parsing errors
+            const row = document.createElement('tr');
+            row.className = 'error-row';
+
+            const nameCell = document.createElement('td');
+            nameCell.textContent = description;
+            row.appendChild(nameCell);
+
+            const errorCell = document.createElement('td');
+            errorCell.colSpan = 6;
+            errorCell.className = 'error-cell';
+            errorCell.textContent = `Error: ${error.message}`;
+            row.appendChild(errorCell);
+
+            tbody.appendChild(row);
+        }
+    });
 }
 
 // Populate the example selector dropdown
