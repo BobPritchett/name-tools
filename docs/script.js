@@ -54,6 +54,7 @@ function updateResults() {
             const parsed = parseName(line);
             allParsed.push({ line, parsed });
             
+            const detailsId = `details-${index}`;
             html += `
                 <tr>
                     <td class="test-input">${line}</td>
@@ -65,6 +66,12 @@ function updateResults() {
                     <td>${parsed.suffix || '-'}</td>
                     <td class="actions-col">
                         <button class="copy-row-btn" title="Copy to JSON" data-index="${index}">Copy</button>
+                        <button class="copy-row-btn" title="Toggle details" data-toggle="${detailsId}">Details</button>
+                    </td>
+                </tr>
+                <tr id="${detailsId}" class="details-row" style="display: none;">
+                    <td colspan="8">
+                        ${renderExtendedPanel(parsed)}
                     </td>
                 </tr>
             `;
@@ -75,6 +82,15 @@ function updateResults() {
                 </table>
             </div>
         `;
+
+        // For single line input, show the extended panel prominently once (outside the table)
+        if (lines.length === 1) {
+            html += `
+                <div class="result-group">
+                    ${renderExtendedPanel(allParsed[0].parsed)}
+                </div>
+            `;
+        }
 
         // Formatting outputs (single entry point)
         if (lines.length === 1) {
@@ -119,8 +135,20 @@ function updateResults() {
         document.querySelectorAll('.copy-row-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const index = parseInt(btn.getAttribute('data-index'));
-                const { line, parsed } = allParsed[index];
-                copyParsedToJson(line, parsed, btn);
+                if (!Number.isNaN(index)) {
+                    const { line, parsed } = allParsed[index];
+                    copyParsedToJson(line, parsed, btn);
+                }
+            });
+        });
+
+        // Toggle details buttons
+        document.querySelectorAll('[data-toggle]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-toggle');
+                const row = document.getElementById(id);
+                if (!row) return;
+                row.style.display = row.style.display === 'none' ? '' : 'none';
             });
         });
 
@@ -143,6 +171,50 @@ function updateResults() {
         resultsDiv.innerHTML = `<p style="color: #cf222e; font-size: 14px;">Error: ${error.message}</p>`;
         demoActions.style.display = 'none';
     }
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function renderTokenList(tokens) {
+    if (!tokens || tokens.length === 0) return '-';
+    return tokens
+        .map(t => `${t.type}: ${t.value}${t.normalized ? ` (${t.normalized})` : ''}`)
+        .join(', ');
+}
+
+function renderExtendedPanel(parsed) {
+    const prefixTokens = renderTokenList(parsed.prefixTokens);
+    const suffixTokens = renderTokenList(parsed.suffixTokens);
+    const familyParts = Array.isArray(parsed.familyParts) ? parsed.familyParts.join(' ') : '-';
+    const sortDisplay = parsed.sort && parsed.sort.display ? parsed.sort.display : '-';
+    const sortKey = parsed.sort && parsed.sort.key ? parsed.sort.key : '-';
+
+    return `
+        <div class="details-panel">
+            <details open>
+                <summary>Extended ParsedName fields</summary>
+                <table class="details-kv">
+                    <tbody>
+                        <tr><th>preferredGiven</th><td class="mono">${escapeHtml(parsed.preferredGiven || '-')}</td></tr>
+                        <tr><th>prefixTokens</th><td class="mono">${escapeHtml(prefixTokens)}</td></tr>
+                        <tr><th>suffixTokens</th><td class="mono">${escapeHtml(suffixTokens)}</td></tr>
+                        <tr><th>familyParticle</th><td class="mono">${escapeHtml(parsed.familyParticle || '-')}</td></tr>
+                        <tr><th>familyParts</th><td class="mono">${escapeHtml(familyParts)}</td></tr>
+                        <tr><th>familyParticleBehavior</th><td class="mono">${escapeHtml(parsed.familyParticleBehavior || '-')}</td></tr>
+                        <tr><th>sort.display</th><td class="mono">${escapeHtml(sortDisplay)}</td></tr>
+                        <tr><th>sort.key</th><td class="mono">${escapeHtml(sortKey)}</td></tr>
+                    </tbody>
+                </table>
+            </details>
+        </div>
+    `;
 }
 
 function copyParsedToJson(input, parsed, btn) {

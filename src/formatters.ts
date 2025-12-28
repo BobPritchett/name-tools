@@ -1,4 +1,5 @@
 import { parseName } from './parsers';
+import { extractIdentitySuffixFromTokens } from './affixes';
 import type { NameFormatOptions, NamePreset, ParsedName } from './types';
 
 type ResolvedOptions = Required<
@@ -144,8 +145,9 @@ function extractIdentitySuffix(suffix: string): string | undefined {
 function resolveGiven(parsed: ParsedName, prefer: ResolvedOptions['prefer']): string | undefined {
   const first = parsed.first ? normalizeTrim(parsed.first) : undefined;
   const nickname = parsed.nickname ? normalizeTrim(parsed.nickname) : undefined;
+  const preferredGiven = parsed.preferredGiven ? normalizeTrim(parsed.preferredGiven) : undefined;
 
-  if (prefer === 'nickname') return nickname ?? first;
+  if (prefer === 'nickname') return preferredGiven ?? nickname ?? first;
   if (prefer === 'first') return first ?? nickname;
 
   // prefer === 'auto'
@@ -169,10 +171,13 @@ function resolveLast(parsed: ParsedName): string | undefined {
 
 function resolveSuffix(parsed: ParsedName, suffixMode: ResolvedOptions['suffix']): string | undefined {
   const suffix = parsed.suffix ? normalizeCollapseSpaces(parsed.suffix) : undefined;
-  if (!suffix) return undefined;
   if (suffixMode === 'omit') return undefined;
+
   if (suffixMode === 'include') return suffix;
   // auto: include identity-like only
+  const identityFromTokens = extractIdentitySuffixFromTokens(parsed.suffixTokens);
+  if (identityFromTokens) return identityFromTokens;
+  if (!suffix) return undefined;
   return extractIdentitySuffix(suffix);
 }
 

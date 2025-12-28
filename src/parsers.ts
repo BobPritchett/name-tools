@@ -2,6 +2,7 @@ import { isPrefix } from './data/prefixes';
 import { isSuffix } from './data/suffixes';
 import { isParticle } from './data/particles';
 import { isCommonSurname, isCommonFirstName } from './data/surnames';
+import { buildAffixTokens } from './affixes';
 import { ParsedName } from './types';
 
 /**
@@ -39,6 +40,13 @@ export function parseName(fullName: string): ParsedName {
   if (!result.first && !result.last) {
     throw new Error('Invalid name: no name parts found after parsing');
   }
+
+  // Additive metadata (does not alter the original display strings)
+  result.prefixTokens = buildAffixTokens(result.prefix, 'prefix');
+  result.suffixTokens = buildAffixTokens(result.suffix, 'suffix');
+  deriveFamilyParticle(result);
+  derivePreferredGiven(result);
+  deriveSortHelpers(result);
 
   return result;
 }
@@ -182,6 +190,101 @@ function assignNameParts(parts: string[], result: ParsedName): void {
     }
     result.last = parts.slice(surnameStartIndex).join(' ');
   }
+}
+
+const FAMILY_PARTICLE_PHRASES = [
+  // multi-word (check first)
+  'de la',
+  'de los',
+  'de las',
+  'van der',
+  'van den',
+  'van de',
+  // single-word
+  'de',
+  'del',
+  'da',
+  'dos',
+  'di',
+  'van',
+  'von',
+  'al',
+  'el',
+  'bin',
+  'ibn',
+] as const;
+
+function deriveFamilyParticle(result: ParsedName): void {
+  const last = result.last?.trim();
+  if (!last) return;
+
+  const words = last.split(/\s+/).filter(Boolean);
+  if (words.length < 2) return;
+
+  const lowerWords = words.map(w => w.toLowerCase());
+
+  // Try longest particle phrases first
+  const candidates = [...FAMILY_PARTICLE_PHRASES].sort((a, b) => b.split(' ').length - a.split(' ').length);
+  for (const phrase of candidates) {
+    const pWords = phrase.split(' ');
+    if (pWords.length >= words.length) continue;
+
+    const matches = pWords.every((pw, idx) => lowerWords[idx] === pw);
+    if (!matches) continue;
+
+    const particleOriginal = words.slice(0, pWords.length).join(' ');
+    const remainderWords = words.slice(pWords.length);
+    if (remainderWords.length === 0) return;
+
+    result.familyParticle = particleOriginal;
+    result.familyParts = remainderWords;
+    result.familyParticleBehavior = 'localeDefault';
+    return;
+  }
+}
+
+function derivePreferredGiven(result: ParsedName): void {
+  if (result.preferredGiven) return;
+  const nick = result.nickname?.trim();
+  if (!nick) return;
+  result.preferredGiven = nick.replace(/^[\"'\(\[]+/, '').replace(/[\"'\)\]]+$/, '').trim() || undefined;
+}
+
+function deriveSortHelpers(result: ParsedName): void {
+  const last = result.last?.trim();
+  const first = result.first?.trim();
+  const middle = result.middle?.trim();
+
+  let display = '';
+  if (last && first) {
+    display = `${last}, ${first}${middle ? ` ${middle}` : ''}`;
+  } else if (last) {
+    display = last;
+  } else if (first) {
+    display = `${first}${middle ? ` ${middle}` : ''}`;
+  }
+
+  // Include generational/dynastic suffixes (identity-like) in sort display, exclude credentials by default.
+  const identitySuffix = result.suffixTokens
+    ?.filter(t => t.type === 'generational' || t.type === 'dynasticNumber')
+    .map(t => t.value)
+    .filter(Boolean)
+    .join(', ');
+  if (display && identitySuffix) {
+    display = `${display}, ${identitySuffix}`;
+  }
+
+  if (!display) return;
+
+  const key = display
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '') // strip diacritics
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  result.sort = { display, key };
 }
 
 /**

@@ -18,7 +18,7 @@ export {
   getNickname,
 } from './parsers';
 
-export type { ParsedName } from './types';
+export type { ParsedName, NameAffixToken, NameAffixTokenType, NameToken, NameTokenType } from './types';
 
 // Export formatters
 export {

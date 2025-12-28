@@ -1,6 +1,45 @@
 /**
  * Represents a person's name broken down into its component parts
  */
+export type NameAffixTokenType =
+  | 'honorific' // Mr, Mrs, Ms, Dr, Prof, Sir, Dame
+  | 'style' // The Hon., His/Her Excellency, The Rt Hon
+  | 'religious' // Rev, Fr, Rabbi, Imam, Sr (Sister), Br (Brother)
+  | 'military' // Capt, Maj, Col, Gen, Sgt
+  | 'judicial' // Judge, Justice
+  | 'professional' // Esq, CPA, PE, RN
+  | 'education' // PhD, Ph.D., MD, JD, MBA
+  | 'generational' // Jr, Sr
+  | 'dynasticNumber' // II, III, IV
+  | 'postnominalHonor' // OBE, KBE etc (optional)
+  | 'other';
+
+export interface NameAffixToken {
+  type: NameAffixTokenType;
+  value: string; // exact substring as written
+  normalized?: string; // optional: uppercase/punctuation-stripped
+  isAbbrev?: boolean;
+  requiresCommaBefore?: boolean; // optional hint (US style often uses comma)
+}
+
+export type NameTokenType =
+  | 'prefix'
+  | 'given'
+  | 'middle'
+  | 'family'
+  | 'particle'
+  | 'suffix'
+  | 'nickname'
+  | 'literal';
+
+export interface NameToken {
+  type: NameTokenType;
+  value: string;
+  normalized?: string;
+  noBreakAfter?: boolean;
+  noBreakBefore?: boolean;
+}
+
 export interface ParsedName {
   prefix?: string;
   first?: string;
@@ -8,6 +47,27 @@ export interface ParsedName {
   last?: string;
   suffix?: string;
   nickname?: string;
+
+  // typed affixes (additive; original strings remain display strings)
+  prefixTokens?: NameAffixToken[];
+  suffixTokens?: NameAffixToken[];
+
+  // family particles (optional)
+  familyParts?: string[]; // remaining family name parts excluding particle (recommended minimal)
+  familyParticle?: string; // e.g., "van", "de", "de la", "al"
+  familyParticleBehavior?: 'attach' | 'separate' | 'localeDefault';
+
+  // preferred given name (optional; commonly derived from nickname)
+  preferredGiven?: string;
+
+  // sort helpers (optional, recommended)
+  sort?: {
+    key?: string; // normalized key for sorting/dedupe
+    display?: string; // e.g., "Smith, John Q."
+  };
+
+  // optional full token stream (if supported by consumer)
+  tokens?: NameToken[];
 }
 
 export type NamePreset =
