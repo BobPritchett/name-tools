@@ -2,11 +2,7 @@ import {
     isPrefix,
     isSuffix,
     parseName,
-    getInitials,
-    formatLastFirst,
-    formatFirstLast,
-    formatWithMiddleInitial,
-    formatFormal
+    formatName
 } from './name-tools.js';
 
 // Global variable to hold examples data
@@ -80,18 +76,37 @@ function updateResults() {
             </div>
         `;
 
-        // If only one line, show formatted outputs too
+        // Formatting outputs (single entry point)
         if (lines.length === 1) {
             const parsed = allParsed[0].parsed;
-            const initials = getInitials(lines[0]);
             html += `
                 <div class="result-group">
                     <div class="formatted-outputs">
-                        <div class="formatted-item"><strong>Last, First:</strong> <span>${formatLastFirst(parsed)}</span></div>
-                        <div class="formatted-item"><strong>First Last:</strong> <span>${formatFirstLast(parsed)}</span></div>
-                        <div class="formatted-item"><strong>With Initials:</strong> <span>${formatWithMiddleInitial(parsed)}</span></div>
-                        <div class="formatted-item"><strong>Formal:</strong> <span>${formatFormal(parsed)}</span></div>
-                        <div class="formatted-item"><strong>Initials:</strong> <span>${initials}</span></div>
+                        <div class="formatted-item"><strong>Display:</strong> <span>${formatName(parsed)}</span></div>
+                        <div class="formatted-item"><strong>Formal Full:</strong> <span>${formatName(parsed, { preset: 'formalFull' })}</span></div>
+                        <div class="formatted-item"><strong>Formal Short:</strong> <span>${formatName(parsed, { preset: 'formalShort' })}</span></div>
+                        <div class="formatted-item"><strong>Alphabetical:</strong> <span>${formatName(parsed, { preset: 'alphabetical' })}</span></div>
+                        <div class="formatted-item"><strong>Initialed:</strong> <span>${formatName(parsed, { preset: 'initialed' })}</span></div>
+                        <div class="formatted-item"><strong>Preferred Display:</strong> <span>${formatName(parsed, { preset: 'preferredDisplay' })}</span></div>
+                    </div>
+                </div>
+            `;
+        } else if (lines.length === 2) {
+            // Show list + couple renderings for 2 names
+            html += `
+                <div class="result-group">
+                    <div class="formatted-outputs">
+                        <div class="formatted-item"><strong>List:</strong> <span>${formatName(lines, { join: 'list' })}</span></div>
+                        <div class="formatted-item"><strong>Couple:</strong> <span>${formatName(lines, { join: 'couple' })}</span></div>
+                    </div>
+                </div>
+            `;
+        } else if (lines.length > 2) {
+            // Show list rendering for 3+ names
+            html += `
+                <div class="result-group">
+                    <div class="formatted-outputs">
+                        <div class="formatted-item"><strong>List:</strong> <span>${formatName(lines, { join: 'list' })}</span></div>
                     </div>
                 </div>
             `;

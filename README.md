@@ -9,9 +9,11 @@ A lightweight, zero-dependency utility library for parsing, formatting, and mani
 
 ## Features
 
-- Parse full names into components (prefix, first, middle, last, suffix)
-- Multiple formatting options (Last-First, First-Last, with initials, formal)
-- Extract specific parts (first name, last name, initials)
+- Parse full names into components (prefix, first, middle, last, suffix, nickname)
+- **Single** formatting entry point with presets + options (`formatName`)
+- Smart no-break spacing for nicer UI rendering (NBSP/NNBSP, optional HTML entities output)
+- Render lists/couples from arrays of names
+- Extract specific parts (first name, last name, nickname)
 - Comprehensive data sets of common prefixes and suffixes
 - Full TypeScript support with type definitions
 - Zero dependencies
@@ -26,7 +28,7 @@ pnpm add name-tools
 ## Quick Start
 
 ```javascript
-import { parseName, formatLastFirst, getInitials } from 'name-tools';
+import { parseName, formatName } from 'name-tools';
 
 // Parse a full name
 const parsed = parseName("Dr. Bob William Pritchett Jr.");
@@ -39,13 +41,19 @@ console.log(parsed);
 //   suffix: 'Jr.'
 // }
 
-// Format names
-const formatted = formatLastFirst("Bob Pritchett");
-console.log(formatted); // "Pritchett, Bob"
+// Format a name (single entry point)
+console.log(formatName("Dr. Bob William Pritchett Jr."));
+// "Bob Pritchett, Jr." (NBSP used in smart mode)
 
-// Get initials
-const initials = getInitials("John Robert Smith");
-console.log(initials); // "JRS"
+console.log(formatName("Dr. Bob William Pritchett Jr.", { preset: "formalFull" }));
+// "Dr. Bob William Pritchett, Jr."
+
+// Render a list or couple
+console.log(formatName(["John Smith", "Mary Jones"], { join: "list" }));
+// "John Smith and Mary Jones"
+
+console.log(formatName(["John Smith", "Mary Smith"], { join: "couple" }));
+// "John and Mary Smith"
 ```
 
 ## API Reference
@@ -91,63 +99,48 @@ Extract just the last name from a full name.
 getLastName("Bob William Pritchett"); // "Pritchett"
 ```
 
-#### `getInitials(fullName: string): string`
-
-Get the initials from a full name.
-
-```javascript
-getInitials("John Robert Smith"); // "JRS"
-getInitials("Bob Pritchett");      // "BP"
-```
-
 ### Formatting Functions
 
-All formatting functions accept either a string (full name) or a `ParsedName` object.
+All formatting uses a single entry point. Input can be a string, a `ParsedName`, or an array of either.
 
-#### `formatFirstLast(name: string | ParsedName): string`
+#### `formatName(input, options?) -> string`
 
-Format a name in standard "First Last" order.
-
-```javascript
-formatFirstLast("Dr. Bob Pritchett Jr.");
-// "Dr. Bob Pritchett Jr."
+```ts
+formatName(
+  input: string | ParsedName | Array<string | ParsedName>,
+  options?: NameFormatOptions
+): string
 ```
 
-#### `formatLastFirst(name: string | ParsedName): string`
-
-Format a name in "Last, First" order (common for alphabetical sorting).
-
 ```javascript
-formatLastFirst("Bob William Pritchett");
-// "Pritchett, Bob William"
+formatName("Dr. Bob Pritchett Jr.");
+// "Bob Pritchett, Jr."
 
-formatLastFirst("Dr. Bob Pritchett Jr.");
-// "Pritchett, Bob, Jr."
+formatName("Dr. Bob Pritchett Jr.", { preset: "alphabetical" });
+// "Pritchett, Bob, Jr."
 ```
 
-#### `formatWithMiddleInitial(name: string | ParsedName): string`
+#### Preset Matrix (quick pick)
 
-Format a name with abbreviated middle name(s).
-
-```javascript
-formatWithMiddleInitial("Bob William Pritchett");
-// "Bob W. Pritchett"
-
-formatWithMiddleInitial("John Robert Michael Smith");
-// "John R. M. Smith"
-```
-
-#### `formatFormal(name: string | ParsedName): string`
-
-Format a name in formal style (Title + Last name).
+Example input used below:
 
 ```javascript
-formatFormal("Dr. Bob Pritchett");
-// "Dr. Pritchett"
-
-formatFormal("Bob Pritchett");
-// "Mr/Ms Pritchett"
+const input = "Dr. Bob William Pritchett Jr.";
 ```
+
+| preset | intent | defaults (high level) | output example |
+| --- | --- | --- | --- |
+| `display` (default) | best UI display name | prefix omit, middle none, suffix auto, given-family | `formatName(input)` → `Bob Pritchett, Jr.` |
+| `preferredDisplay` | nickname + family for UI | prefer nickname, middle none, suffix auto | `formatName(input, { preset: "preferredDisplay" })` → `Bob Pritchett, Jr.` *(falls back to first if no nickname)* |
+| `informal` | given + family | prefix omit, middle none, suffix omit | `formatName(input, { preset: "informal" })` → `Bob Pritchett` |
+| `firstOnly` | given only | prefix omit, middle none, suffix omit | `formatName(input, { preset: "firstOnly" })` → `Bob` |
+| `preferredFirst` | nickname only | prefer nickname, middle none, suffix omit | `formatName(input, { preset: "preferredFirst" })` → `Bob` *(falls back to first if no nickname)* |
+| `formalFull` | full formal name | prefix include, middle full, suffix include, given-family | `formatName(input, { preset: "formalFull" })` → `Dr. Bob William Pritchett, Jr.` |
+| `formalShort` | title + family | prefix include, middle none, suffix omit | `formatName(input, { preset: "formalShort" })` → `Dr. Pritchett` |
+| `alphabetical` | sortable family-first | family-given, middle initial, suffix auto | `formatName(input, { preset: "alphabetical" })` → `Pritchett, Bob W., Jr.` |
+| `initialed` | initials + family | middle initial, suffix omit | `formatName(input, { preset: "initialed" })` → `B. W. Pritchett` |
+
+See `NameFormatOptions` for presets, typography, no-break behavior, and array rendering.
 
 ### Data Sets & Utilities
 
@@ -186,10 +179,10 @@ isSuffix("Bob");  // false
 This library is written in TypeScript and includes full type definitions.
 
 ```typescript
-import { parseName, ParsedName, formatLastFirst } from 'name-tools';
+import { parseName, ParsedName, formatName, NameFormatOptions } from 'name-tools';
 
 const parsed: ParsedName = parseName("Bob Pritchett");
-const formatted: string = formatLastFirst(parsed);
+const formatted: string = formatName(parsed, { preset: "display" } satisfies NameFormatOptions);
 ```
 
 ## Use Cases
@@ -222,31 +215,29 @@ createEmail("Bob Pritchett", "example.com");
 ### Formatting for Display
 
 ```javascript
-import { parseName, formatWithMiddleInitial } from 'name-tools';
+import { parseName, formatName } from 'name-tools';
 
 function displayName(fullName) {
   const parsed = parseName(fullName);
 
-  // Use full name for VIPs with titles
-  if (parsed.prefix) {
-    return formatWithMiddleInitial(parsed);
-  }
+  // Use a more formal preset for VIPs with titles
+  if (parsed.prefix) return formatName(parsed, { preset: "formalFull" });
 
-  // Otherwise just first and last
-  return `${parsed.first} ${parsed.last}`;
+  // Otherwise the default display preset
+  return formatName(parsed);
 }
 
-displayName("Dr. Bob William Pritchett");
-// "Dr. Bob W. Pritchett"
+displayName("Dr. Bob William Pritchett Jr.");
+// "Dr. Bob William Pritchett, Jr."
 
-displayName("Bob William Pritchett");
-// "Bob Pritchett"
+displayName("Bob William Pritchett Jr.");
+// "Bob Pritchett, Jr."
 ```
 
 ### Sorting Names
 
 ```javascript
-import { formatLastFirst } from 'name-tools';
+import { formatName } from 'name-tools';
 
 const names = [
   "Bob Pritchett",
@@ -255,7 +246,7 @@ const names = [
 ];
 
 const sorted = names
-  .map(name => ({ original: name, sortKey: formatLastFirst(name) }))
+  .map(name => ({ original: name, sortKey: formatName(name, { preset: "alphabetical" }) }))
   .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
   .map(item => item.original);
 

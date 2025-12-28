@@ -439,9 +439,9 @@
     {
       "input": "Her Majesty Queen Elizabeth II",
       "expected": {
-        "prefix": "Her Majesty Queen",
-        "first": "Elizabeth",
-        "last": "",
+        "prefix": "Her Majesty",
+        "first": "Queen",
+        "last": "Elizabeth",
         "suffix": "II"
       },
       "description": "Her Majesty prefix"

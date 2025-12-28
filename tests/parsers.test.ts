@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { parseName, getFirstName, getLastName } from '../src/parsers';
-import { getInitials } from '../src/formatters';
 import examples from '../src/data/examples.json';
 
 describe('parseName', () => {
@@ -36,15 +35,6 @@ describe('getLastName', () => {
   examples.extractionExamples.forEach(({ input, lastName }) => {
     it(`should extract last name from "${input}"`, () => {
       expect(getLastName(input)).toBe(lastName);
-    });
-  });
-});
-
-describe('getInitials', () => {
-  // Data-driven tests
-  examples.extractionExamples.forEach(({ input, initials }) => {
-    it(`should get initials from "${input}"`, () => {
-      expect(getInitials(input)).toBe(initials);
     });
   });
 });

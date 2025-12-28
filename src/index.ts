@@ -22,9 +22,7 @@ export type { ParsedName } from './types';
 
 // Export formatters
 export {
-  formatLastFirst,
-  formatFirstLast,
-  formatWithMiddleInitial,
-  formatFormal,
-  getInitials,
+  formatName,
 } from './formatters';
+
+export type { NameFormatOptions, NamePreset } from './types';

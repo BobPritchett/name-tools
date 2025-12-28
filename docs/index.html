@@ -74,15 +74,17 @@
 
             <section class="info-section">
                 <h2>Quick Start</h2>
-                <pre><code>import { parseName, formatLastFirst } from 'name-tools';
+                <pre><code>import { parseName, formatName } from 'name-tools';
 
 const parsed = parseName("Dr. Bob Pritchett Jr.");
 console.log(parsed);
 // { prefix: 'Dr.', first: 'Bob', last: 'Pritchett', suffix: 'Jr.' }
 
-const formatted = formatLastFirst("Bob Pritchett");
-console.log(formatted);
-// "Pritchett, Bob"</code></pre>
+console.log(formatName("Dr. Bob Pritchett Jr."));
+// "Bob Pritchett, Jr." (NBSP used for nicer line breaks)
+
+console.log(formatName("Dr. Bob Pritchett Jr.", { preset: "alphabetical" }));
+// "Pritchett, Bob, Jr."</code></pre>
             </section>
 
             <section class="info-section">
@@ -105,15 +107,11 @@ console.log(formatted);
                         <li><code>parseName(fullName: string)</code> - Parse a full name into components</li>
                         <li><code>getFirstName(fullName: string)</code> - Extract first name</li>
                         <li><code>getLastName(fullName: string)</code> - Extract last name</li>
-                        <li><code>getInitials(fullName: string)</code> - Get initials</li>
                     </ul>
 
                     <h3>Formatting Functions</h3>
                     <ul>
-                        <li><code>formatFirstLast(name)</code> - Format as "First Last"</li>
-                        <li><code>formatLastFirst(name)</code> - Format as "Last, First"</li>
-                        <li><code>formatWithMiddleInitial(name)</code> - Format with middle initial</li>
-                        <li><code>formatFormal(name)</code> - Format as "Title Last"</li>
+                        <li><code>formatName(input, options?)</code> - Single rendering entry point (presets + options)</li>
                     </ul>
 
                     <h3>Data & Utilities</h3>
