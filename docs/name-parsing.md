@@ -6,6 +6,13 @@ This document provides detailed instructions on how the name parsing algorithm w
 
 The `parseName()` function uses a multi-step algorithm to break down a full name string into its component parts: `prefix`, `first`, `middle`, `last`, `suffix`, and `nickname`. The parser processes names from both ends (prefixes from the left, suffixes from the right) and uses heuristics to determine where the surname boundary lies.
 
+In addition to the core display strings, the parser also attaches **typed affix tokens**:
+
+- `prefixTokens`: tokenized + classified prefix parts
+- `suffixTokens`: tokenized + classified suffix parts
+
+These tokens preserve the parsed substring as written (`value`) while also carrying a normalized matching key (`normalized`) and, when recognized, canonical display forms (`canonicalShort` / `canonicalLong`).
+
 ## Parsing Algorithm Steps
 
 ### Step 1: Extract Nicknames
@@ -30,7 +37,7 @@ Suffixes are extracted from the **right side** of the name, working backward. Th
 
 1. **Comma-separated suffixes** (processed first):
    - `"John Smith, Jr."` → suffix: `"Jr."`
-   - `"Dr. Jane Doe, PhD, MD"` → suffix: `"PhD, MD"`
+   - `"Dr. Jane Doe, PhD, MD"` → suffix: `"PhD, MD"` *(display string preserved; canonical forms available via `suffixTokens`)*
 
 2. **Space-separated suffixes** (processed after commas):
    - `"John Smith Jr."` → suffix: `"Jr."`
@@ -40,11 +47,16 @@ Suffixes are extracted from the **right side** of the name, working backward. Th
    - Royal titles: `"queen"`, `"king"`, `"consort"` (case-insensitive)
    - Multiple suffixes can be combined: `"PhD, MD"`, `"Jr., Esq."`
 
+4. **Unanticipated post-nominals (degrees/certifications)**:
+   - If the parser sees a **trailing comma suffix tail** and the comma-separated chunk looks like a short, credential-like abbreviation (e.g., `"PMP"`, `"CISSP"`, `"M.S."`), it is preserved as part of the suffix even if it is not in the built-in canonical list.
+   - These tokens are classified as `type: "other"` in `suffixTokens` unless they match a known canonical entry.
+
 **Examples:**
 ```
 "John Smith Jr." → { first: "John", last: "Smith", suffix: "Jr." }
 "Dr. Jane Doe, PhD" → { prefix: "Dr.", first: "Jane", last: "Doe", suffix: "PhD" }
 "Robert Williams III, Esq." → { first: "Robert", last: "Williams", suffix: "III, Esq." }
+"John Smith, PMP" → { first: "John", last: "Smith", suffix: "PMP" }
 ```
 
 ### Step 3: Extract Prefixes
@@ -54,6 +66,8 @@ Prefixes are extracted from the **left side** of the name, working forward. The 
 1. Checks for multi-word prefixes (up to 5 words) before single-word prefixes
 2. Continues extracting prefixes until no more matches are found
 3. Must leave at least one word for the actual name
+
+Prefix recognition is driven by the canonical affix dataset (plus heuristics for a few patterns), and the original display string is preserved in `prefix`. Canonical render-ready forms are available via `prefixTokens`.
 
 **Examples:**
 ```
@@ -230,12 +244,22 @@ const formatted = formatName(parsed, { preset: "display" });
 
 This allows you to parse once and format multiple times with different options.
 
+### Canonical affix rendering
+
+Because the parser emits `prefixTokens` / `suffixTokens`, `formatName()` can render affixes in canonical forms even if the input casing/punctuation is inconsistent.
+
+For example, with `suffix: "auto"` (the default behavior for most presets), `formatName()` preserves the full suffix tail and will render known entries canonically:
+
+```javascript
+formatName("John Smith, phd") // "John Smith, Ph.D."
+formatName("John Smith, PMP") // "John Smith, PMP" (unknown credential preserved)
+```
+
 ## Data Sources
 
 The parser relies on several data sets:
 
-- **Prefixes**: Common titles and honorifics (Mr., Dr., Prof., etc.)
-- **Suffixes**: Common suffixes (Jr., Sr., PhD, MD, etc.)
+- **Affixes (prefixes + suffixes)**: Canonical affix entries with matching variants and render-ready short/long forms (see `src/data/affixes.ts`)
 - **Particles**: Surname particles (van, von, de, da, etc.)
 - **Surnames**: Database of common surnames for compound surname detection
 - **First Names**: Database of common first names to distinguish from surnames

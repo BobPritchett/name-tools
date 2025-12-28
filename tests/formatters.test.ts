@@ -29,6 +29,15 @@ describe('formatName (single)', () => {
     );
   });
 
+  it('canonicalizes common US degree suffixes (PhD, MSW)', () => {
+    expect(formatName('John Smith, phd')).toBe(
+      `John${NBSP}Smith,${NBSP}Ph.D.`
+    );
+    expect(formatName('John Smith, msw')).toBe(
+      `John${NBSP}Smith,${NBSP}M.S.W.`
+    );
+  });
+
   it('renders informal (given + last, no suffix)', () => {
     expect(formatName('Dr. Bob William Pritchett Jr.', { preset: 'informal' })).toBe(
       `Bob${NBSP}Pritchett`

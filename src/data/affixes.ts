@@ -436,6 +436,19 @@ export const SUFFIX_AFFIX_ENTRIES: readonly AffixEntry[] = [
   // English-speaking + broadly EU-used postnominals (degrees, credentials)
   // Canonical punctuation is stored; matching tolerates stripped dots.
   // ---------------------------------------------------------------------------
+  // Associate's
+  { id: 'aa', type: 'education', ctx: 'suffix', short: 'A.A.', long: 'Associate of Arts', variants: ['aa', 'a.a.'] },
+  { id: 'as', type: 'education', ctx: 'suffix', short: 'A.S.', long: 'Associate of Science', variants: ['as', 'a.s.'] },
+  { id: 'aas', type: 'education', ctx: 'suffix', short: 'A.A.S.', long: 'Associate of Applied Science', variants: ['aas', 'a.a.s.'] },
+
+  // Bachelor's
+  { id: 'ba', type: 'education', ctx: 'suffix', short: 'B.A.', long: 'Bachelor of Arts', variants: ['ba', 'b.a.'] },
+  { id: 'bs', type: 'education', ctx: 'suffix', short: 'B.S.', long: 'Bachelor of Science', variants: ['bs', 'b.s.'] },
+  { id: 'bba', type: 'education', ctx: 'suffix', short: 'B.B.A.', long: 'Bachelor of Business Administration', variants: ['bba', 'b.b.a.'] },
+
+  // Master's
+  { id: 'ma', type: 'education', ctx: 'suffix', short: 'M.A.', long: 'Master of Arts', variants: ['ma', 'm.a.'] },
+  { id: 'ms', type: 'education', ctx: 'suffix', short: 'M.S.', long: 'Master of Science', variants: ['ms', 'm.s.'] },
   { id: 'phd', type: 'education', ctx: 'suffix', short: 'Ph.D.', variants: ['phd', 'ph.d.'] },
   { id: 'dphil', type: 'education', ctx: 'suffix', short: 'D.Phil.', variants: ['dphil', 'd.phil.'] },
   { id: 'md', type: 'education', ctx: 'suffix', short: 'M.D.', variants: ['md', 'm.d.'] },
@@ -444,13 +457,20 @@ export const SUFFIX_AFFIX_ENTRIES: readonly AffixEntry[] = [
   { id: 'dmd', type: 'education', ctx: 'suffix', short: 'D.M.D.', variants: ['dmd', 'd.m.d.'] },
   { id: 'dvm', type: 'education', ctx: 'suffix', short: 'D.V.M.', variants: ['dvm', 'd.v.m.'] },
   { id: 'jd', type: 'education', ctx: 'suffix', short: 'J.D.', variants: ['jd', 'j.d.'] },
+  { id: 'edd', type: 'education', ctx: 'suffix', short: 'Ed.D.', variants: ['edd', 'ed.d.'] },
+  { id: 'pharmd', type: 'education', ctx: 'suffix', short: 'Pharm.D.', variants: ['pharmd', 'pharm.d.'] },
+  { id: 'psyd', type: 'education', ctx: 'suffix', short: 'Psy.D.', variants: ['psyd', 'psy.d.'] },
+  { id: 'dpt', type: 'education', ctx: 'suffix', short: 'D.P.T.', variants: ['dpt', 'd.p.t.'] },
+  { id: 'od', type: 'education', ctx: 'suffix', short: 'O.D.', variants: ['od', 'o.d.'] },
   { id: 'llb', type: 'education', ctx: 'suffix', short: 'LL.B.', variants: ['llb', 'll.b.'] },
   { id: 'llm', type: 'education', ctx: 'suffix', short: 'LL.M.', variants: ['llm', 'll.m.'] },
   { id: 'mba', type: 'education', ctx: 'suffix', short: 'M.B.A.', variants: ['mba', 'm.b.a.'] },
+  { id: 'med', type: 'education', ctx: 'suffix', short: 'M.Ed.', variants: ['med', 'm.ed.'] },
+  { id: 'mat', type: 'education', ctx: 'suffix', short: 'M.A.T.', variants: ['mat', 'm.a.t.'] },
   { id: 'msc', type: 'education', ctx: 'suffix', short: 'M.Sc.', variants: ['msc', 'm.sc.'] },
   { id: 'bsc', type: 'education', ctx: 'suffix', short: 'B.Sc.', variants: ['bsc', 'b.sc.'] },
-  { id: 'ma', type: 'education', ctx: 'suffix', short: 'M.A.', variants: ['ma', 'm.a.'] },
-  { id: 'ba', type: 'education', ctx: 'suffix', short: 'B.A.', variants: ['ba', 'b.a.'] },
+  { id: 'mpa', type: 'education', ctx: 'suffix', short: 'M.P.A.', variants: ['mpa', 'm.p.a.'] },
+  { id: 'msw', type: 'education', ctx: 'suffix', short: 'M.S.W.', variants: ['msw', 'm.s.w.'] },
   { id: 'meng', type: 'education', ctx: 'suffix', short: 'M.Eng.', variants: ['meng', 'm.eng.'] },
   { id: 'beng', type: 'education', ctx: 'suffix', short: 'B.Eng.', variants: ['beng', 'b.eng.'] },
 
