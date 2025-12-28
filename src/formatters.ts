@@ -20,6 +20,11 @@ type ResolvedOptions = Required<
     | 'prefix'
     | 'suffix'
     | 'order'
+    | 'prefixForm'
+    | 'suffixForm'
+    | 'capitalization'
+    | 'punctuation'
+    | 'apostrophes'
   >
 >;
 
@@ -99,6 +104,12 @@ function resolveOptions(options?: NameFormatOptions): ResolvedOptions {
     prefix: options?.prefix ?? base.prefix,
     suffix: options?.suffix ?? base.suffix,
     order: options?.order ?? base.order,
+
+    prefixForm: options?.prefixForm ?? 'short',
+    suffixForm: options?.suffixForm ?? 'short',
+    capitalization: options?.capitalization ?? 'canonical',
+    punctuation: options?.punctuation ?? 'canonical',
+    apostrophes: options?.apostrophes ?? 'canonical',
   };
 }
 
@@ -154,10 +165,13 @@ function resolveGiven(parsed: ParsedName, prefer: ResolvedOptions['prefer']): st
   return first ?? nickname;
 }
 
-function resolvePrefix(parsed: ParsedName, prefixMode: ResolvedOptions['prefix']): string | undefined {
+function resolvePrefix(parsed: ParsedName, prefixMode: ResolvedOptions['prefix'], o: ResolvedOptions): string | undefined {
+  if (prefixMode === 'omit') return undefined;
+  const renderedFromTokens = renderAffixTokens(parsed.prefixTokens, 'prefix', o);
+  if (renderedFromTokens) return renderedFromTokens;
+
   const prefix = parsed.prefix ? normalizeCollapseSpaces(parsed.prefix) : undefined;
   if (!prefix) return undefined;
-  if (prefixMode === 'omit') return undefined;
   if (prefixMode === 'include') return prefix;
   // auto: treat as include only for presets that requested it via defaults (resolved already)
   return prefix;
@@ -169,16 +183,71 @@ function resolveLast(parsed: ParsedName): string | undefined {
   return last.length > 0 ? last : undefined;
 }
 
-function resolveSuffix(parsed: ParsedName, suffixMode: ResolvedOptions['suffix']): string | undefined {
+function resolveSuffix(parsed: ParsedName, suffixMode: ResolvedOptions['suffix'], o: ResolvedOptions): string | undefined {
   const suffix = parsed.suffix ? normalizeCollapseSpaces(parsed.suffix) : undefined;
   if (suffixMode === 'omit') return undefined;
 
-  if (suffixMode === 'include') return suffix;
+  if (suffixMode === 'include') {
+    return renderAffixTokens(parsed.suffixTokens, 'suffix', o) ?? suffix;
+  }
+
   // auto: include identity-like only
-  const identityFromTokens = extractIdentitySuffixFromTokens(parsed.suffixTokens);
-  if (identityFromTokens) return identityFromTokens;
+  if (parsed.suffixTokens && parsed.suffixTokens.length > 0) {
+    const identityTokens = parsed.suffixTokens.filter(t => t.type === 'generational' || t.type === 'dynasticNumber');
+    const renderedIdentity = renderAffixTokens(identityTokens, 'suffix', o);
+    if (renderedIdentity) return renderedIdentity;
+  }
   if (!suffix) return undefined;
   return extractIdentitySuffix(suffix);
+}
+
+function applyPunctuation(value: string, mode: ResolvedOptions['punctuation']): string {
+  if (mode === 'strip') return value.replace(/\./g, '');
+  return value;
+}
+
+function applyApostrophes(value: string, mode: ResolvedOptions['apostrophes']): string {
+  if (mode === 'ascii') return value.replace(/[\u2019\u2018\u02BC]/g, "'");
+  // canonical/preserve: canonical data may already contain ’; preserve handled upstream by choosing input
+  return value;
+}
+
+function applyCapitalization(value: string, mode: ResolvedOptions['capitalization']): string {
+  if (mode === 'lower') return value.toLowerCase();
+  if (mode === 'upper') return value.toUpperCase();
+  return value;
+}
+
+function renderAffixTokens(tokens: ParsedName['prefixTokens'], ctx: 'prefix', o: ResolvedOptions): string | undefined;
+function renderAffixTokens(tokens: ParsedName['suffixTokens'], ctx: 'suffix', o: ResolvedOptions): string | undefined;
+function renderAffixTokens(tokens: any, ctx: 'prefix' | 'suffix', o: ResolvedOptions): string | undefined {
+  if (!tokens || tokens.length === 0) return undefined;
+
+  const form = ctx === 'prefix' ? o.prefixForm : o.suffixForm;
+
+  const rendered = tokens.map((t: any) => {
+    // Preserve modes override the whole source token (we don't try to reconstruct dimensions).
+    if (o.capitalization === 'preserve' || o.punctuation === 'preserve' || o.apostrophes === 'preserve') {
+      return String(t.value ?? '').trim();
+    }
+
+    let base = String(t.value ?? '').trim();
+    if (form !== 'asInput') {
+      const canonical = form === 'long' ? t.canonicalLong : t.canonicalShort;
+      if (canonical) base = canonical;
+    }
+
+    base = applyApostrophes(base, o.apostrophes);
+    base = applyPunctuation(base, o.punctuation);
+    base = applyCapitalization(base, o.capitalization);
+    return base.trim();
+  }).filter((s: string) => s.length > 0);
+
+  if (rendered.length === 0) return undefined;
+  if (ctx === 'suffix') {
+    return rendered.join(', ');
+  }
+  return rendered.join(' ');
 }
 
 type Boundary =
@@ -269,9 +338,9 @@ function renderGivenPlusMiddle(
 function renderSingle(parsed: ParsedName, o: ResolvedOptions): RenderedPersonParts {
   const t = getSpaceTokens(o.output);
 
-  const prefixText = resolvePrefix(parsed, o.prefix);
+  const prefixText = resolvePrefix(parsed, o.prefix, o);
   const lastText = resolveLast(parsed);
-  const suffixText = resolveSuffix(parsed, o.suffix);
+  const suffixText = resolveSuffix(parsed, o.suffix, o);
 
   const { givenLikeText } = renderGivenPlusMiddle(parsed, o, t);
 

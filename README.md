@@ -144,35 +144,11 @@ See `NameFormatOptions` for presets, typography, no-break behavior, and array re
 
 ### Data Sets & Utilities
 
-#### `PREFIXES: string[]`
+The library exports surname particle datasets and helpers:
 
-Array of common name prefixes/titles:
-`Mr`, `Mr.`, `Mrs`, `Mrs.`, `Ms`, `Ms.`, `Miss`, `Dr`, `Dr.`, `Prof`, `Prof.`, `Rev`, `Rev.`, `Hon`, `Hon.`, `Sir`, `Lady`, `Lord`
-
-#### `SUFFIXES: string[]`
-
-Array of common name suffixes:
-`Jr`, `Jr.`, `Sr`, `Sr.`, `II`, `III`, `IV`, `V`, `PhD`, `Ph.D.`, `MD`, `M.D.`, `Esq`, `Esq.`, `DDS`, `D.D.S.`, `JD`, `J.D.`, `MBA`, `M.B.A.`, `CPA`, `RN`, `DVM`
-
-#### `isPrefix(str: string): boolean`
-
-Check if a string is a known prefix.
-
-```javascript
-isPrefix("Dr."); // true
-isPrefix("Mr");  // true
-isPrefix("Bob"); // false
-```
-
-#### `isSuffix(str: string): boolean`
-
-Check if a string is a known suffix.
-
-```javascript
-isSuffix("Jr.");  // true
-isSuffix("PhD");  // true
-isSuffix("Bob");  // false
-```
+- `PARTICLES`, `MULTI_WORD_PARTICLES`
+- `COMMON_SURNAMES`, `COMMON_FIRST_NAMES`
+- `isParticle()`, `isMultiWordParticle()`, `isCommonSurname()`, `isCommonFirstName()`
 
 ## TypeScript Support
 

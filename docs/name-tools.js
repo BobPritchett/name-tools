@@ -8,302 +8,6 @@ function isInList(list, value) {
   });
 }
 
-// src/data/prefixes.ts
-var PREFIXES = [
-  // Standard Academic/Professional
-  "Dr",
-  // Doctor
-  "Dr.",
-  "Prof",
-  // Professor
-  "Prof.",
-  "Professor",
-  "Rev",
-  // Reverend
-  "Rev.",
-  "Reverend",
-  "Hon",
-  // Honourable
-  "Hon.",
-  "Honourable",
-  "Right Honourable",
-  "The Right Honourable",
-  "The Hon",
-  "The Hon Dr",
-  "The Hon Lady",
-  "The Hon Lord",
-  "The Hon Mrs",
-  "The Hon Sir",
-  "The Honourable",
-  "The Rt Hon",
-  // The Right Honourable
-  "The Rt Hon Dr",
-  "The Rt Hon Lord",
-  "The Rt Hon Sir",
-  "The Rt Hon Visc",
-  // The Right Honourable Viscount
-  "Justice",
-  "Judge",
-  "The Learned Judge",
-  // Common/Social
-  "Mr",
-  "Mr.",
-  "Mrs",
-  "Mrs.",
-  "Ms",
-  "Ms.",
-  "Miss",
-  "Master",
-  "Mx",
-  "M",
-  // Monsieur
-  "Mme",
-  // Madame
-  "Madam",
-  "Madame",
-  // Religious
-  "Archbishop",
-  "Archbishop Emeritus",
-  "Archdeacon",
-  "Bishop",
-  "Bishop Emeritus",
-  "Brother",
-  "Brother Superior",
-  "Canon",
-  "Cardinal",
-  "Chaplain",
-  "Chaplain General",
-  "Chaplain-in-Chief",
-  "Dom",
-  "Elder",
-  "Father",
-  "Monsignor",
-  "Most Reverend",
-  "The Most Reverend",
-  "Pastor",
-  "Provincial",
-  "Rabbi",
-  "Rector",
-  "Rector Magnificus",
-  "Rev Canon",
-  "Rev Dr",
-  "The Reverend Canon",
-  "Right Reverend",
-  "Sister",
-  "Suffragan Bishop",
-  "The Venerable",
-  "Very Reverend",
-  // Military
-  "Admiral",
-  "Rear Admiral",
-  "Vice Admiral",
-  "Air Chief Marshal",
-  "Air Commodore",
-  "Air Marshal",
-  "Air Vice Marshal",
-  "Brigadier",
-  "Brig Gen",
-  // Brigadier General
-  "Capt",
-  // Captain
-  "Captain",
-  "Col",
-  // Colonel
-  "Colonel",
-  "Colour Sergeant",
-  "Commander",
-  "Commodore",
-  "Cpl",
-  // Corporal
-  "Field Marshal",
-  "Flight Lieutenant",
-  "General",
-  "Major General",
-  "Lieutenant General",
-  "Lance Corporal",
-  "Lance Sergeant",
-  "Lt",
-  // Lieutenant
-  "Lt Col",
-  // Lieutenant Colonel
-  "Lt Commander",
-  "Lt Cpl",
-  // Lance Corporal
-  "Lt General",
-  "Major",
-  "Marshal of the RAF",
-  // Marshal of the Royal Air Force
-  "Petty Officer",
-  "Pipe Major",
-  "Pvt",
-  // Private
-  "Regimental Corporal Major",
-  "Regimental Sergeant Major",
-  "Second Lieutenant",
-  "Senior Aircraftman",
-  "Senior Aircraftwoman",
-  "Sgt",
-  // Sergeant
-  "Squadron Leader",
-  "Staff Corporal",
-  "Staff Sergeant",
-  "Warrant Officer",
-  "Warrant Officer Class 1",
-  "Warrant Officer Class 2",
-  // Nobility/Royalty
-  "Archduke",
-  "Baron",
-  "Baron of Parliament",
-  "Baroness",
-  "Baronet",
-  "Baronial Lord",
-  "Count",
-  "Count Palatine",
-  "Countess",
-  "Countess of",
-  "Dowager Countess",
-  "Dame",
-  "Dame Commander",
-  "Dame Grand Cross",
-  "Duchess",
-  "Duke",
-  "Earl",
-  "The Earl of",
-  "Her Grace",
-  "Her Majesty",
-  "His Majesty",
-  "Her Majesty's Counsel",
-  "Hereditary Lord",
-  "His Excellency",
-  "HE",
-  // His/Her Excellency
-  "Knight Bachelor",
-  "Knight Commander",
-  "Knight Grand Cross",
-  "Knight Marshal",
-  "Lady",
-  "Lord",
-  "Lord Advocate",
-  "Lord Chancellor",
-  "Lord Chief Justice",
-  "Lord High Admiral",
-  "Lord High Commissioner",
-  "Lord Justice",
-  "Lord Lieutenant",
-  "Lord Mayor",
-  "Lord of the Manor",
-  "Lord President of the Council",
-  "Marcher Lord",
-  "Marchioness",
-  "Marquess",
-  "Marquis",
-  "Premier Duke",
-  "Prince",
-  "Prince Consort",
-  "Princess",
-  "Princess Royal",
-  "Sir",
-  "The Hon Lady",
-  "The Hon Lord",
-  "Viscount",
-  "Viscountess",
-  // Political/Legal/Ambassadorial
-  "Alderman",
-  "Ambassador",
-  "Ambassador-at-Large",
-  "Chancellor",
-  "Chancellor of the Exchequer",
-  "Chief Constable",
-  "Chief Justice",
-  "Cllr",
-  // Councillor
-  "Constable of the Tower",
-  "Consul",
-  "Consul General",
-  "Deputy",
-  "Deputy High Commissioner",
-  "Envoy Extraordinary",
-  "HMA",
-  // His/Her Majesty's Ambassador
-  "High Steward",
-  "KC",
-  // King's Counsel
-  "Keeper of the Privy Seal",
-  "Minister",
-  "Minister of State",
-  "Premier",
-  "Senator",
-  "Sheriff",
-  "Speaker of the House",
-  "Vice Chancellor",
-  // Academic/Fellowship
-  "Archchancellor",
-  "Dean",
-  "Dean Emeritus",
-  "Fellow",
-  "Headmaster",
-  "Headmistress",
-  "Lic",
-  // Licentiate
-  "Master of Arts",
-  "Master of the Rolls",
-  "Provost",
-  "Provost (academic)",
-  "Warden",
-  // Combined/Multi-person
-  "Brig & Mrs",
-  "Commander & Mrs",
-  "Lord & Lady",
-  "Prof & Dr",
-  "Prof & Mrs",
-  "Prof & Rev",
-  "Prof Dame",
-  "Prof Dr",
-  "Rev & Mrs",
-  "Sir & Lady",
-  "The Hon Mrs",
-  "The Hon Sir",
-  // Others
-  "Churchwarden",
-  "Freeman of the City",
-  "Llc",
-  // Limited Liability Company (rare as prefix)
-  "Yeoman Warder"
-];
-function isPrefix(str) {
-  return isInList(PREFIXES, str);
-}
-
-// src/data/suffixes.ts
-var SUFFIXES = [
-  "Jr",
-  "Jr.",
-  "Sr",
-  "Sr.",
-  "II",
-  "III",
-  "IV",
-  "V",
-  "PhD",
-  "Ph.D.",
-  "MD",
-  "M.D.",
-  "Esq",
-  "Esq.",
-  "DDS",
-  "D.D.S.",
-  "JD",
-  "J.D.",
-  "MBA",
-  "M.B.A.",
-  "CPA",
-  "RN",
-  "DVM"
-];
-function isSuffix(str) {
-  return isInList(SUFFIXES, str);
-}
-
 // src/data/particles.ts
 var DUTCH_GERMAN = [
   "van",
@@ -569,8 +273,395 @@ function isCommonFirstName(str) {
   return isInList(COMMON_FIRST_NAMES, str);
 }
 
+// src/data/affixes.ts
+function normalizeAffixVariantForMatch(value) {
+  return value.trim().replace(/^[,;:\s]+/, "").replace(/[,;:\s]+$/, "").replace(/\s+/g, " ").replace(/[\u2019\u2018\u02BC]/g, "'").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/\./g, "").toUpperCase().trim();
+}
+function buildAffixVariantIndex(entries, ctx) {
+  const map = /* @__PURE__ */ new Map();
+  for (const e of entries) {
+    if (e.ctx !== "both" && e.ctx !== ctx) continue;
+    const candidates = [];
+    if (e.short) candidates.push(e.short);
+    if (e.long) candidates.push(e.long);
+    if (e.variants) candidates.push(...e.variants);
+    for (const v of candidates) {
+      const k = normalizeAffixVariantForMatch(v);
+      if (!k) continue;
+      if (!map.has(k)) map.set(k, e);
+    }
+  }
+  return map;
+}
+var PREFIX_AFFIX_ENTRIES = [
+  // ---------------------------------------------------------------------------
+  // English-speaking countries (US/UK/CA/AU/NZ/IE) — common honorifics
+  // ---------------------------------------------------------------------------
+  { id: "mr", type: "honorific", ctx: "prefix", short: "Mr.", long: "Mister", variants: ["mr", "mr."] },
+  { id: "mrs", type: "honorific", ctx: "prefix", short: "Mrs.", variants: ["mrs", "mrs."] },
+  { id: "ms", type: "honorific", ctx: "prefix", short: "Ms.", variants: ["ms", "ms."] },
+  { id: "miss", type: "honorific", ctx: "prefix", short: "Miss", variants: ["miss"] },
+  { id: "mx", type: "honorific", ctx: "prefix", short: "Mx", variants: ["mx", "mx."] },
+  { id: "madam", type: "honorific", ctx: "prefix", short: "Madam", variants: ["madam"] },
+  { id: "dr", type: "honorific", ctx: "prefix", short: "Dr.", long: "Doctor", variants: ["dr", "dr."] },
+  { id: "prof", type: "honorific", ctx: "prefix", short: "Prof.", long: "Professor", variants: ["prof", "prof.", "professor"] },
+  // Legal/professional (prefix usage varies; keep as tolerant input)
+  { id: "atty", type: "professional", ctx: "prefix", short: "Atty.", long: "Attorney", variants: ["atty", "atty.", "attorney"] },
+  { id: "lic", type: "professional", ctx: "prefix", short: "Lic.", long: "Licentiate", variants: ["lic", "lic.", "licentiate"] },
+  // Corporate designator; uncommon as a true name prefix, but supported for tolerance.
+  { id: "llc", type: "professional", ctx: "prefix", short: "LLC", variants: ["llc", "l.l.c."] },
+  // ---------------------------------------------------------------------------
+  // Clergy / religious (common in English + EU contexts)
+  // ---------------------------------------------------------------------------
+  { id: "rev", type: "religious", ctx: "prefix", short: "Rev.", long: "Reverend", variants: ["rev", "rev.", "reverend"] },
+  { id: "revd", type: "religious", ctx: "prefix", short: "Revd", long: "Reverend", variants: ["revd", "revd.", "rev d", "rev. d."] },
+  { id: "fr", type: "religious", ctx: "prefix", short: "Fr.", long: "Father", variants: ["fr", "fr.", "father"] },
+  { id: "sr_sister", type: "religious", ctx: "prefix", short: "Sr.", long: "Sister", variants: ["sr", "sr.", "sister"] },
+  { id: "br", type: "religious", ctx: "prefix", short: "Br.", long: "Brother", variants: ["br", "br.", "brother"] },
+  { id: "rabbi", type: "religious", ctx: "prefix", short: "Rabbi", variants: ["rabbi"] },
+  { id: "imam", type: "religious", ctx: "prefix", short: "Imam", variants: ["imam"] },
+  { id: "pastor", type: "religious", ctx: "prefix", short: "Pastor", variants: ["pastor"] },
+  { id: "monsignor", type: "religious", ctx: "prefix", short: "Monsignor", variants: ["monsignor", "msgr", "msgr."] },
+  // Higher clergy + Christian honor styles (UK/EU common)
+  { id: "canon", type: "religious", ctx: "prefix", short: "Canon", variants: ["canon"] },
+  { id: "cardinal", type: "religious", ctx: "prefix", short: "Cardinal", variants: ["cardinal"] },
+  { id: "archdeacon", type: "religious", ctx: "prefix", short: "Archdeacon", variants: ["archdeacon"] },
+  { id: "archbishop", type: "religious", ctx: "prefix", short: "Archbishop", variants: ["archbishop"] },
+  { id: "archbishop_emeritus", type: "religious", ctx: "prefix", short: "Archbishop Emeritus", variants: ["archbishop emeritus"] },
+  { id: "bishop", type: "religious", ctx: "prefix", short: "Bishop", variants: ["bishop"] },
+  { id: "bishop_emeritus", type: "religious", ctx: "prefix", short: "Bishop Emeritus", variants: ["bishop emeritus"] },
+  { id: "suffragan_bishop", type: "religious", ctx: "prefix", short: "Suffragan Bishop", variants: ["suffragan bishop"] },
+  { id: "dom", type: "religious", ctx: "prefix", short: "Dom", variants: ["dom"] },
+  { id: "elder", type: "religious", ctx: "prefix", short: "Elder", variants: ["elder"] },
+  { id: "brother_superior", type: "religious", ctx: "prefix", short: "Brother Superior", variants: ["brother superior"] },
+  { id: "provincial", type: "religious", ctx: "prefix", short: "Provincial", variants: ["provincial"] },
+  { id: "chaplain", type: "religious", ctx: "prefix", short: "Chaplain", variants: ["chaplain"] },
+  { id: "chaplain_general", type: "religious", ctx: "prefix", short: "Chaplain General", variants: ["chaplain general"] },
+  { id: "chaplain_in_chief", type: "religious", ctx: "prefix", short: "Chaplain-in-Chief", variants: ["chaplain-in-chief", "chaplain in chief"] },
+  { id: "most_reverend", type: "religious", ctx: "prefix", short: "Most Reverend", variants: ["most reverend"] },
+  { id: "the_most_reverend", type: "religious", ctx: "prefix", short: "The Most Reverend", variants: ["the most reverend"] },
+  { id: "right_reverend", type: "religious", ctx: "prefix", short: "Right Reverend", variants: ["right reverend"] },
+  { id: "very_reverend", type: "religious", ctx: "prefix", short: "Very Reverend", variants: ["very reverend"] },
+  { id: "the_venerable", type: "religious", ctx: "prefix", short: "The Venerable", variants: ["the venerable"] },
+  // Combined honorifics (common in fixtures and UK usage)
+  { id: "rev_canon", type: "religious", ctx: "prefix", short: "Rev. Canon", long: "Reverend Canon", variants: ["rev canon", "rev. canon", "the reverend canon"] },
+  { id: "rev_dr", type: "religious", ctx: "prefix", short: "Rev. Dr.", variants: ["rev dr", "rev. dr", "rev. dr."] },
+  // ---------------------------------------------------------------------------
+  // Military / police ranks (primarily English canonical forms; EU input variants included)
+  // ---------------------------------------------------------------------------
+  { id: "pvt", type: "military", ctx: "prefix", short: "Pvt.", long: "Private", variants: ["pvt", "pvt.", "private"] },
+  { id: "cpl", type: "military", ctx: "prefix", short: "Cpl.", long: "Corporal", variants: ["cpl", "cpl.", "corporal"] },
+  { id: "sgt", type: "military", ctx: "prefix", short: "Sgt.", long: "Sergeant", variants: ["sgt", "sgt.", "sergeant"] },
+  { id: "lt", type: "military", ctx: "prefix", short: "Lt.", long: "Lieutenant", variants: ["lt", "lt.", "lieutenant"] },
+  { id: "capt", type: "military", ctx: "prefix", short: "Capt.", long: "Captain", variants: ["capt", "capt.", "cpt", "cpt.", "captain"] },
+  { id: "maj", type: "military", ctx: "prefix", short: "Maj.", long: "Major", variants: ["maj", "maj.", "major"] },
+  { id: "col", type: "military", ctx: "prefix", short: "Col.", long: "Colonel", variants: ["col", "col.", "colonel"] },
+  { id: "gen", type: "military", ctx: "prefix", short: "Gen.", long: "General", variants: ["gen", "gen.", "general"] },
+  { id: "adm", type: "military", ctx: "prefix", short: "Adm.", long: "Admiral", variants: ["adm", "adm.", "admiral"] },
+  { id: "air_chief_marshal", type: "military", ctx: "prefix", short: "Air Chief Marshal", variants: ["air chief marshal"] },
+  // Expanded ranks (common UK/US and some Commonwealth usage)
+  { id: "rear_admiral", type: "military", ctx: "prefix", short: "Rear Admiral", variants: ["rear admiral"] },
+  { id: "vice_admiral", type: "military", ctx: "prefix", short: "Vice Admiral", variants: ["vice admiral"] },
+  { id: "air_commodore", type: "military", ctx: "prefix", short: "Air Commodore", variants: ["air commodore"] },
+  { id: "air_marshal", type: "military", ctx: "prefix", short: "Air Marshal", variants: ["air marshal"] },
+  { id: "air_vice_marshal", type: "military", ctx: "prefix", short: "Air Vice Marshal", variants: ["air vice marshal"] },
+  { id: "field_marshal", type: "military", ctx: "prefix", short: "Field Marshal", variants: ["field marshal"] },
+  { id: "marshal_of_the_raf", type: "military", ctx: "prefix", short: "Marshal of the RAF", long: "Marshal of the Royal Air Force", variants: ["marshal of the raf", "marshal of the r.a.f."] },
+  { id: "flight_lieutenant", type: "military", ctx: "prefix", short: "Flight Lieutenant", variants: ["flight lieutenant"] },
+  { id: "squadron_leader", type: "military", ctx: "prefix", short: "Squadron Leader", variants: ["squadron leader"] },
+  { id: "petty_officer", type: "military", ctx: "prefix", short: "Petty Officer", variants: ["petty officer"] },
+  { id: "pipe_major", type: "military", ctx: "prefix", short: "Pipe Major", variants: ["pipe major"] },
+  { id: "lance_corporal", type: "military", ctx: "prefix", short: "Lance Corporal", variants: ["lance corporal"] },
+  { id: "lance_sergeant", type: "military", ctx: "prefix", short: "Lance Sergeant", variants: ["lance sergeant"] },
+  { id: "second_lieutenant", type: "military", ctx: "prefix", short: "Second Lieutenant", variants: ["second lieutenant"] },
+  { id: "senior_aircraftman", type: "military", ctx: "prefix", short: "Senior Aircraftman", variants: ["senior aircraftman"] },
+  { id: "senior_aircraftwoman", type: "military", ctx: "prefix", short: "Senior Aircraftwoman", variants: ["senior aircraftwoman"] },
+  { id: "staff_corporal", type: "military", ctx: "prefix", short: "Staff Corporal", variants: ["staff corporal"] },
+  { id: "staff_sergeant", type: "military", ctx: "prefix", short: "Staff Sergeant", variants: ["staff sergeant"] },
+  { id: "warrant_officer", type: "military", ctx: "prefix", short: "Warrant Officer", variants: ["warrant officer"] },
+  { id: "warrant_officer_class_1", type: "military", ctx: "prefix", short: "Warrant Officer Class 1", variants: ["warrant officer class 1", "warrant officer class i"] },
+  { id: "warrant_officer_class_2", type: "military", ctx: "prefix", short: "Warrant Officer Class 2", variants: ["warrant officer class 2", "warrant officer class ii"] },
+  { id: "brigadier", type: "military", ctx: "prefix", short: "Brigadier", variants: ["brigadier"] },
+  { id: "brig_gen", type: "military", ctx: "prefix", short: "Brig Gen", long: "Brigadier General", variants: ["brig gen", "brig. gen.", "brigadier general"] },
+  { id: "regimental_corporal_major", type: "military", ctx: "prefix", short: "Regimental Corporal Major", variants: ["regimental corporal major"] },
+  { id: "regimental_sergeant_major", type: "military", ctx: "prefix", short: "Regimental Sergeant Major", variants: ["regimental sergeant major"] },
+  { id: "colour_sergeant", type: "military", ctx: "prefix", short: "Colour Sergeant", variants: ["colour sergeant", "color sergeant"] },
+  { id: "commander_rank", type: "military", ctx: "prefix", short: "Commander", variants: ["commander"] },
+  { id: "commodore", type: "military", ctx: "prefix", short: "Commodore", variants: ["commodore"] },
+  { id: "lt_col", type: "military", ctx: "prefix", short: "Lt Col", long: "Lieutenant Colonel", variants: ["lt col", "lt. col.", "lieutenant colonel"] },
+  { id: "lt_commander", type: "military", ctx: "prefix", short: "Lt Commander", variants: ["lt commander", "lt. commander", "lieutenant commander"] },
+  { id: "lt_cpl", type: "military", ctx: "prefix", short: "Lt Cpl", variants: ["lt cpl", "lt. cpl."] },
+  { id: "lt_general", type: "military", ctx: "prefix", short: "Lt General", long: "Lieutenant General", variants: ["lt general", "lt. general", "lieutenant general"] },
+  { id: "major_general", type: "military", ctx: "prefix", short: "Major General", variants: ["major general"] },
+  // ---------------------------------------------------------------------------
+  // UK/IE/CA/AU/NZ styles, nobility, and honorific styles (treated as "style")
+  // ---------------------------------------------------------------------------
+  { id: "sir", type: "honorific", ctx: "prefix", short: "Sir", variants: ["sir"] },
+  { id: "dame", type: "honorific", ctx: "prefix", short: "Dame", variants: ["dame"] },
+  { id: "dame_commander", type: "honorific", ctx: "prefix", short: "Dame Commander", variants: ["dame commander"] },
+  { id: "dame_grand_cross", type: "honorific", ctx: "prefix", short: "Dame Grand Cross", variants: ["dame grand cross"] },
+  { id: "lord", type: "style", ctx: "prefix", short: "Lord", variants: ["lord"] },
+  { id: "lady", type: "style", ctx: "prefix", short: "Lady", variants: ["lady"] },
+  { id: "lord_lieutenant", type: "style", ctx: "prefix", short: "Lord Lieutenant", variants: ["lord lieutenant"] },
+  { id: "lord_mayor", type: "style", ctx: "prefix", short: "Lord Mayor", variants: ["lord mayor"] },
+  { id: "lord_high_admiral", type: "style", ctx: "prefix", short: "Lord High Admiral", variants: ["lord high admiral"] },
+  { id: "lord_high_commissioner", type: "style", ctx: "prefix", short: "Lord High Commissioner", variants: ["lord high commissioner"] },
+  { id: "lord_of_the_manor", type: "style", ctx: "prefix", short: "Lord of the Manor", variants: ["lord of the manor"] },
+  { id: "lord_president_of_the_council", type: "style", ctx: "prefix", short: "Lord President of the Council", variants: ["lord president of the council"] },
+  { id: "duke", type: "style", ctx: "prefix", short: "Duke", variants: ["duke"] },
+  { id: "duchess", type: "style", ctx: "prefix", short: "Duchess", variants: ["duchess"] },
+  { id: "earl", type: "style", ctx: "prefix", short: "Earl", variants: ["earl"] },
+  { id: "baron", type: "style", ctx: "prefix", short: "Baron", variants: ["baron"] },
+  { id: "baroness", type: "style", ctx: "prefix", short: "Baroness", variants: ["baroness"] },
+  { id: "count", type: "style", ctx: "prefix", short: "Count", variants: ["count"] },
+  { id: "countess", type: "style", ctx: "prefix", short: "Countess", variants: ["countess"] },
+  { id: "marquess", type: "style", ctx: "prefix", short: "Marquess", variants: ["marquess"] },
+  { id: "marquis", type: "style", ctx: "prefix", short: "Marquis", variants: ["marquis"] },
+  { id: "viscount", type: "style", ctx: "prefix", short: "Viscount", variants: ["viscount"] },
+  { id: "viscountess", type: "style", ctx: "prefix", short: "Viscountess", variants: ["viscountess"] },
+  { id: "visc", type: "style", ctx: "prefix", short: "Visc", long: "Viscount", variants: ["visc"] },
+  // Additional nobility/courtesy styles seen in UK-oriented datasets
+  { id: "archduke", type: "style", ctx: "prefix", short: "Archduke", variants: ["archduke"] },
+  { id: "archchancellor", type: "style", ctx: "prefix", short: "Archchancellor", variants: ["archchancellor"] },
+  { id: "baronet", type: "style", ctx: "prefix", short: "Baronet", variants: ["baronet"] },
+  { id: "baron_of_parliament", type: "style", ctx: "prefix", short: "Baron of Parliament", variants: ["baron of parliament"] },
+  { id: "baronial_lord", type: "style", ctx: "prefix", short: "Baronial Lord", variants: ["baronial lord"] },
+  { id: "count_palatine", type: "style", ctx: "prefix", short: "Count Palatine", variants: ["count palatine"] },
+  { id: "countess_of", type: "style", ctx: "prefix", short: "Countess of", variants: ["countess of"] },
+  { id: "dowager_countess", type: "style", ctx: "prefix", short: "Dowager Countess", variants: ["dowager countess"] },
+  { id: "premier_duke", type: "style", ctx: "prefix", short: "Premier Duke", variants: ["premier duke"] },
+  { id: "marchioness", type: "style", ctx: "prefix", short: "Marchioness", variants: ["marchioness"] },
+  { id: "marcher_lord", type: "style", ctx: "prefix", short: "Marcher Lord", variants: ["marcher lord"] },
+  { id: "hereditary_lord", type: "style", ctx: "prefix", short: "Hereditary Lord", variants: ["hereditary lord"] },
+  { id: "high_steward", type: "style", ctx: "prefix", short: "High Steward", variants: ["high steward"] },
+  { id: "keeper_of_the_privy_seal", type: "style", ctx: "prefix", short: "Keeper of the Privy Seal", variants: ["keeper of the privy seal"] },
+  { id: "constable_of_the_tower", type: "style", ctx: "prefix", short: "Constable of the Tower", variants: ["constable of the tower"] },
+  { id: "freeman_of_the_city", type: "style", ctx: "prefix", short: "Freeman of the City", variants: ["freeman of the city"] },
+  { id: "yeoman_warder", type: "style", ctx: "prefix", short: "Yeoman Warder", variants: ["yeoman warder"] },
+  { id: "the_earl_of", type: "style", ctx: "prefix", short: "The Earl of", variants: ["the earl of", "earl of"] },
+  // UK parliament/legal courtesy
+  {
+    id: "the_honourable",
+    type: "style",
+    ctx: "prefix",
+    short: "The Hon.",
+    long: "The Honourable",
+    variants: ["the hon", "the hon.", "the honourable", "the honorable"]
+  },
+  {
+    id: "the_right_honourable",
+    type: "style",
+    ctx: "prefix",
+    short: "The Rt Hon",
+    long: "The Right Honourable",
+    variants: ["the rt hon", "the rt. hon.", "the right honourable", "right honourable", "right honorable"]
+  },
+  { id: "his_excellency", type: "style", ctx: "prefix", short: "His Excellency", variants: ["his excellency"] },
+  { id: "her_excellency", type: "style", ctx: "prefix", short: "Her Excellency", variants: ["her excellency"] },
+  { id: "he_abbrev", type: "style", ctx: "prefix", short: "HE", long: "His/Her Excellency", variants: ["he", "h.e.", "h.e"] },
+  { id: "hma", type: "style", ctx: "prefix", short: "HMA", long: "His/Her Majesty\u2019s Ambassador", variants: ["hma"] },
+  { id: "kc_prefix", type: "professional", ctx: "prefix", short: "KC", long: "King\u2019s Counsel", variants: ["kc", "king's counsel", "kings counsel"] },
+  // Royalty (canonical apostrophe used in some titles)
+  { id: "her_majesty", type: "style", ctx: "prefix", short: "Her Majesty", variants: ["her majesty"] },
+  { id: "his_majesty", type: "style", ctx: "prefix", short: "His Majesty", variants: ["his majesty"] },
+  { id: "her_grace", type: "style", ctx: "prefix", short: "Her Grace", variants: ["her grace"] },
+  { id: "his_grace", type: "style", ctx: "prefix", short: "His Grace", variants: ["his grace"] },
+  { id: "prince", type: "style", ctx: "prefix", short: "Prince", variants: ["prince"] },
+  { id: "princess", type: "style", ctx: "prefix", short: "Princess", variants: ["princess"] },
+  { id: "prince_consort", type: "style", ctx: "prefix", short: "Prince Consort", variants: ["prince consort"] },
+  { id: "princess_royal", type: "style", ctx: "prefix", short: "Princess Royal", variants: ["princess royal"] },
+  {
+    id: "her_majestys_counsel",
+    type: "style",
+    ctx: "prefix",
+    short: "Her Majesty\u2019s Counsel",
+    variants: ["her majesty's counsel", "her majesty\u2019s counsel", "hma counsel"]
+  },
+  {
+    id: "his_majestys_counsel",
+    type: "style",
+    ctx: "prefix",
+    short: "His Majesty\u2019s Counsel",
+    variants: ["his majesty's counsel", "his majesty\u2019s counsel", "hma counsel"]
+  },
+  // ---------------------------------------------------------------------------
+  // Civic / diplomatic / political / academic / institutional (English-speaking)
+  // ---------------------------------------------------------------------------
+  { id: "alderman", type: "style", ctx: "prefix", short: "Alderman", variants: ["alderman"] },
+  { id: "ambassador", type: "style", ctx: "prefix", short: "Ambassador", variants: ["ambassador"] },
+  { id: "ambassador_at_large", type: "style", ctx: "prefix", short: "Ambassador-at-Large", variants: ["ambassador-at-large", "ambassador at large"] },
+  { id: "consul", type: "style", ctx: "prefix", short: "Consul", variants: ["consul"] },
+  { id: "consul_general", type: "style", ctx: "prefix", short: "Consul General", variants: ["consul general"] },
+  { id: "envoy_extraordinary", type: "style", ctx: "prefix", short: "Envoy Extraordinary", variants: ["envoy extraordinary"] },
+  { id: "deputy", type: "style", ctx: "prefix", short: "Deputy", variants: ["deputy"] },
+  { id: "deputy_high_commissioner", type: "style", ctx: "prefix", short: "Deputy High Commissioner", variants: ["deputy high commissioner"] },
+  { id: "chancellor", type: "style", ctx: "prefix", short: "Chancellor", variants: ["chancellor"] },
+  { id: "vice_chancellor", type: "style", ctx: "prefix", short: "Vice Chancellor", variants: ["vice chancellor"] },
+  { id: "chancellor_of_the_exchequer", type: "style", ctx: "prefix", short: "Chancellor of the Exchequer", variants: ["chancellor of the exchequer"] },
+  { id: "minister", type: "style", ctx: "prefix", short: "Minister", variants: ["minister"] },
+  { id: "minister_of_state", type: "style", ctx: "prefix", short: "Minister of State", variants: ["minister of state"] },
+  { id: "senator", type: "style", ctx: "prefix", short: "Senator", variants: ["senator"] },
+  { id: "chief", type: "style", ctx: "prefix", short: "Chief", variants: ["chief"] },
+  { id: "chief_constable", type: "style", ctx: "prefix", short: "Chief Constable", variants: ["chief constable"] },
+  { id: "speaker_of_the_house", type: "style", ctx: "prefix", short: "Speaker of the House", variants: ["speaker of the house"] },
+  { id: "sheriff", type: "style", ctx: "prefix", short: "Sheriff", variants: ["sheriff"] },
+  { id: "cllr", type: "style", ctx: "prefix", short: "Cllr", long: "Councillor", variants: ["cllr", "councillor", "councilor"] },
+  { id: "churchwarden", type: "style", ctx: "prefix", short: "Churchwarden", variants: ["churchwarden"] },
+  { id: "headmaster", type: "style", ctx: "prefix", short: "Headmaster", variants: ["headmaster"] },
+  { id: "headmistress", type: "style", ctx: "prefix", short: "Headmistress", variants: ["headmistress"] },
+  { id: "dean", type: "style", ctx: "prefix", short: "Dean", variants: ["dean"] },
+  { id: "dean_emeritus", type: "style", ctx: "prefix", short: "Dean Emeritus", variants: ["dean emeritus"] },
+  { id: "fellow", type: "style", ctx: "prefix", short: "Fellow", variants: ["fellow"] },
+  { id: "provost", type: "style", ctx: "prefix", short: "Provost", variants: ["provost"] },
+  { id: "provost_academic", type: "style", ctx: "prefix", short: "Provost (academic)", variants: ["provost (academic)", "provost academic"] },
+  { id: "warden", type: "style", ctx: "prefix", short: "Warden", variants: ["warden"] },
+  { id: "master", type: "style", ctx: "prefix", short: "Master", variants: ["master"] },
+  { id: "master_of_arts", type: "style", ctx: "prefix", short: "Master of Arts", variants: ["master of arts"] },
+  { id: "master_of_the_rolls", type: "style", ctx: "prefix", short: "Master of the Rolls", variants: ["master of the rolls"] },
+  { id: "rector", type: "style", ctx: "prefix", short: "Rector", variants: ["rector"] },
+  { id: "rector_magnificus", type: "style", ctx: "prefix", short: "Rector Magnificus", variants: ["rector magnificus"] },
+  // ---------------------------------------------------------------------------
+  // Chivalric / orders (UK)
+  // ---------------------------------------------------------------------------
+  { id: "knight_bachelor", type: "style", ctx: "prefix", short: "Knight Bachelor", variants: ["knight bachelor"] },
+  { id: "knight_commander", type: "style", ctx: "prefix", short: "Knight Commander", variants: ["knight commander"] },
+  { id: "knight_grand_cross", type: "style", ctx: "prefix", short: "Knight Grand Cross", variants: ["knight grand cross"] },
+  { id: "knight_marshal", type: "style", ctx: "prefix", short: "Knight Marshal", variants: ["knight marshal"] },
+  // ---------------------------------------------------------------------------
+  // Judicial (UK/IE/US common)
+  // ---------------------------------------------------------------------------
+  { id: "judge", type: "judicial", ctx: "prefix", short: "Judge", variants: ["judge"] },
+  { id: "justice", type: "judicial", ctx: "prefix", short: "Justice", variants: ["justice"] },
+  { id: "chief_justice", type: "judicial", ctx: "prefix", short: "Chief Justice", variants: ["chief justice"] },
+  { id: "lord_chief_justice", type: "judicial", ctx: "prefix", short: "Lord Chief Justice", variants: ["lord chief justice"] },
+  { id: "lord_justice", type: "judicial", ctx: "prefix", short: "Lord Justice", variants: ["lord justice"] },
+  { id: "lord_chancellor", type: "judicial", ctx: "prefix", short: "Lord Chancellor", variants: ["lord chancellor"] },
+  { id: "lord_advocate", type: "judicial", ctx: "prefix", short: "Lord Advocate", variants: ["lord advocate"] },
+  { id: "the_learned_judge", type: "judicial", ctx: "prefix", short: "The Learned Judge", variants: ["the learned judge"] },
+  // ---------------------------------------------------------------------------
+  // Multi-person combined prefixes (UK)
+  // ---------------------------------------------------------------------------
+  { id: "brig_and_mrs", type: "style", ctx: "prefix", short: "Brig & Mrs", variants: ["brig & mrs", "brig and mrs"] },
+  { id: "commander_and_mrs", type: "style", ctx: "prefix", short: "Commander & Mrs", variants: ["commander & mrs", "commander and mrs"] },
+  { id: "lord_and_lady", type: "style", ctx: "prefix", short: "Lord & Lady", variants: ["lord & lady", "lord and lady"] },
+  { id: "prof_and_dr", type: "style", ctx: "prefix", short: "Prof & Dr", variants: ["prof & dr", "prof and dr"] },
+  { id: "prof_and_mrs", type: "style", ctx: "prefix", short: "Prof & Mrs", variants: ["prof & mrs", "prof and mrs"] },
+  { id: "prof_and_rev", type: "style", ctx: "prefix", short: "Prof & Rev", variants: ["prof & rev", "prof and rev"] },
+  { id: "prof_dame", type: "style", ctx: "prefix", short: "Prof Dame", variants: ["prof dame"] },
+  { id: "prof_dr", type: "style", ctx: "prefix", short: "Prof Dr", variants: ["prof dr"] },
+  { id: "rev_and_mrs", type: "style", ctx: "prefix", short: "Rev & Mrs", variants: ["rev & mrs", "rev and mrs"] },
+  { id: "sir_and_lady", type: "style", ctx: "prefix", short: "Sir & Lady", variants: ["sir & lady", "sir and lady"] },
+  // ---------------------------------------------------------------------------
+  // European Union — common civil honorifics (local-language)
+  // NOTE: canonical forms are local-language display forms. Matching folds diacritics.
+  // ---------------------------------------------------------------------------
+  // French (FR/BE/LU)
+  { id: "fr_monsieur", type: "honorific", ctx: "prefix", short: "M.", long: "Monsieur", variants: ["m", "m.", "monsieur"] },
+  { id: "fr_madame", type: "honorific", ctx: "prefix", short: "Mme", long: "Madame", variants: ["mme", "mme.", "madame"] },
+  { id: "fr_mademoiselle", type: "honorific", ctx: "prefix", short: "Mlle", long: "Mademoiselle", variants: ["mlle", "mlle.", "mademoiselle"] },
+  // German (DE/AT)
+  { id: "de_herr", type: "honorific", ctx: "prefix", short: "Herr", variants: ["herr"] },
+  { id: "de_frau", type: "honorific", ctx: "prefix", short: "Frau", variants: ["frau"] },
+  { id: "de_dr", type: "honorific", ctx: "prefix", short: "Dr.", long: "Doktor", variants: ["dr", "dr.", "doktor"] },
+  { id: "de_prof", type: "honorific", ctx: "prefix", short: "Prof.", long: "Professor", variants: ["prof", "prof.", "professor"] },
+  { id: "de_ing", type: "professional", ctx: "prefix", short: "Ing.", long: "Ingenieur", variants: ["ing", "ing.", "ingenieur", "ingenieurin"] },
+  // Spanish (ES)
+  { id: "es_senor", type: "honorific", ctx: "prefix", short: "Sr.", long: "Se\xF1or", variants: ["sr", "sr.", "senor", "se\xF1or"] },
+  { id: "es_senora", type: "honorific", ctx: "prefix", short: "Sra.", long: "Se\xF1ora", variants: ["sra", "sra.", "senora", "se\xF1ora"] },
+  { id: "es_senorita", type: "honorific", ctx: "prefix", short: "Srta.", long: "Se\xF1orita", variants: ["srta", "srta.", "senorita", "se\xF1orita"] },
+  { id: "es_don", type: "style", ctx: "prefix", short: "Don", variants: ["don"] },
+  { id: "es_dona", type: "style", ctx: "prefix", short: "Do\xF1a", variants: ["dona", "do\xF1a"] },
+  // Portuguese (PT)
+  { id: "pt_senhor", type: "honorific", ctx: "prefix", short: "Sr.", long: "Senhor", variants: ["sr", "sr.", "senhor"] },
+  { id: "pt_senhora", type: "honorific", ctx: "prefix", short: "Sra.", long: "Senhora", variants: ["sra", "sra.", "senhora"] },
+  { id: "pt_doutor", type: "honorific", ctx: "prefix", short: "Dr.", long: "Doutor", variants: ["dr", "dr.", "doutor", "doutora"] },
+  // Italian (IT)
+  { id: "it_signore", type: "honorific", ctx: "prefix", short: "Sig.", long: "Signore", variants: ["sig", "sig.", "signore"] },
+  { id: "it_signora", type: "honorific", ctx: "prefix", short: "Sig.ra", long: "Signora", variants: ["sig.ra", "sigra", "signora"] },
+  { id: "it_signorina", type: "honorific", ctx: "prefix", short: "Sig.na", long: "Signorina", variants: ["sig.na", "signorina"] },
+  { id: "it_dottore", type: "honorific", ctx: "prefix", short: "Dott.", long: "Dottore", variants: ["dott", "dott.", "dottore"] },
+  { id: "it_dottoressa", type: "honorific", ctx: "prefix", short: "Dott.ssa", long: "Dottoressa", variants: ["dott.ssa", "dottsa", "dottoressa"] },
+  { id: "it_professore", type: "honorific", ctx: "prefix", short: "Prof.", long: "Professore", variants: ["prof", "prof.", "professore"] },
+  { id: "it_professoressa", type: "honorific", ctx: "prefix", short: "Prof.ssa", long: "Professoressa", variants: ["prof.ssa", "profssa", "professoressa"] },
+  // Dutch (NL/BE)
+  { id: "nl_de_heer", type: "honorific", ctx: "prefix", short: "Dhr.", long: "De heer", variants: ["dhr", "dhr.", "de heer"] },
+  { id: "nl_mevrouw", type: "honorific", ctx: "prefix", short: "Mevr.", long: "Mevrouw", variants: ["mevr", "mevr.", "mevrouw"] },
+  { id: "nl_juffrouw", type: "honorific", ctx: "prefix", short: "Juf.", long: "Juffrouw", variants: ["juf", "juf.", "juffrouw"] },
+  // Swedish (SE)
+  { id: "se_herr", type: "honorific", ctx: "prefix", short: "Herr", variants: ["herr"] },
+  { id: "se_fru", type: "honorific", ctx: "prefix", short: "Fru", variants: ["fru"] },
+  { id: "se_fr\xF6ken", type: "honorific", ctx: "prefix", short: "Fr\xF6ken", variants: ["froken", "fr\xF6ken"] },
+  // Danish (DK) / Norwegian (NO)
+  { id: "dk_hr", type: "honorific", ctx: "prefix", short: "Hr.", long: "Herr", variants: ["hr", "hr.", "herr"] },
+  { id: "dk_fru", type: "honorific", ctx: "prefix", short: "Fru", variants: ["fru"] },
+  { id: "no_hr", type: "honorific", ctx: "prefix", short: "Hr.", variants: ["hr", "hr."] },
+  { id: "no_fru", type: "honorific", ctx: "prefix", short: "Fru", variants: ["fru"] },
+  // Polish (PL)
+  { id: "pl_pan", type: "honorific", ctx: "prefix", short: "Pan", variants: ["pan"] },
+  { id: "pl_pani", type: "honorific", ctx: "prefix", short: "Pani", variants: ["pani"] },
+  // Czech (CZ) / Slovak (SK)
+  { id: "cz_pan", type: "honorific", ctx: "prefix", short: "Pan", variants: ["pan"] },
+  { id: "cz_pani", type: "honorific", ctx: "prefix", short: "Pan\xED", variants: ["pani", "pan\xED"] },
+  // Greek (GR) — common abbreviations (ASCII-friendly variants included)
+  { id: "gr_kyr", type: "honorific", ctx: "prefix", short: "\u03BA.", long: "\u039A\u03CD\u03C1\u03B9\u03BF\u03C2", variants: ["k", "k.", "\u03BA", "\u03BA.", "\u03BA\u03C5\u03C1\u03B9\u03BF\u03C2", "\u03BA\u03CD\u03C1\u03B9\u03BF\u03C2"] },
+  { id: "gr_kyria", type: "honorific", ctx: "prefix", short: "\u03BA\u03B1.", long: "\u039A\u03C5\u03C1\u03AF\u03B1", variants: ["ka", "ka.", "\u03BA\u03B1", "\u03BA\u03B1.", "\u03BA\u03C5\u03C1\u03B9\u03B1", "\u03BA\u03C5\u03C1\u03AF\u03B1"] }
+];
+var SUFFIX_AFFIX_ENTRIES = [
+  { id: "jr", type: "generational", ctx: "suffix", short: "Jr.", variants: ["jr", "jr."] },
+  { id: "sr", type: "generational", ctx: "suffix", short: "Sr.", variants: ["sr", "sr."] },
+  { id: "ii", type: "dynasticNumber", ctx: "suffix", short: "II", variants: ["ii"] },
+  { id: "iii", type: "dynasticNumber", ctx: "suffix", short: "III", variants: ["iii"] },
+  { id: "iv", type: "dynasticNumber", ctx: "suffix", short: "IV", variants: ["iv"] },
+  { id: "v", type: "dynasticNumber", ctx: "suffix", short: "V", variants: ["v"] },
+  // ---------------------------------------------------------------------------
+  // English-speaking + broadly EU-used postnominals (degrees, credentials)
+  // Canonical punctuation is stored; matching tolerates stripped dots.
+  // ---------------------------------------------------------------------------
+  { id: "phd", type: "education", ctx: "suffix", short: "Ph.D.", variants: ["phd", "ph.d."] },
+  { id: "dphil", type: "education", ctx: "suffix", short: "D.Phil.", variants: ["dphil", "d.phil."] },
+  { id: "md", type: "education", ctx: "suffix", short: "M.D.", variants: ["md", "m.d."] },
+  { id: "do", type: "education", ctx: "suffix", short: "D.O.", variants: ["do", "d.o."] },
+  { id: "dds", type: "education", ctx: "suffix", short: "D.D.S.", variants: ["dds", "d.d.s."] },
+  { id: "dmd", type: "education", ctx: "suffix", short: "D.M.D.", variants: ["dmd", "d.m.d."] },
+  { id: "dvm", type: "education", ctx: "suffix", short: "D.V.M.", variants: ["dvm", "d.v.m."] },
+  { id: "jd", type: "education", ctx: "suffix", short: "J.D.", variants: ["jd", "j.d."] },
+  { id: "llb", type: "education", ctx: "suffix", short: "LL.B.", variants: ["llb", "ll.b."] },
+  { id: "llm", type: "education", ctx: "suffix", short: "LL.M.", variants: ["llm", "ll.m."] },
+  { id: "mba", type: "education", ctx: "suffix", short: "M.B.A.", variants: ["mba", "m.b.a."] },
+  { id: "msc", type: "education", ctx: "suffix", short: "M.Sc.", variants: ["msc", "m.sc."] },
+  { id: "bsc", type: "education", ctx: "suffix", short: "B.Sc.", variants: ["bsc", "b.sc."] },
+  { id: "ma", type: "education", ctx: "suffix", short: "M.A.", variants: ["ma", "m.a."] },
+  { id: "ba", type: "education", ctx: "suffix", short: "B.A.", variants: ["ba", "b.a."] },
+  { id: "meng", type: "education", ctx: "suffix", short: "M.Eng.", variants: ["meng", "m.eng."] },
+  { id: "beng", type: "education", ctx: "suffix", short: "B.Eng.", variants: ["beng", "b.eng."] },
+  // Nursing/medical
+  { id: "rn", type: "professional", ctx: "suffix", short: "RN", variants: ["rn"] },
+  { id: "np", type: "professional", ctx: "suffix", short: "NP", variants: ["np"] },
+  { id: "pa_c", type: "professional", ctx: "suffix", short: "PA-C", variants: ["pa-c", "pac", "pa c"] },
+  // Accounting/finance
+  { id: "cpa", type: "professional", ctx: "suffix", short: "CPA", variants: ["cpa"] },
+  { id: "cfa", type: "professional", ctx: "suffix", short: "CFA", variants: ["cfa"] },
+  // Legal
+  { id: "esq", type: "professional", ctx: "suffix", short: "Esq.", variants: ["esq", "esq."] },
+  { id: "kc", type: "professional", ctx: "suffix", short: "KC", variants: ["kc"] },
+  { id: "qc", type: "professional", ctx: "suffix", short: "QC", variants: ["qc"] },
+  // ---------------------------------------------------------------------------
+  // UK/IE honours (postnominals) — stored canonically
+  // ---------------------------------------------------------------------------
+  { id: "obe", type: "postnominalHonor", ctx: "suffix", short: "OBE", variants: ["obe"] },
+  { id: "mbe", type: "postnominalHonor", ctx: "suffix", short: "MBE", variants: ["mbe"] },
+  { id: "cbe", type: "postnominalHonor", ctx: "suffix", short: "CBE", variants: ["cbe"] },
+  { id: "kbe", type: "postnominalHonor", ctx: "suffix", short: "KBE", variants: ["kbe"] },
+  { id: "dbe", type: "postnominalHonor", ctx: "suffix", short: "DBE", variants: ["dbe"] },
+  { id: "cmg", type: "postnominalHonor", ctx: "suffix", short: "CMG", variants: ["cmg"] },
+  { id: "cvo", type: "postnominalHonor", ctx: "suffix", short: "CVO", variants: ["cvo"] },
+  { id: "mvo", type: "postnominalHonor", ctx: "suffix", short: "MVO", variants: ["mvo"] }
+];
+
 // src/affixes.ts
 var ROMAN_NUMERALS = /* @__PURE__ */ new Set(["II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]);
+var PREFIX_INDEX = buildAffixVariantIndex(PREFIX_AFFIX_ENTRIES, "prefix");
+var SUFFIX_INDEX = buildAffixVariantIndex(SUFFIX_AFFIX_ENTRIES, "suffix");
 var HONORIFIC = /* @__PURE__ */ new Set(["MR", "MRS", "MS", "MISS", "MX", "DR", "PROF", "SIR", "DAME"]);
 var STYLE_PHRASES = /* @__PURE__ */ new Set([
   "THE HON",
@@ -581,6 +672,29 @@ var STYLE_PHRASES = /* @__PURE__ */ new Set([
   "HIS EXCELLENCY",
   "HER EXCELLENCY"
 ]);
+var NOBILITY_AND_ROYALTY = /* @__PURE__ */ new Set([
+  "HER MAJESTY",
+  "HIS MAJESTY",
+  "HER GRACE",
+  "HIS GRACE",
+  "PRINCE",
+  "PRINCESS",
+  "DUKE",
+  "DUCHESS",
+  "EARL",
+  "LORD",
+  "LADY",
+  "BARON",
+  "BARONESS",
+  "COUNT",
+  "COUNTESS",
+  "MARQUESS",
+  "MARQUIS",
+  "VISCOUNT",
+  "VISCOUNTESS",
+  "VISC"
+  // common abbreviation used in "The Rt Hon Visc"
+]);
 var RELIGIOUS = /* @__PURE__ */ new Set(["REV", "REVEREND", "FR", "FATHER", "RABBI", "IMAM", "PASTOR", "SISTER", "SR", "BR", "BROTHER"]);
 var MILITARY = /* @__PURE__ */ new Set(["PVT", "CPL", "SGT", "LT", "CPT", "CAPT", "MAJ", "COL", "GEN", "ADM"]);
 var JUDICIAL = /* @__PURE__ */ new Set(["JUDGE", "JUSTICE"]);
@@ -589,15 +703,51 @@ var EDUCATION = /* @__PURE__ */ new Set(["PHD", "MD", "JD", "MBA", "MS", "MA", "
 var POSTNOMINAL_HONOR = /* @__PURE__ */ new Set(["OBE", "MBE", "CBE", "KBE", "DBE"]);
 var SPLITTABLE_WORDS = /* @__PURE__ */ new Set([
   ...HONORIFIC,
+  ...NOBILITY_AND_ROYALTY,
   ...RELIGIOUS,
   ...MILITARY,
   ...JUDICIAL,
   ...PROFESSIONAL,
   ...EDUCATION,
   ...POSTNOMINAL_HONOR,
+  "JR",
+  "SR",
+  ...ROMAN_NUMERALS,
   "HON"
   // allow splitting "The Hon Dr" once style phrase is handled
 ]);
+for (const entry of [...PREFIX_AFFIX_ENTRIES, ...SUFFIX_AFFIX_ENTRIES]) {
+  const candidates = [];
+  if (entry.short) candidates.push(entry.short);
+  if (entry.long) candidates.push(entry.long);
+  if (entry.variants) candidates.push(...entry.variants);
+  for (const c of candidates) {
+    const k = normalizeAffixVariantForMatch(c);
+    if (k && !k.includes(" ")) SPLITTABLE_WORDS.add(k);
+  }
+}
+var MULTIWORD_PREFIX_PHRASES = (() => {
+  const phrases = [];
+  const add = (s) => {
+    const k = normalizeAffixVariantForMatch(s);
+    if (!k || !k.includes(" ")) return;
+    const words = k.split(" ").filter(Boolean);
+    if (words.length >= 2) phrases.push({ words, len: words.length });
+  };
+  for (const entry of PREFIX_AFFIX_ENTRIES) {
+    if (entry.short) add(entry.short);
+    if (entry.long) add(entry.long);
+    if (entry.variants) entry.variants.forEach(add);
+  }
+  phrases.sort((a, b) => b.len - a.len);
+  const seen = /* @__PURE__ */ new Set();
+  return phrases.filter((p) => {
+    const key = p.words.join(" ");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+})();
 function collapseSpaces(value) {
   return value.trim().replace(/\s+/g, " ");
 }
@@ -606,7 +756,7 @@ function stripEdgePunctuation(value) {
 }
 function normalizeAffix(value) {
   const raw = collapseSpaces(stripEdgePunctuation(value));
-  const normalized = raw.replace(/^[.]+/, "").replace(/[.]+$/, "").replace(/\s+/g, " ").toUpperCase();
+  const normalized = raw.replace(/^[.]+/, "").replace(/[.]+$/, "").replace(/\s+/g, " ").replace(/[\u2019\u2018\u02BC]/g, "'").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
   const normalizedKey = normalized.replace(/\./g, "").replace(/\s+/g, " ").trim();
   return { normalized, normalizedKey };
 }
@@ -618,6 +768,7 @@ function looksAbbreviated(value, normalizedKey) {
 function classifyType(normalizedKey, ctx) {
   if (ROMAN_NUMERALS.has(normalizedKey) && ctx === "suffix") return "dynasticNumber";
   if (/^(JR|SR)$/.test(normalizedKey)) return "generational";
+  if (NOBILITY_AND_ROYALTY.has(normalizedKey)) return "style";
   if (EDUCATION.has(normalizedKey)) return "education";
   if (PROFESSIONAL.has(normalizedKey)) return "professional";
   if (POSTNOMINAL_HONOR.has(normalizedKey)) return "postnominalHonor";
@@ -646,16 +797,29 @@ function classifyType(normalizedKey, ctx) {
 function classifyAffixToken(value, ctx) {
   const v = collapseSpaces(stripEdgePunctuation(value));
   const { normalizedKey } = normalizeAffix(v);
-  const type = classifyType(normalizedKey, ctx);
+  const entry = (ctx === "prefix" ? PREFIX_INDEX : SUFFIX_INDEX).get(normalizedKey);
+  const type = entry ? entry.type : classifyType(normalizedKey, ctx);
   const isAbbrev = looksAbbreviated(v, normalizedKey);
   const requiresCommaBefore = ctx === "suffix" && (type === "generational" || type === "professional" || type === "education" || type === "postnominalHonor" || normalizedKey === "ESQ");
   return {
     type,
     value: v,
     normalized: normalizedKey,
+    entryId: entry?.id,
+    canonicalShort: entry?.short,
+    canonicalLong: entry?.long,
     isAbbrev: isAbbrev || void 0,
     requiresCommaBefore: requiresCommaBefore || void 0
   };
+}
+function matchKnownPrefixPhraseAt(words, startIdx) {
+  const remaining = words.slice(startIdx);
+  for (const p of MULTIWORD_PREFIX_PHRASES) {
+    if (remaining.length < p.len) continue;
+    const slice = remaining.slice(0, p.len).join(" ");
+    if (slice === p.words.join(" ")) return p.len;
+  }
+  return 0;
 }
 function matchStylePhraseAt(words, startIdx) {
   const remaining = words.slice(startIdx);
@@ -666,7 +830,11 @@ function matchStylePhraseAt(words, startIdx) {
     { phrase: ["THE", "RT", "HON"], len: 3 },
     { phrase: ["THE", "HON"], len: 2 },
     { phrase: ["HIS", "EXCELLENCY"], len: 2 },
-    { phrase: ["HER", "EXCELLENCY"], len: 2 }
+    { phrase: ["HER", "EXCELLENCY"], len: 2 },
+    { phrase: ["HIS", "MAJESTY"], len: 2 },
+    { phrase: ["HER", "MAJESTY"], len: 2 },
+    { phrase: ["HIS", "GRACE"], len: 2 },
+    { phrase: ["HER", "GRACE"], len: 2 }
   ];
   for (const c of candidates) {
     if (remaining.length < c.len) continue;
@@ -699,10 +867,29 @@ function splitAffixToAtomicParts(value, ctx) {
     }
     let i = 0;
     while (i < words.length) {
+      if (ctx === "prefix") {
+        const knownLen = matchKnownPrefixPhraseAt(normalizedWords, i);
+        if (knownLen > 0) {
+          out.push(words.slice(i, i + knownLen).join(" "));
+          i += knownLen;
+          continue;
+        }
+      }
       const styleLen = matchStylePhraseAt(normalizedWords, i);
       if (styleLen > 0) {
         out.push(words.slice(i, i + styleLen).join(" "));
         i += styleLen;
+        continue;
+      }
+      if (SPLITTABLE_WORDS.has(normalizedWords[i])) {
+        out.push(words[i]);
+        i += 1;
+        continue;
+      }
+      const nextSplittableIdx = normalizedWords.findIndex((w, idx) => idx > i && SPLITTABLE_WORDS.has(w));
+      if (nextSplittableIdx > i) {
+        out.push(words.slice(i, nextSplittableIdx).join(" "));
+        i = nextSplittableIdx;
         continue;
       }
       out.push(words.slice(i).join(" "));
@@ -716,11 +903,6 @@ function buildAffixTokens(displayValue, ctx) {
   const parts = splitAffixToAtomicParts(displayValue, ctx);
   if (parts.length === 0) return void 0;
   return parts.map((p) => classifyAffixToken(p, ctx));
-}
-function extractIdentitySuffixFromTokens(tokens) {
-  if (!tokens || tokens.length === 0) return void 0;
-  const identity = tokens.filter((t) => t.type === "generational" || t.type === "dynasticNumber").map((t) => t.value).filter(Boolean);
-  return identity.length > 0 ? identity.join(", ") : void 0;
 }
 
 // src/parsers.ts
@@ -756,11 +938,15 @@ function extractNickname(text, result) {
 function extractSuffixes(text, result) {
   let workingText = text;
   const suffixesFound = [];
+  const looksLikeSuffix = (value) => {
+    const tokens = buildAffixTokens(value, "suffix");
+    return !!tokens && tokens.length > 0 && tokens.every((t) => t.type !== "other");
+  };
   const parts = workingText.split(",");
   while (parts.length > 1) {
     const lastPart = parts[parts.length - 1].trim();
     const firstWordOfLast = lastPart.split(/\s+/)[0];
-    if (isSuffix(firstWordOfLast) || /queen|king|consort/i.test(lastPart)) {
+    if (looksLikeSuffix(firstWordOfLast) || looksLikeSuffix(lastPart) || /queen|king|consort/i.test(lastPart)) {
       suffixesFound.unshift(lastPart);
       parts.pop();
     } else {
@@ -773,7 +959,7 @@ function extractSuffixes(text, result) {
   while (spaceParts.length > 1) {
     const lastWord = spaceParts[spaceParts.length - 1];
     const cleanWord = lastWord.replace(/[,]$/, "");
-    if (isSuffix(cleanWord)) {
+    if (looksLikeSuffix(cleanWord)) {
       spaceSuffixes.unshift(lastWord);
       spaceParts.pop();
     } else {
@@ -789,11 +975,15 @@ function extractSuffixes(text, result) {
 }
 function extractPrefixes(parts, result) {
   const prefixesFound = [];
+  const looksLikePrefix = (value) => {
+    const tokens = buildAffixTokens(value, "prefix");
+    return !!tokens && tokens.length > 0 && tokens.every((t) => t.type !== "other");
+  };
   while (parts.length > 1) {
     let matchFound = false;
     for (let len = Math.min(parts.length - 1, 5); len >= 1; len--) {
       const candidate = parts.slice(0, len).join(" ");
-      if (isPrefix(candidate)) {
+      if (looksLikePrefix(candidate)) {
         prefixesFound.push(candidate);
         parts.splice(0, len);
         matchFound = true;
@@ -967,7 +1157,12 @@ function resolveOptions(options) {
     middle: options?.middle ?? base.middle,
     prefix: options?.prefix ?? base.prefix,
     suffix: options?.suffix ?? base.suffix,
-    order: options?.order ?? base.order
+    order: options?.order ?? base.order,
+    prefixForm: options?.prefixForm ?? "short",
+    suffixForm: options?.suffixForm ?? "short",
+    capitalization: options?.capitalization ?? "canonical",
+    punctuation: options?.punctuation ?? "canonical",
+    apostrophes: options?.apostrophes ?? "canonical"
   };
 }
 function ensureParsed(name) {
@@ -1007,10 +1202,12 @@ function resolveGiven(parsed, prefer) {
   if (prefer === "first") return first ?? nickname;
   return first ?? nickname;
 }
-function resolvePrefix(parsed, prefixMode) {
+function resolvePrefix(parsed, prefixMode, o) {
+  if (prefixMode === "omit") return void 0;
+  const renderedFromTokens = renderAffixTokens(parsed.prefixTokens, "prefix", o);
+  if (renderedFromTokens) return renderedFromTokens;
   const prefix = parsed.prefix ? normalizeCollapseSpaces(parsed.prefix) : void 0;
   if (!prefix) return void 0;
-  if (prefixMode === "omit") return void 0;
   if (prefixMode === "include") return prefix;
   return prefix;
 }
@@ -1019,14 +1216,55 @@ function resolveLast(parsed) {
   const last = normalizeTrim(parsed.last);
   return last.length > 0 ? last : void 0;
 }
-function resolveSuffix(parsed, suffixMode) {
+function resolveSuffix(parsed, suffixMode, o) {
   const suffix = parsed.suffix ? normalizeCollapseSpaces(parsed.suffix) : void 0;
   if (suffixMode === "omit") return void 0;
-  if (suffixMode === "include") return suffix;
-  const identityFromTokens = extractIdentitySuffixFromTokens(parsed.suffixTokens);
-  if (identityFromTokens) return identityFromTokens;
+  if (suffixMode === "include") {
+    return renderAffixTokens(parsed.suffixTokens, "suffix", o) ?? suffix;
+  }
+  if (parsed.suffixTokens && parsed.suffixTokens.length > 0) {
+    const identityTokens = parsed.suffixTokens.filter((t) => t.type === "generational" || t.type === "dynasticNumber");
+    const renderedIdentity = renderAffixTokens(identityTokens, "suffix", o);
+    if (renderedIdentity) return renderedIdentity;
+  }
   if (!suffix) return void 0;
   return extractIdentitySuffix(suffix);
+}
+function applyPunctuation(value, mode) {
+  if (mode === "strip") return value.replace(/\./g, "");
+  return value;
+}
+function applyApostrophes(value, mode) {
+  if (mode === "ascii") return value.replace(/[\u2019\u2018\u02BC]/g, "'");
+  return value;
+}
+function applyCapitalization(value, mode) {
+  if (mode === "lower") return value.toLowerCase();
+  if (mode === "upper") return value.toUpperCase();
+  return value;
+}
+function renderAffixTokens(tokens, ctx, o) {
+  if (!tokens || tokens.length === 0) return void 0;
+  const form = ctx === "prefix" ? o.prefixForm : o.suffixForm;
+  const rendered = tokens.map((t) => {
+    if (o.capitalization === "preserve" || o.punctuation === "preserve" || o.apostrophes === "preserve") {
+      return String(t.value ?? "").trim();
+    }
+    let base = String(t.value ?? "").trim();
+    if (form !== "asInput") {
+      const canonical = form === "long" ? t.canonicalLong : t.canonicalShort;
+      if (canonical) base = canonical;
+    }
+    base = applyApostrophes(base, o.apostrophes);
+    base = applyPunctuation(base, o.punctuation);
+    base = applyCapitalization(base, o.capitalization);
+    return base.trim();
+  }).filter((s) => s.length > 0);
+  if (rendered.length === 0) return void 0;
+  if (ctx === "suffix") {
+    return rendered.join(", ");
+  }
+  return rendered.join(" ");
 }
 function boundarySpace(boundary, o, t) {
   const noBreak = o.noBreak;
@@ -1085,9 +1323,9 @@ function renderGivenPlusMiddle(parsed, o, t) {
 }
 function renderSingle(parsed, o) {
   const t = getSpaceTokens(o.output);
-  const prefixText = resolvePrefix(parsed, o.prefix);
+  const prefixText = resolvePrefix(parsed, o.prefix, o);
   const lastText = resolveLast(parsed);
-  const suffixText = resolveSuffix(parsed, o.suffix);
+  const suffixText = resolveSuffix(parsed, o.suffix, o);
   const { givenLikeText } = renderGivenPlusMiddle(parsed, o, t);
   if (o.preset === "formalShort") {
     const pieces = [];
@@ -1257,8 +1495,6 @@ export {
   COMMON_SURNAMES,
   MULTI_WORD_PARTICLES,
   PARTICLES,
-  PREFIXES,
-  SUFFIXES,
   formatName,
   getFirstName,
   getLastName,
@@ -1267,7 +1503,5 @@ export {
   isCommonSurname,
   isMultiWordParticle,
   isParticle,
-  isPrefix,
-  isSuffix,
   parseName
 };

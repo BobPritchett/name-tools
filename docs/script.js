@@ -1,6 +1,4 @@
 import {
-    isPrefix,
-    isSuffix,
     parseName,
     formatName
 } from './name-tools.js';

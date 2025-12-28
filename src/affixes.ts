@@ -1,8 +1,17 @@
 import type { NameAffixToken, NameAffixTokenType } from './types';
+import {
+  buildAffixVariantIndex,
+  normalizeAffixVariantForMatch,
+  PREFIX_AFFIX_ENTRIES,
+  SUFFIX_AFFIX_ENTRIES,
+} from './data/affixes';
 
 type AffixContext = 'prefix' | 'suffix';
 
 const ROMAN_NUMERALS = new Set(['II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']);
+
+const PREFIX_INDEX = buildAffixVariantIndex(PREFIX_AFFIX_ENTRIES, 'prefix');
+const SUFFIX_INDEX = buildAffixVariantIndex(SUFFIX_AFFIX_ENTRIES, 'suffix');
 
 // Minimal starter packs (expandable). Matching uses normalized (upper, periods removed).
 const HONORIFIC = new Set(['MR', 'MRS', 'MS', 'MISS', 'MX', 'DR', 'PROF', 'SIR', 'DAME']);
@@ -15,6 +24,29 @@ const STYLE_PHRASES = new Set([
   'HIS EXCELLENCY',
   'HER EXCELLENCY',
 ]);
+// Nobility/royalty are treated as "style" for now (no dedicated token type).
+const NOBILITY_AND_ROYALTY = new Set([
+  'HER MAJESTY',
+  'HIS MAJESTY',
+  'HER GRACE',
+  'HIS GRACE',
+  'PRINCE',
+  'PRINCESS',
+  'DUKE',
+  'DUCHESS',
+  'EARL',
+  'LORD',
+  'LADY',
+  'BARON',
+  'BARONESS',
+  'COUNT',
+  'COUNTESS',
+  'MARQUESS',
+  'MARQUIS',
+  'VISCOUNT',
+  'VISCOUNTESS',
+  'VISC', // common abbreviation used in "The Rt Hon Visc"
+]);
 const RELIGIOUS = new Set(['REV', 'REVEREND', 'FR', 'FATHER', 'RABBI', 'IMAM', 'PASTOR', 'SISTER', 'SR', 'BR', 'BROTHER']);
 const MILITARY = new Set(['PVT', 'CPL', 'SGT', 'LT', 'CPT', 'CAPT', 'MAJ', 'COL', 'GEN', 'ADM']);
 const JUDICIAL = new Set(['JUDGE', 'JUSTICE']);
@@ -24,14 +56,56 @@ const POSTNOMINAL_HONOR = new Set(['OBE', 'MBE', 'CBE', 'KBE', 'DBE']);
 
 const SPLITTABLE_WORDS = new Set<string>([
   ...HONORIFIC,
+  ...NOBILITY_AND_ROYALTY,
   ...RELIGIOUS,
   ...MILITARY,
   ...JUDICIAL,
   ...PROFESSIONAL,
   ...EDUCATION,
   ...POSTNOMINAL_HONOR,
+  'JR',
+  'SR',
+  ...ROMAN_NUMERALS,
   'HON', // allow splitting "The Hon Dr" once style phrase is handled
 ]);
+
+// Expand splittable word set based on canonical affix data (single-word variants).
+for (const entry of [...PREFIX_AFFIX_ENTRIES, ...SUFFIX_AFFIX_ENTRIES]) {
+  const candidates: string[] = [];
+  if (entry.short) candidates.push(entry.short);
+  if (entry.long) candidates.push(entry.long);
+  if (entry.variants) candidates.push(...entry.variants);
+  for (const c of candidates) {
+    const k = normalizeAffixVariantForMatch(c);
+    if (k && !k.includes(' ')) SPLITTABLE_WORDS.add(k);
+  }
+}
+
+const MULTIWORD_PREFIX_PHRASES: Array<{ words: string[]; len: number }> = (() => {
+  const phrases: Array<{ words: string[]; len: number }> = [];
+  const add = (s: string) => {
+    const k = normalizeAffixVariantForMatch(s);
+    if (!k || !k.includes(' ')) return;
+    const words = k.split(' ').filter(Boolean);
+    if (words.length >= 2) phrases.push({ words, len: words.length });
+  };
+
+  for (const entry of PREFIX_AFFIX_ENTRIES) {
+    if (entry.short) add(entry.short);
+    if (entry.long) add(entry.long);
+    if (entry.variants) entry.variants.forEach(add);
+  }
+
+  // Greedy longest-first, de-duped
+  phrases.sort((a, b) => b.len - a.len);
+  const seen = new Set<string>();
+  return phrases.filter(p => {
+    const key = p.words.join(' ');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+})();
 
 function collapseSpaces(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
@@ -48,6 +122,9 @@ export function normalizeAffix(value: string): { normalized: string; normalizedK
     .replace(/^[.]+/, '')
     .replace(/[.]+$/, '')
     .replace(/\s+/g, ' ')
+    .replace(/[\u2019\u2018\u02BC]/g, "'")
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase();
 
   // Matching key: remove periods and collapse spaces.
@@ -67,6 +144,7 @@ function classifyType(normalizedKey: string, ctx: AffixContext): NameAffixTokenT
   if (ROMAN_NUMERALS.has(normalizedKey) && ctx === 'suffix') return 'dynasticNumber';
   if (/^(JR|SR)$/.test(normalizedKey)) return 'generational';
 
+  if (NOBILITY_AND_ROYALTY.has(normalizedKey)) return 'style';
   if (EDUCATION.has(normalizedKey)) return 'education';
   if (PROFESSIONAL.has(normalizedKey)) return 'professional';
   if (POSTNOMINAL_HONOR.has(normalizedKey)) return 'postnominalHonor';
@@ -105,7 +183,8 @@ function classifyType(normalizedKey: string, ctx: AffixContext): NameAffixTokenT
 export function classifyAffixToken(value: string, ctx: AffixContext): NameAffixToken {
   const v = collapseSpaces(stripEdgePunctuation(value));
   const { normalizedKey } = normalizeAffix(v);
-  const type = classifyType(normalizedKey, ctx);
+  const entry = (ctx === 'prefix' ? PREFIX_INDEX : SUFFIX_INDEX).get(normalizedKey);
+  const type = entry ? entry.type : classifyType(normalizedKey, ctx);
   const isAbbrev = looksAbbreviated(v, normalizedKey);
 
   const requiresCommaBefore =
@@ -116,9 +195,22 @@ export function classifyAffixToken(value: string, ctx: AffixContext): NameAffixT
     type,
     value: v,
     normalized: normalizedKey,
+    entryId: entry?.id,
+    canonicalShort: entry?.short,
+    canonicalLong: entry?.long,
     isAbbrev: isAbbrev || undefined,
     requiresCommaBefore: requiresCommaBefore || undefined,
   };
+}
+
+function matchKnownPrefixPhraseAt(words: string[], startIdx: number): number {
+  const remaining = words.slice(startIdx);
+  for (const p of MULTIWORD_PREFIX_PHRASES) {
+    if (remaining.length < p.len) continue;
+    const slice = remaining.slice(0, p.len).join(' ');
+    if (slice === p.words.join(' ')) return p.len;
+  }
+  return 0;
 }
 
 function matchStylePhraseAt(words: string[], startIdx: number): number {
@@ -133,6 +225,10 @@ function matchStylePhraseAt(words: string[], startIdx: number): number {
     { phrase: ['THE', 'HON'], len: 2 },
     { phrase: ['HIS', 'EXCELLENCY'], len: 2 },
     { phrase: ['HER', 'EXCELLENCY'], len: 2 },
+    { phrase: ['HIS', 'MAJESTY'], len: 2 },
+    { phrase: ['HER', 'MAJESTY'], len: 2 },
+    { phrase: ['HIS', 'GRACE'], len: 2 },
+    { phrase: ['HER', 'GRACE'], len: 2 },
   ];
 
   for (const c of candidates) {
@@ -181,12 +277,38 @@ export function splitAffixToAtomicParts(value: string, ctx: AffixContext): strin
     // Otherwise, try to carve out known multi-word style phrases, leaving the rest as single tokens.
     let i = 0;
     while (i < words.length) {
+      if (ctx === 'prefix') {
+        const knownLen = matchKnownPrefixPhraseAt(normalizedWords, i);
+        if (knownLen > 0) {
+          out.push(words.slice(i, i + knownLen).join(' '));
+          i += knownLen;
+          continue;
+        }
+      }
+
       const styleLen = matchStylePhraseAt(normalizedWords, i);
       if (styleLen > 0) {
         out.push(words.slice(i, i + styleLen).join(' '));
         i += styleLen;
         continue;
       }
+
+      // If the current word is independently recognizable, split it off.
+      if (SPLITTABLE_WORDS.has(normalizedWords[i])) {
+        out.push(words[i]);
+        i += 1;
+        continue;
+      }
+
+      // If a later word is recognizable (e.g., "... Sir", "... Dr"), split the preceding phrase,
+      // then loop to consume the recognizable word(s) without swallowing trailing name parts.
+      const nextSplittableIdx = normalizedWords.findIndex((w, idx) => idx > i && SPLITTABLE_WORDS.has(w));
+      if (nextSplittableIdx > i) {
+        out.push(words.slice(i, nextSplittableIdx).join(' '));
+        i = nextSplittableIdx;
+        continue;
+      }
+
       // Default: keep the whole remaining chunk as a single token to avoid nonsense splits (e.g., "Rear Admiral")
       out.push(words.slice(i).join(' '));
       break;

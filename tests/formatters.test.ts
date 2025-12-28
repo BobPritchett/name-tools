@@ -11,6 +11,12 @@ describe('formatName (single)', () => {
     );
   });
 
+  it('renders suffix:auto canonically even if input omits punctuation/case', () => {
+    expect(formatName('Bob Pritchett jr')).toBe(
+      `Bob${NBSP}Pritchett,${NBSP}Jr.`
+    );
+  });
+
   it('renders informal (given + last, no suffix)', () => {
     expect(formatName('Dr. Bob William Pritchett Jr.', { preset: 'informal' })).toBe(
       `Bob${NBSP}Pritchett`
@@ -50,6 +56,36 @@ describe('formatName (single)', () => {
   it('supports output:"html" by emitting HTML entities for NBSP/NNBSP', () => {
     expect(formatName('Bob William Pritchett', { preset: 'initialed', output: 'html' })).toBe(
       `B.&#8239;W.&nbsp;Pritchett`
+    );
+  });
+
+  it('can canonicalize prefix casing/punctuation (short form)', () => {
+    expect(formatName('rev john smith', { preset: 'formalFull' })).toBe(
+      `Rev.${NBSP}john${NBSP}smith`
+    );
+  });
+
+  it('can render canonical long prefix form', () => {
+    expect(formatName('rev john smith', { preset: 'formalFull', prefixForm: 'long' })).toBe(
+      `Reverend${NBSP}john${NBSP}smith`
+    );
+  });
+
+  it('can strip periods from canonical forms', () => {
+    expect(formatName('rev john smith', { preset: 'formalFull', punctuation: 'strip' })).toBe(
+      `Rev${NBSP}john${NBSP}smith`
+    );
+  });
+
+  it('can canonicalize apostrophes in known prefixes', () => {
+    expect(formatName("her majesty's counsel john smith", { preset: 'formalFull', prefix: 'include' })).toBe(
+      `Her Majesty’s Counsel${NBSP}john${NBSP}smith`
+    );
+  });
+
+  it('matches diacritics-insensitively for EU honorifics', () => {
+    expect(formatName('senor juan perez', { preset: 'formalFull', prefix: 'include' })).toBe(
+      `Sr.${NBSP}juan${NBSP}perez`
     );
   });
 });

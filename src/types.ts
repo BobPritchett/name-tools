@@ -16,8 +16,11 @@ export type NameAffixTokenType =
 
 export interface NameAffixToken {
   type: NameAffixTokenType;
-  value: string; // exact substring as written
-  normalized?: string; // optional: uppercase/punctuation-stripped
+  value: string; // exact substring as written (post-parsing whitespace/punctuation cleanup)
+  normalized?: string; // optional: matching key (normalization layer output)
+  entryId?: string; // optional: ID of matched canonical entry (for formatting)
+  canonicalShort?: string; // optional: canonical short display form (data-driven)
+  canonicalLong?: string; // optional: canonical long display form (data-driven)
   isAbbrev?: boolean;
   requiresCommaBefore?: boolean; // optional hint (US style often uses comma)
 }
@@ -113,5 +116,12 @@ export type NameFormatOptions = {
   prefix?: 'include' | 'omit' | 'auto'; // default varies by preset
   suffix?: 'include' | 'omit' | 'auto'; // default varies by preset
   order?: 'given-family' | 'family-given' | 'auto'; // default: "given-family"
+
+  // Affix rendering (formatting concern)
+  prefixForm?: 'short' | 'long' | 'asInput'; // default: "short"
+  suffixForm?: 'short' | 'long' | 'asInput'; // default: "short"
+  capitalization?: 'canonical' | 'preserve' | 'lower' | 'upper'; // default: "canonical"
+  punctuation?: 'canonical' | 'strip' | 'preserve'; // default: "canonical"
+  apostrophes?: 'canonical' | 'ascii' | 'preserve'; // default: "canonical"
 };
 

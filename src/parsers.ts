@@ -1,5 +1,3 @@
-import { isPrefix } from './data/prefixes';
-import { isSuffix } from './data/suffixes';
 import { isParticle } from './data/particles';
 import { isCommonSurname, isCommonFirstName } from './data/surnames';
 import { buildAffixTokens } from './affixes';
@@ -70,13 +68,18 @@ function extractSuffixes(text: string, result: ParsedName): string {
   let workingText = text;
   const suffixesFound: string[] = [];
 
+  const looksLikeSuffix = (value: string): boolean => {
+    const tokens = buildAffixTokens(value, 'suffix');
+    return !!tokens && tokens.length > 0 && tokens.every(t => t.type !== 'other');
+  };
+
   // First, identify all comma-separated parts from the end that are suffixes
   const parts = workingText.split(',');
   while (parts.length > 1) {
     const lastPart = parts[parts.length - 1].trim();
     const firstWordOfLast = lastPart.split(/\s+/)[0];
 
-    if (isSuffix(firstWordOfLast) || /queen|king|consort/i.test(lastPart)) {
+    if (looksLikeSuffix(firstWordOfLast) || looksLikeSuffix(lastPart) || /queen|king|consort/i.test(lastPart)) {
       suffixesFound.unshift(lastPart);
       parts.pop();
     } else {
@@ -93,7 +96,7 @@ function extractSuffixes(text: string, result: ParsedName): string {
     const lastWord = spaceParts[spaceParts.length - 1];
     // Remove trailing punctuation for suffix check
     const cleanWord = lastWord.replace(/[,]$/, '');
-    if (isSuffix(cleanWord)) {
+    if (looksLikeSuffix(cleanWord)) {
       spaceSuffixes.unshift(lastWord);
       spaceParts.pop();
     } else {
@@ -117,6 +120,11 @@ function extractSuffixes(text: string, result: ParsedName): string {
 function extractPrefixes(parts: string[], result: ParsedName): string[] {
   const prefixesFound: string[] = [];
 
+  const looksLikePrefix = (value: string): boolean => {
+    const tokens = buildAffixTokens(value, 'prefix');
+    return !!tokens && tokens.length > 0 && tokens.every(t => t.type !== 'other');
+  };
+
   while (parts.length > 1) {
     let matchFound = false;
 
@@ -125,7 +133,7 @@ function extractPrefixes(parts: string[], result: ParsedName): string[] {
     // We must leave at least one part for the actual name (parts.length - 1)
     for (let len = Math.min(parts.length - 1, 5); len >= 1; len--) {
       const candidate = parts.slice(0, len).join(' ');
-      if (isPrefix(candidate)) {
+      if (looksLikePrefix(candidate)) {
         prefixesFound.push(candidate);
         parts.splice(0, len);
         matchFound = true;
