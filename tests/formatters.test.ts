@@ -17,6 +17,18 @@ describe('formatName (single)', () => {
     );
   });
 
+  it('renders suffix:auto including unknown post-nominals after trailing comma', () => {
+    expect(formatName('John Smith, PMP')).toBe(
+      `John${NBSP}Smith,${NBSP}PMP`
+    );
+  });
+
+  it('renders suffix:auto including recognized credentials (e.g., Esq.)', () => {
+    expect(formatName('John Smith Jr., Esq.')).toBe(
+      `John${NBSP}Smith,${NBSP}Jr.,${NBSP}Esq.`
+    );
+  });
+
   it('renders informal (given + last, no suffix)', () => {
     expect(formatName('Dr. Bob William Pritchett Jr.', { preset: 'informal' })).toBe(
       `Bob${NBSP}Pritchett`

@@ -938,15 +938,29 @@ function extractNickname(text, result) {
 function extractSuffixes(text, result) {
   let workingText = text;
   const suffixesFound = [];
-  const looksLikeSuffix = (value) => {
+  const looksLikeKnownOrHeuristicSuffix = (value) => {
     const tokens = buildAffixTokens(value, "suffix");
-    return !!tokens && tokens.length > 0 && tokens.every((t) => t.type !== "other");
+    return !!tokens && tokens.length > 0 && tokens.some((t) => t.type !== "other");
+  };
+  const looksLikeUnknownPostNominalChunk = (value) => {
+    const v = value.trim().replace(/^[,;:\s]+/, "").replace(/[,;:\s]+$/, "");
+    if (!v) return false;
+    if (v.length > 18) return false;
+    if (/\d/.test(v)) return false;
+    if (/[^\p{L}.\-\s]/u.test(v)) return false;
+    if (!/[.]/.test(v) && !/[A-Z]/.test(v)) return false;
+    const lettersOnly = v.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[.\-\s]/g, "");
+    if (!/^[A-Za-z]+$/.test(lettersOnly)) return false;
+    if (lettersOnly.length < 2 || lettersOnly.length > 10) return false;
+    const upperCount = (lettersOnly.match(/[A-Z]/g) ?? []).length;
+    if (!/[.]/.test(v) && upperCount / lettersOnly.length < 0.7) return false;
+    return true;
   };
   const parts = workingText.split(",");
   while (parts.length > 1) {
     const lastPart = parts[parts.length - 1].trim();
     const firstWordOfLast = lastPart.split(/\s+/)[0];
-    if (looksLikeSuffix(firstWordOfLast) || looksLikeSuffix(lastPart) || /queen|king|consort/i.test(lastPart)) {
+    if (looksLikeKnownOrHeuristicSuffix(firstWordOfLast) || looksLikeKnownOrHeuristicSuffix(lastPart) || looksLikeUnknownPostNominalChunk(lastPart) || /queen|king|consort/i.test(lastPart)) {
       suffixesFound.unshift(lastPart);
       parts.pop();
     } else {
@@ -959,7 +973,7 @@ function extractSuffixes(text, result) {
   while (spaceParts.length > 1) {
     const lastWord = spaceParts[spaceParts.length - 1];
     const cleanWord = lastWord.replace(/[,]$/, "");
-    if (looksLikeSuffix(cleanWord)) {
+    if (looksLikeKnownOrHeuristicSuffix(cleanWord)) {
       spaceSuffixes.unshift(lastWord);
       spaceParts.pop();
     } else {
@@ -1176,24 +1190,6 @@ function toInitial(word) {
   if (!w) return void 0;
   return w.charAt(0).toUpperCase() + ".";
 }
-function isIdentitySuffixToken(token) {
-  const t = token.trim().replace(/[.,]/g, "");
-  if (!t) return false;
-  if (/^(jr|sr)$/i.test(t)) return true;
-  if (/^(ii|iii|iv|v|vi|vii|viii|ix|x)$/i.test(t)) return true;
-  return false;
-}
-function extractIdentitySuffix(suffix) {
-  const rawTokens = suffix.split(",").map((s) => s.trim()).filter(Boolean);
-  const identityParts = [];
-  for (const chunk of rawTokens) {
-    const firstWord = chunk.split(/\s+/)[0] ?? "";
-    if (isIdentitySuffixToken(firstWord)) {
-      identityParts.push(chunk);
-    }
-  }
-  return identityParts.length > 0 ? identityParts.join(", ") : void 0;
-}
 function resolveGiven(parsed, prefer) {
   const first = parsed.first ? normalizeTrim(parsed.first) : void 0;
   const nickname = parsed.nickname ? normalizeTrim(parsed.nickname) : void 0;
@@ -1223,12 +1219,9 @@ function resolveSuffix(parsed, suffixMode, o) {
     return renderAffixTokens(parsed.suffixTokens, "suffix", o) ?? suffix;
   }
   if (parsed.suffixTokens && parsed.suffixTokens.length > 0) {
-    const identityTokens = parsed.suffixTokens.filter((t) => t.type === "generational" || t.type === "dynasticNumber");
-    const renderedIdentity = renderAffixTokens(identityTokens, "suffix", o);
-    if (renderedIdentity) return renderedIdentity;
+    return renderAffixTokens(parsed.suffixTokens, "suffix", o) ?? suffix;
   }
-  if (!suffix) return void 0;
-  return extractIdentitySuffix(suffix);
+  return suffix;
 }
 function applyPunctuation(value, mode) {
   if (mode === "strip") return value.replace(/\./g, "");
@@ -1245,14 +1238,15 @@ function applyCapitalization(value, mode) {
 }
 function renderAffixTokens(tokens, ctx, o) {
   if (!tokens || tokens.length === 0) return void 0;
+  const t = getSpaceTokens(o.output);
   const form = ctx === "prefix" ? o.prefixForm : o.suffixForm;
-  const rendered = tokens.map((t) => {
+  const rendered = tokens.map((t2) => {
     if (o.capitalization === "preserve" || o.punctuation === "preserve" || o.apostrophes === "preserve") {
-      return String(t.value ?? "").trim();
+      return String(t2.value ?? "").trim();
     }
-    let base = String(t.value ?? "").trim();
+    let base = String(t2.value ?? "").trim();
     if (form !== "asInput") {
-      const canonical = form === "long" ? t.canonicalLong : t.canonicalShort;
+      const canonical = form === "long" ? t2.canonicalLong : t2.canonicalShort;
       if (canonical) base = canonical;
     }
     base = applyApostrophes(base, o.apostrophes);
@@ -1262,7 +1256,8 @@ function renderAffixTokens(tokens, ctx, o) {
   }).filter((s) => s.length > 0);
   if (rendered.length === 0) return void 0;
   if (ctx === "suffix") {
-    return rendered.join(", ");
+    const commaSep = "," + boundarySpace("commaSpace", o, t);
+    return rendered.join(commaSep);
   }
   return rendered.join(" ");
 }

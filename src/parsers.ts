@@ -68,9 +68,40 @@ function extractSuffixes(text: string, result: ParsedName): string {
   let workingText = text;
   const suffixesFound: string[] = [];
 
-  const looksLikeSuffix = (value: string): boolean => {
+  const looksLikeKnownOrHeuristicSuffix = (value: string): boolean => {
     const tokens = buildAffixTokens(value, 'suffix');
-    return !!tokens && tokens.length > 0 && tokens.every(t => t.type !== 'other');
+    // For extraction, accept anything we can classify as a known/heuristic suffix.
+    // Unknown credentials are handled separately via comma-tail heuristic.
+    return !!tokens && tokens.length > 0 && tokens.some(t => t.type !== 'other');
+  };
+
+  const looksLikeUnknownPostNominalChunk = (value: string): boolean => {
+    // Heuristic (comma-tail only): tolerate unknown degrees/certs without incorrectly swallowing locations.
+    // We require:
+    // - short, mostly-uppercase alphabetic token(s)
+    // - optional periods/hyphens/spaces
+    // - no digits
+    const v = value.trim().replace(/^[,;:\s]+/, '').replace(/[,;:\s]+$/, '');
+    if (!v) return false;
+    if (v.length > 18) return false;
+    if (/\d/.test(v)) return false;
+    // allow only letters (unicode), periods, hyphens, spaces
+    if (/[^\p{L}.\-\s]/u.test(v)) return false;
+    // must have either explicit abbreviation punctuation or uppercase signal
+    if (!/[.]/.test(v) && !/[A-Z]/.test(v)) return false;
+
+    const lettersOnly = v
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[.\-\s]/g, '');
+    if (!/^[A-Za-z]+$/.test(lettersOnly)) return false;
+    if (lettersOnly.length < 2 || lettersOnly.length > 10) return false;
+
+    const upperCount = (lettersOnly.match(/[A-Z]/g) ?? []).length;
+    // if no periods, require mostly uppercase (avoid "London")
+    if (!/[.]/.test(v) && upperCount / lettersOnly.length < 0.7) return false;
+
+    return true;
   };
 
   // First, identify all comma-separated parts from the end that are suffixes
@@ -79,7 +110,12 @@ function extractSuffixes(text: string, result: ParsedName): string {
     const lastPart = parts[parts.length - 1].trim();
     const firstWordOfLast = lastPart.split(/\s+/)[0];
 
-    if (looksLikeSuffix(firstWordOfLast) || looksLikeSuffix(lastPart) || /queen|king|consort/i.test(lastPart)) {
+    if (
+      looksLikeKnownOrHeuristicSuffix(firstWordOfLast) ||
+      looksLikeKnownOrHeuristicSuffix(lastPart) ||
+      looksLikeUnknownPostNominalChunk(lastPart) ||
+      /queen|king|consort/i.test(lastPart)
+    ) {
       suffixesFound.unshift(lastPart);
       parts.pop();
     } else {
@@ -96,7 +132,7 @@ function extractSuffixes(text: string, result: ParsedName): string {
     const lastWord = spaceParts[spaceParts.length - 1];
     // Remove trailing punctuation for suffix check
     const cleanWord = lastWord.replace(/[,]$/, '');
-    if (looksLikeSuffix(cleanWord)) {
+    if (looksLikeKnownOrHeuristicSuffix(cleanWord)) {
       spaceSuffixes.unshift(lastWord);
       spaceParts.pop();
     } else {

@@ -1,5 +1,4 @@
 import { parseName } from './parsers';
-import { extractIdentitySuffixFromTokens } from './affixes';
 import type { NameFormatOptions, NamePreset, ParsedName } from './types';
 
 type ResolvedOptions = Required<
@@ -191,14 +190,11 @@ function resolveSuffix(parsed: ParsedName, suffixMode: ResolvedOptions['suffix']
     return renderAffixTokens(parsed.suffixTokens, 'suffix', o) ?? suffix;
   }
 
-  // auto: include identity-like only
+  // auto: preserve full suffix tail (credentials/degrees included), while still allowing canonical rendering.
   if (parsed.suffixTokens && parsed.suffixTokens.length > 0) {
-    const identityTokens = parsed.suffixTokens.filter(t => t.type === 'generational' || t.type === 'dynasticNumber');
-    const renderedIdentity = renderAffixTokens(identityTokens, 'suffix', o);
-    if (renderedIdentity) return renderedIdentity;
+    return renderAffixTokens(parsed.suffixTokens, 'suffix', o) ?? suffix;
   }
-  if (!suffix) return undefined;
-  return extractIdentitySuffix(suffix);
+  return suffix;
 }
 
 function applyPunctuation(value: string, mode: ResolvedOptions['punctuation']): string {
@@ -223,6 +219,7 @@ function renderAffixTokens(tokens: ParsedName['suffixTokens'], ctx: 'suffix', o:
 function renderAffixTokens(tokens: any, ctx: 'prefix' | 'suffix', o: ResolvedOptions): string | undefined {
   if (!tokens || tokens.length === 0) return undefined;
 
+  const t = getSpaceTokens(o.output);
   const form = ctx === 'prefix' ? o.prefixForm : o.suffixForm;
 
   const rendered = tokens.map((t: any) => {
@@ -245,7 +242,8 @@ function renderAffixTokens(tokens: any, ctx: 'prefix' | 'suffix', o: ResolvedOpt
 
   if (rendered.length === 0) return undefined;
   if (ctx === 'suffix') {
-    return rendered.join(', ');
+    const commaSep = ',' + boundarySpace('commaSpace', o, t);
+    return rendered.join(commaSep);
   }
   return rendered.join(' ');
 }
