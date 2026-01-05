@@ -100,8 +100,14 @@ function splitRecipients(input: string): string[] {
 }
 
 /**
+ * Common suffix patterns that appear after comma in reversed names
+ */
+const SUFFIX_PATTERN = /^(Jr\.?|Sr\.?|II|III|IV|V|VI|VII|VIII|Esq\.?|Ph\.?D\.?|M\.?D\.?|D\.?D\.?S\.?|D\.?O\.?|R\.?N\.?|CPA|MBA|JD|LLD|DDS|DO|RN)$/i;
+
+/**
  * Check if a comma is part of a reversed name (not a list separator)
  * "Smith, John" -> true (reversed name, don't split)
+ * "Smith, John, Jr." -> true at both commas (reversed name with suffix)
  * "John Smith, Jane Doe" -> false at the comma (list separator)
  */
 function isReversedNameComma(before: string, after: string): boolean {
@@ -111,35 +117,44 @@ function isReversedNameComma(before: string, after: string): boolean {
   // If before is empty, it's not a reversed name
   if (!beforeTrimmed) return false;
 
-  // If after starts with what looks like a given name (capitalized word)
-  // and before looks like a surname (single capitalized word or particle+name)
-  // then this might be a reversed name
-
-  // Count tokens before comma
-  const beforeTokens = beforeTrimmed.split(/\s+/).filter(Boolean);
-  const afterTokens = afterTrimmed.split(/[\s,;]+/).filter(Boolean);
-
-  // Typical reversed name: "Smith, John" (1-2 tokens before, name after)
-  // Not reversed: "John Smith, Jane Doe" (2+ tokens before, name after)
-
   // If there's an email in the after part, it's probably a new recipient
   if (hasEmail(afterTrimmed.split(/[,;]/)[0])) {
     return false;
   }
 
-  // If before has 1-2 tokens and after starts with a name-like word, assume reversed
-  if (beforeTokens.length <= 2) {
-    const firstAfter = afterTokens[0];
-    if (firstAfter && /^[A-Z][a-z]+$/.test(firstAfter)) {
-      // Could be reversed name
-      // But check if there's another comma soon (which would indicate a list)
+  // Get the first word after the comma
+  const afterTokens = afterTrimmed.split(/[\s,;]+/).filter(Boolean);
+  const firstAfter = afterTokens[0];
+  if (!firstAfter) return false;
+
+  // Check if after is a suffix (Jr., Sr., III, etc.)
+  // This handles "Smith, John, Jr." - the comma before Jr.
+  if (SUFFIX_PATTERN.test(firstAfter)) {
+    return true;
+  }
+
+  // Count tokens before comma (excluding commas from count)
+  const beforeTokens = beforeTrimmed.split(/[\s,]+/).filter(Boolean);
+
+  // If before has 1-3 tokens (could be "Smith" or "Smith, John" or "van der Berg, Jan")
+  // and after starts with a name-like word, assume reversed
+  if (beforeTokens.length <= 3) {
+    // Check if after looks like a given name or suffix
+    if (/^[A-Z][a-z]+\.?$/.test(firstAfter)) {
+      // Could be reversed name - check for subsequent commas
       const commaIdx = afterTrimmed.indexOf(',');
       if (commaIdx > 0 && commaIdx < 30) {
-        // There's another comma nearby - check if it's a suffix
-        const betweenCommas = afterTrimmed.slice(0, commaIdx).trim();
-        const suffixPattern = /^[A-Z][a-z]+(\s+[A-Z]\.?)?$/; // "John" or "John Q."
-        if (suffixPattern.test(betweenCommas)) {
+        // There's another comma nearby - check if what follows is a suffix
+        const afterComma = afterTrimmed.slice(commaIdx + 1).trim();
+        const nextWord = afterComma.split(/[\s,;]+/)[0];
+        if (nextWord && SUFFIX_PATTERN.test(nextWord)) {
           // Looks like "Smith, John, Jr." pattern
+          return true;
+        }
+        // Check if between commas looks like a name
+        const betweenCommas = afterTrimmed.slice(0, commaIdx).trim();
+        const namePattern = /^[A-Z][a-z]+(\s+[A-Z]\.?)?$/; // "John" or "John Q."
+        if (namePattern.test(betweenCommas)) {
           return true;
         }
       }

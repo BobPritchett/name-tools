@@ -2194,24 +2194,35 @@ function splitRecipients(input) {
     return r.replace(/^(To|Cc|Bcc|From):\s*/i, "").trim();
   }).filter(Boolean);
 }
+var SUFFIX_PATTERN = /^(Jr\.?|Sr\.?|II|III|IV|V|VI|VII|VIII|Esq\.?|Ph\.?D\.?|M\.?D\.?|D\.?D\.?S\.?|D\.?O\.?|R\.?N\.?|CPA|MBA|JD|LLD|DDS|DO|RN)$/i;
 function isReversedNameComma(before, after) {
   const beforeTrimmed = before.trim();
   const afterTrimmed = after.trim();
   if (!beforeTrimmed)
     return false;
-  const beforeTokens = beforeTrimmed.split(/\s+/).filter(Boolean);
-  const afterTokens = afterTrimmed.split(/[\s,;]+/).filter(Boolean);
   if (hasEmail(afterTrimmed.split(/[,;]/)[0])) {
     return false;
   }
-  if (beforeTokens.length <= 2) {
-    const firstAfter = afterTokens[0];
-    if (firstAfter && /^[A-Z][a-z]+$/.test(firstAfter)) {
+  const afterTokens = afterTrimmed.split(/[\s,;]+/).filter(Boolean);
+  const firstAfter = afterTokens[0];
+  if (!firstAfter)
+    return false;
+  if (SUFFIX_PATTERN.test(firstAfter)) {
+    return true;
+  }
+  const beforeTokens = beforeTrimmed.split(/[\s,]+/).filter(Boolean);
+  if (beforeTokens.length <= 3) {
+    if (/^[A-Z][a-z]+\.?$/.test(firstAfter)) {
       const commaIdx = afterTrimmed.indexOf(",");
       if (commaIdx > 0 && commaIdx < 30) {
+        const afterComma = afterTrimmed.slice(commaIdx + 1).trim();
+        const nextWord = afterComma.split(/[\s,;]+/)[0];
+        if (nextWord && SUFFIX_PATTERN.test(nextWord)) {
+          return true;
+        }
         const betweenCommas = afterTrimmed.slice(0, commaIdx).trim();
-        const suffixPattern = /^[A-Z][a-z]+(\s+[A-Z]\.?)?$/;
-        if (suffixPattern.test(betweenCommas)) {
+        const namePattern = /^[A-Z][a-z]+(\s+[A-Z]\.?)?$/;
+        if (namePattern.test(betweenCommas)) {
           return true;
         }
       }

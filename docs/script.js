@@ -1,5 +1,6 @@
 import {
     parseName,
+    parseNameList,
     parsePersonName,
     formatName,
     isPerson,
@@ -24,9 +25,10 @@ function updateResults() {
         return;
     }
 
-    const lines = inputContent.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    // Use parseNameList to handle newlines, semicolons, and emails
+    const recipients = parseNameList(inputContent);
 
-    if (lines.length === 0) {
+    if (recipients.length === 0) {
         resultsDiv.innerHTML = '<p style="color: #636c76; font-size: 14px;">Enter a name to see results...</p>';
         demoActions.style.display = 'none';
         return;
@@ -36,8 +38,9 @@ function updateResults() {
         let html = '';
 
         // Single input - show detailed entity classification
-        if (lines.length === 1) {
-            const entity = parseName(lines[0]);
+        if (recipients.length === 1) {
+            const recipient = recipients[0];
+            const entity = recipient.display || parseName(recipient.raw);
 
             // Entity Classification section
             html += `
@@ -47,13 +50,14 @@ function updateResults() {
                         <span class="entity-kind entity-kind-${entity.kind}">${entity.kind}</span>
                         <span class="entity-confidence">Confidence: ${(entity.meta.confidence * 100).toFixed(0)}%</span>
                     </div>
+                    ${recipient.email ? `<div class="email-info"><strong>Email:</strong> <code>${escapeHtml(recipient.email)}</code></div>` : ''}
                     ${renderEntityDetails(entity)}
                 </div>
             `;
 
             // Only show parsed components table for person entities
             if (isPerson(entity)) {
-                const parsed = parsePersonName(lines[0]);
+                const parsed = parsePersonName(recipient.raw);
                 html += `
                     <div class="result-group">
                         <h3>Parsed Components</h3>
@@ -106,40 +110,40 @@ function updateResults() {
 
         } else {
             // Multiple inputs - show classification for each and list formatting
+            const hasAnyEmail = recipients.some(r => r.email);
+
             html += `
                 <div class="result-group">
-                    <h3>Entity Classifications</h3>
+                    <h3>Parsed Recipients (${recipients.length})</h3>
                     <table class="parsed-table entity-table">
                         <thead>
                             <tr>
                                 <th>Input</th>
                                 <th>Kind</th>
+                                ${hasAnyEmail ? '<th>Email</th>' : ''}
+                                <th>Conf.</th>
                                 <th>Display</th>
                                 <th>Formal Full</th>
-                                <th>Formal Short</th>
                                 <th>Alphabetical</th>
                             </tr>
                         </thead>
                         <tbody>
             `;
 
-            const entities = lines.map(line => parseName(line));
-
-            entities.forEach((entity, index) => {
-                const rowId = `entity-details-${index}`;
+            const entities = [];
+            recipients.forEach((recipient) => {
+                const entity = recipient.display || parseName(recipient.raw);
+                entities.push(entity);
+                const tooltipText = getEntityTooltip(entity);
                 html += `
-                    <tr class="entity-row" onclick="toggleEntityDetails('${rowId}')">
-                        <td class="test-input">${escapeHtml(lines[index])}</td>
+                    <tr class="entity-row" title="${escapeHtml(tooltipText)}">
+                        <td class="test-input">${escapeHtml(recipient.raw)}</td>
                         <td><span class="entity-kind entity-kind-${entity.kind}" style="padding: 2px 8px; font-size: 11px;">${entity.kind}</span></td>
+                        ${hasAnyEmail ? `<td class="email-cell">${recipient.email ? escapeHtml(recipient.email) : '-'}</td>` : ''}
+                        <td class="confidence-cell">${(entity.meta.confidence * 100).toFixed(0)}%</td>
                         <td class="format-cell">${escapeHtml(formatName(entity))}</td>
                         <td class="format-cell">${escapeHtml(formatName(entity, { preset: 'formalFull' }))}</td>
-                        <td class="format-cell">${escapeHtml(formatName(entity, { preset: 'formalShort' }))}</td>
                         <td class="format-cell">${escapeHtml(formatName(entity, { preset: 'alphabetical' }))}</td>
-                    </tr>
-                    <tr id="${rowId}" class="entity-details-row">
-                        <td colspan="6">
-                            ${renderCompactEntityDetails(entity)}
-                        </td>
                     </tr>
                 `;
             });
@@ -151,7 +155,7 @@ function updateResults() {
             `;
 
             // Show list/couple formatting
-            if (lines.length === 2) {
+            if (recipients.length === 2) {
                 html += `
                     <div class="result-group">
                         <h3>Combined Formats</h3>
@@ -179,11 +183,7 @@ function updateResults() {
         // Main copy button
         const copyJsonBtn = document.getElementById('copyJsonBtn');
         copyJsonBtn.onclick = () => {
-            const entities = lines.map(line => ({
-                input: line,
-                entity: parseName(line)
-            }));
-            const json = JSON.stringify(entities, null, 2);
+            const json = JSON.stringify(recipients, null, 2);
             copyToClipboard(json, copyJsonBtn);
         };
 
@@ -277,29 +277,31 @@ function renderEntityDetails(entity) {
     return html;
 }
 
-function renderCompactEntityDetails(entity) {
+function getEntityTooltip(entity) {
     let parts = [];
 
+    // Component details section
+    parts.push('── Components ──');
     if (isPerson(entity)) {
-        if (entity.honorific) parts.push(`<span class="detail-label">Honorific:</span> ${escapeHtml(entity.honorific)}`);
-        if (entity.given) parts.push(`<span class="detail-label">Given:</span> ${escapeHtml(entity.given)}`);
-        if (entity.middle) parts.push(`<span class="detail-label">Middle:</span> ${escapeHtml(entity.middle)}`);
-        if (entity.family) parts.push(`<span class="detail-label">Family:</span> ${escapeHtml(entity.family)}`);
-        if (entity.suffix) parts.push(`<span class="detail-label">Suffix:</span> ${escapeHtml(entity.suffix)}`);
-        if (entity.nickname) parts.push(`<span class="detail-label">Nickname:</span> ${escapeHtml(entity.nickname)}`);
-        if (entity.reversed) parts.push(`<span class="detail-label">Reversed:</span> yes`);
+        if (entity.honorific) parts.push(`Honorific: ${entity.honorific}`);
+        if (entity.given) parts.push(`Given: ${entity.given}`);
+        if (entity.middle) parts.push(`Middle: ${entity.middle}`);
+        if (entity.family) parts.push(`Family: ${entity.family}`);
+        if (entity.suffix) parts.push(`Suffix: ${entity.suffix}`);
+        if (entity.nickname) parts.push(`Nickname: ${entity.nickname}`);
+        if (entity.reversed) parts.push(`Reversed: yes`);
     } else if (isOrganization(entity)) {
-        parts.push(`<span class="detail-label">Base Name:</span> ${escapeHtml(entity.baseName)}`);
-        if (entity.legalForm) parts.push(`<span class="detail-label">Legal Form:</span> ${escapeHtml(entity.legalForm)}`);
-        if (entity.legalSuffixRaw) parts.push(`<span class="detail-label">Legal Suffix:</span> ${escapeHtml(entity.legalSuffixRaw)}`);
+        parts.push(`Base Name: ${entity.baseName}`);
+        if (entity.legalForm) parts.push(`Legal Form: ${entity.legalForm}`);
+        if (entity.legalSuffixRaw) parts.push(`Legal Suffix: ${entity.legalSuffixRaw}`);
     } else if (isFamily(entity)) {
-        parts.push(`<span class="detail-label">Family Name:</span> ${escapeHtml(entity.familyName)}`);
-        if (entity.article) parts.push(`<span class="detail-label">Article:</span> ${escapeHtml(entity.article)}`);
-        if (entity.familyWord) parts.push(`<span class="detail-label">Family Word:</span> ${escapeHtml(entity.familyWord)}`);
-        parts.push(`<span class="detail-label">Style:</span> ${escapeHtml(entity.style)}`);
+        parts.push(`Family Name: ${entity.familyName}`);
+        if (entity.article) parts.push(`Article: ${entity.article}`);
+        if (entity.familyWord) parts.push(`Family Word: ${entity.familyWord}`);
+        parts.push(`Style: ${entity.style}`);
     } else if (isCompound(entity)) {
-        parts.push(`<span class="detail-label">Connector:</span> ${escapeHtml(entity.connector)}`);
-        if (entity.sharedFamily) parts.push(`<span class="detail-label">Shared Family:</span> ${escapeHtml(entity.sharedFamily)}`);
+        parts.push(`Connector: ${entity.connector}`);
+        if (entity.sharedFamily) parts.push(`Shared Family: ${entity.sharedFamily}`);
         const memberNames = entity.members.map(m => {
             if (m.kind === 'person') {
                 return `${m.given || ''}${m.family ? ' ' + m.family : ''}`.trim();
@@ -307,28 +309,29 @@ function renderCompactEntityDetails(entity) {
             return m.text || '';
         }).filter(Boolean);
         if (memberNames.length > 0) {
-            parts.push(`<span class="detail-label">Members:</span> ${memberNames.map(n => escapeHtml(n)).join(', ')}`);
+            parts.push(`Members: ${memberNames.join(', ')}`);
         }
     } else {
-        parts.push(`<span class="detail-label">Text:</span> ${escapeHtml(entity.text || entity.meta?.raw || '')}`);
+        parts.push(`Text: ${entity.text || entity.meta?.raw || ''}`);
     }
 
-    // Add confidence and reasons
-    parts.push(`<span class="detail-label">Confidence:</span> ${(entity.meta.confidence * 100).toFixed(0)}%`);
+    // Formatted outputs section
+    parts.push('');
+    parts.push('── Formats ──');
+    parts.push(`Display: ${formatName(entity)}`);
+    parts.push(`Formal Full: ${formatName(entity, { preset: 'formalFull' })}`);
+    parts.push(`Formal Short: ${formatName(entity, { preset: 'formalShort' })}`);
+    parts.push(`Alphabetical: ${formatName(entity, { preset: 'alphabetical' })}`);
+    parts.push(`Informal: ${formatName(entity, { preset: 'informal' })}`);
+
+    // Add reasons
     if (entity.meta.reasons && entity.meta.reasons.length > 0) {
-        parts.push(`<span class="detail-label">Reasons:</span> ${entity.meta.reasons.map(r => `<code>${escapeHtml(r)}</code>`).join(' ')}`);
+        parts.push('');
+        parts.push(`Reasons: ${entity.meta.reasons.join(', ')}`);
     }
 
-    return `<div class="compact-details">${parts.join('<span class="detail-sep">|</span>')}</div>`;
+    return parts.join('\n');
 }
-
-// Toggle visibility of entity details row
-window.toggleEntityDetails = function(rowId) {
-    const row = document.getElementById(rowId);
-    if (row) {
-        row.classList.toggle('expanded');
-    }
-};
 
 function renderTokenList(tokens) {
     if (!tokens || tokens.length === 0) return '-';

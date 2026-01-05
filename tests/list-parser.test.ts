@@ -49,6 +49,19 @@ describe('parseNameList', () => {
       expect(result[0].raw).toBe('Smith, John');
       expect(result[1].raw).toBe('Doe, Jane');
     });
+
+    it('should not split reversed name with suffix on comma', () => {
+      const result = parseNameList('Smith, John, Jr.');
+      expect(result).toHaveLength(1);
+      expect(result[0].raw).toBe('Smith, John, Jr.');
+    });
+
+    it('should handle reversed name with suffix followed by another name', () => {
+      const result = parseNameList('Smith, John, Jr.; Doe, Jane');
+      expect(result).toHaveLength(2);
+      expect(result[0].raw).toBe('Smith, John, Jr.');
+      expect(result[1].raw).toBe('Doe, Jane');
+    });
   });
 
   describe('email extraction', () => {
