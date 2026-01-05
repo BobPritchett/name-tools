@@ -89,6 +89,15 @@ export const PREFIX_AFFIX_ENTRIES: readonly AffixEntry[] = [
   { id: 'mx', type: 'honorific', ctx: 'prefix', short: 'Mx', variants: ['mx', 'mx.'] },
   { id: 'madam', type: 'honorific', ctx: 'prefix', short: 'Madam', variants: ['madam'] },
 
+  // ---------------------------------------------------------------------------
+  // Plural honorifics (for couples/groups)
+  // ---------------------------------------------------------------------------
+  { id: 'messrs', type: 'honorific', ctx: 'prefix', short: 'Messrs.', long: 'Messieurs', variants: ['messrs', 'messrs.', 'messieurs'] },
+  { id: 'mmes', type: 'honorific', ctx: 'prefix', short: 'Mmes.', long: 'Mesdames', variants: ['mmes', 'mmes.', 'mesdames'] },
+  { id: 'drs', type: 'honorific', ctx: 'prefix', short: 'Drs.', long: 'Doctors', variants: ['drs', 'drs.', 'doctors'] },
+  { id: 'profs', type: 'honorific', ctx: 'prefix', short: 'Profs.', long: 'Professors', variants: ['profs', 'profs.', 'professors'] },
+  { id: 'revs', type: 'honorific', ctx: 'prefix', short: 'Revs.', long: 'Reverends', variants: ['revs', 'revs.', 'reverends'] },
+
   { id: 'dr', type: 'honorific', ctx: 'prefix', short: 'Dr.', long: 'Doctor', variants: ['dr', 'dr.'] },
   { id: 'prof', type: 'honorific', ctx: 'prefix', short: 'Prof.', long: 'Professor', variants: ['prof', 'prof.', 'professor'] },
 
@@ -342,8 +351,20 @@ export const PREFIX_AFFIX_ENTRIES: readonly AffixEntry[] = [
   { id: 'the_learned_judge', type: 'judicial', ctx: 'prefix', short: 'The Learned Judge', variants: ['the learned judge'] },
 
   // ---------------------------------------------------------------------------
-  // Multi-person combined prefixes (UK)
+  // Multi-person combined prefixes (common couple/pair honorifics)
   // ---------------------------------------------------------------------------
+  // Common paired honorifics (Mr. & Mrs., etc.)
+  { id: 'mr_and_mrs', type: 'honorific', ctx: 'prefix', short: 'Mr. & Mrs.', variants: ['mr & mrs', 'mr and mrs', 'mr. & mrs.', 'mr. and mrs.', 'mr.&mrs.', 'mr&mrs'] },
+  { id: 'mr_and_ms', type: 'honorific', ctx: 'prefix', short: 'Mr. & Ms.', variants: ['mr & ms', 'mr and ms', 'mr. & ms.', 'mr. and ms.'] },
+  { id: 'mr_and_mr', type: 'honorific', ctx: 'prefix', short: 'Mr. & Mr.', variants: ['mr & mr', 'mr and mr', 'mr. & mr.', 'mr. and mr.'] },
+  { id: 'mrs_and_mrs', type: 'honorific', ctx: 'prefix', short: 'Mrs. & Mrs.', variants: ['mrs & mrs', 'mrs and mrs', 'mrs. & mrs.', 'mrs. and mrs.'] },
+  { id: 'ms_and_ms', type: 'honorific', ctx: 'prefix', short: 'Ms. & Ms.', variants: ['ms & ms', 'ms and ms', 'ms. & ms.', 'ms. and ms.'] },
+  { id: 'dr_and_mrs', type: 'honorific', ctx: 'prefix', short: 'Dr. & Mrs.', variants: ['dr & mrs', 'dr and mrs', 'dr. & mrs.', 'dr. and mrs.'] },
+  { id: 'dr_and_mr', type: 'honorific', ctx: 'prefix', short: 'Dr. & Mr.', variants: ['dr & mr', 'dr and mr', 'dr. & mr.', 'dr. and mr.'] },
+  { id: 'dr_and_ms', type: 'honorific', ctx: 'prefix', short: 'Dr. & Ms.', variants: ['dr & ms', 'dr and ms', 'dr. & ms.', 'dr. and ms.'] },
+  { id: 'dr_and_dr', type: 'honorific', ctx: 'prefix', short: 'Dr. & Dr.', variants: ['dr & dr', 'dr and dr', 'dr. & dr.', 'dr. and dr.'] },
+
+  // UK/formal paired prefixes
   { id: 'brig_and_mrs', type: 'style', ctx: 'prefix', short: 'Brig & Mrs', variants: ['brig & mrs', 'brig and mrs'] },
   { id: 'commander_and_mrs', type: 'style', ctx: 'prefix', short: 'Commander & Mrs', variants: ['commander & mrs', 'commander and mrs'] },
   { id: 'lord_and_lady', type: 'style', ctx: 'prefix', short: 'Lord & Lady', variants: ['lord & lady', 'lord and lady'] },
@@ -354,6 +375,10 @@ export const PREFIX_AFFIX_ENTRIES: readonly AffixEntry[] = [
   { id: 'prof_dr', type: 'style', ctx: 'prefix', short: 'Prof Dr', variants: ['prof dr'] },
   { id: 'rev_and_mrs', type: 'style', ctx: 'prefix', short: 'Rev & Mrs', variants: ['rev & mrs', 'rev and mrs'] },
   { id: 'sir_and_lady', type: 'style', ctx: 'prefix', short: 'Sir & Lady', variants: ['sir & lady', 'sir and lady'] },
+  { id: 'capt_and_mrs', type: 'style', ctx: 'prefix', short: 'Capt. & Mrs.', variants: ['capt & mrs', 'capt and mrs', 'capt. & mrs.', 'capt. and mrs.'] },
+  { id: 'col_and_mrs', type: 'style', ctx: 'prefix', short: 'Col. & Mrs.', variants: ['col & mrs', 'col and mrs', 'col. & mrs.', 'col. and mrs.'] },
+  { id: 'gen_and_mrs', type: 'style', ctx: 'prefix', short: 'Gen. & Mrs.', variants: ['gen & mrs', 'gen and mrs', 'gen. & mrs.', 'gen. and mrs.'] },
+  { id: 'maj_and_mrs', type: 'style', ctx: 'prefix', short: 'Maj. & Mrs.', variants: ['maj & mrs', 'maj and mrs', 'maj. & mrs.', 'maj. and mrs.'] },
 
   // ---------------------------------------------------------------------------
   // European Union — common civil honorifics (local-language)

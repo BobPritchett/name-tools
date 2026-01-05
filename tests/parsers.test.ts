@@ -186,27 +186,242 @@ describe('parseName (entity classification)', () => {
   });
 
   describe('compound detection', () => {
-    it('should detect compound names with &', () => {
-      const result = parseName('Bob & Mary Smith');
-      expect(result.kind).toBe('compound');
-      if (result.kind === 'compound') {
-        expect(result.connector).toBe('&');
-        expect(result.sharedFamily).toBe('Smith');
-        expect(result.members.length).toBe(2);
-      }
+    // ==========================================================================
+    // A1. Shared family at end (most common)
+    // ==========================================================================
+    describe('shared family patterns', () => {
+      it('should detect compound names with & and shared family', () => {
+        const result = parseName('Bob & Mary Smith');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.connector).toBe('&');
+          expect(result.sharedFamily).toBe('Smith');
+          expect(result.members.length).toBe(2);
+          expect(result.members[0].kind).toBe('person');
+          expect((result.members[0] as any).given).toBe('Bob');
+          expect((result.members[0] as any).family).toBe('Smith');
+          expect((result.members[1] as any).given).toBe('Mary');
+          expect((result.members[1] as any).family).toBe('Smith');
+        }
+      });
+
+      it('should detect compound names with "and" and shared family', () => {
+        const result = parseName('John and Jane Doe');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.connector).toBe('and');
+          expect(result.sharedFamily).toBe('Doe');
+        }
+      });
+
+      it('should detect compound names with + connector', () => {
+        const result = parseName('Alice + Bob Richardson');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.connector).toBe('+');
+          expect(result.sharedFamily).toBe('Richardson');
+        }
+      });
+
+      it('should handle honorific on first person only', () => {
+        const result = parseName('Mr. Bill & Mary Smith');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.sharedFamily).toBe('Smith');
+          expect((result.members[0] as any).honorific).toBe('Mr.');
+          expect((result.members[0] as any).given).toBe('Bill');
+          expect((result.members[1] as any).given).toBe('Mary');
+          // Mary should NOT inherit Mr. honorific
+          expect((result.members[1] as any).honorific).toBeUndefined();
+        }
+      });
+
+      it('should handle honorific on second person only', () => {
+        const result = parseName('Bill & Dr. Mary Smith');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.sharedFamily).toBe('Smith');
+          expect((result.members[0] as any).given).toBe('Bill');
+          expect((result.members[0] as any).honorific).toBeUndefined();
+          expect((result.members[1] as any).honorific).toBe('Dr.');
+          expect((result.members[1] as any).given).toBe('Mary');
+        }
+      });
+
+      it('should handle both honorifics explicit', () => {
+        const result = parseName('Mr. Bill & Mrs. Mary Smith');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.sharedFamily).toBe('Smith');
+          expect((result.members[0] as any).honorific).toBe('Mr.');
+          expect((result.members[1] as any).honorific).toBe('Mrs.');
+        }
+      });
     });
 
-    it('should detect compound names with "and"', () => {
-      const result = parseName('John and Jane Doe');
-      expect(result.kind).toBe('compound');
-      if (result.kind === 'compound') {
-        expect(result.connector).toBe('and');
-      }
+    // ==========================================================================
+    // Paired honorific patterns (Mr. & Mrs., Dr. and Mrs., etc.)
+    // ==========================================================================
+    describe('paired honorific patterns', () => {
+      it('should detect Mr. & Mrs. Smith', () => {
+        const result = parseName('Mr. & Mrs. Smith');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.sharedFamily).toBe('Smith');
+          expect(result.members.length).toBe(2);
+          expect((result.members[0] as any).honorific).toBe('Mr.');
+          expect((result.members[1] as any).honorific).toBe('Mrs.');
+          expect(result.meta.reasons).toContain('COMPOUND_PAIRED_HONORIFIC');
+        }
+      });
+
+      it('should detect Mr. and Mrs. Smith', () => {
+        const result = parseName('Mr. and Mrs. Smith');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.sharedFamily).toBe('Smith');
+        }
+      });
+
+      it('should detect Mr. & Mrs. Bill Smith (traditional format)', () => {
+        const result = parseName('Mr. & Mrs. Bill Smith');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.sharedFamily).toBe('Smith');
+          // Bill belongs to Mr., Mrs. given is unknown
+          expect((result.members[0] as any).given).toBe('Bill');
+          expect((result.members[0] as any).family).toBe('Smith');
+        }
+      });
+
+      it('should detect Dr. and Mrs. Smith', () => {
+        const result = parseName('Dr. and Mrs. Smith');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.sharedFamily).toBe('Smith');
+          expect((result.members[0] as any).honorific).toBe('Dr.');
+          expect((result.members[1] as any).honorific).toBe('Mrs.');
+        }
+      });
+
+      it('should detect Dr. & Mr. Smith (same-sex couple)', () => {
+        const result = parseName('Dr. & Mr. Smith');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.sharedFamily).toBe('Smith');
+          expect((result.members[0] as any).honorific).toBe('Dr.');
+          expect((result.members[1] as any).honorific).toBe('Mr.');
+        }
+      });
+
+      it('should handle compact format Mr.&Mrs.', () => {
+        const result = parseName('Mr.&Mrs. Johnson');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.sharedFamily).toBe('Johnson');
+        }
+      });
     });
 
-    it('should not classify org-like connectors as compound', () => {
-      const result = parseName('Research & Development LLC');
-      expect(result.kind).toBe('organization');
+    // ==========================================================================
+    // Plural honorific patterns (Drs., Messrs., etc.)
+    // ==========================================================================
+    describe('plural honorific patterns', () => {
+      it('should detect Drs. John and Jane Doe', () => {
+        const result = parseName('Drs. John and Jane Doe');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.sharedFamily).toBe('Doe');
+          expect((result.members[0] as any).honorific).toBe('Dr.');
+          expect((result.members[0] as any).given).toBe('John');
+          expect((result.members[1] as any).honorific).toBe('Dr.');
+          expect((result.members[1] as any).given).toBe('Jane');
+          expect(result.meta.reasons).toContain('COMPOUND_PLURAL_HONORIFIC');
+        }
+      });
+
+      it('should detect Doctors John & Jane Doe', () => {
+        const result = parseName('Doctors John & Jane Doe');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.sharedFamily).toBe('Doe');
+          expect((result.members[0] as any).honorific).toBe('Dr.');
+          expect((result.members[1] as any).honorific).toBe('Dr.');
+        }
+      });
+
+      it('should detect Messrs. John and Bill Smith', () => {
+        const result = parseName('Messrs. John and Bill Smith');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.sharedFamily).toBe('Smith');
+          expect((result.members[0] as any).honorific).toBe('Mr.');
+          expect((result.members[1] as any).honorific).toBe('Mr.');
+        }
+      });
+    });
+
+    // ==========================================================================
+    // Suffix handling (suffixes should NOT be inherited)
+    // ==========================================================================
+    describe('suffix handling', () => {
+      it('should not share suffix across members', () => {
+        const result = parseName('John Jr. & Jane Smith');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect((result.members[0] as any).suffix).toBe('Jr.');
+          // Jane should NOT inherit Jr.
+          expect((result.members[1] as any).suffix).toBeUndefined();
+        }
+      });
+
+      it('should handle suffix on second person only', () => {
+        const result = parseName('John & Jane Smith Jr.');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          // Jr. should attach to Jane, not be inherited by John
+          expect((result.members[0] as any).suffix).toBeUndefined();
+        }
+      });
+
+      it('should handle credentials correctly', () => {
+        const result = parseName('Dr. Bill Smith, MD & Mary Smith, RN');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.members.length).toBe(2);
+        }
+      });
+    });
+
+    // ==========================================================================
+    // Reversed format patterns
+    // ==========================================================================
+    describe('reversed format patterns', () => {
+      it('should detect Smith, Bill & Mary', () => {
+        const result = parseName('Smith, Bill & Mary');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.sharedFamily).toBe('Smith');
+        }
+      });
+    });
+
+    // ==========================================================================
+    // Edge cases and organization detection
+    // ==========================================================================
+    describe('edge cases', () => {
+      it('should not classify org-like connectors as compound', () => {
+        const result = parseName('Research & Development LLC');
+        expect(result.kind).toBe('organization');
+      });
+
+      it('should handle single initial as given name', () => {
+        const result = parseName('J. & Mary Smith');
+        expect(result.kind).toBe('compound');
+        if (result.kind === 'compound') {
+          expect(result.sharedFamily).toBe('Smith');
+        }
+      });
     });
   });
 

@@ -41,8 +41,13 @@ export function tokenize(text: string): string[] {
 
 /**
  * Check if a token looks like a capitalized name token
+ * Matches:
+ * - Full names: "John", "Mary", "O'Brien", "Smith-Jones"
+ * - Initials: "J", "J.", "M."
  */
 export function isNameLikeToken(token: string): boolean {
+  // Single letter initial (with optional period)
+  if (/^[A-Z]\.?$/.test(token)) return true;
   // Starts with uppercase, followed by lowercase (with optional hyphen/apostrophe)
   return /^[A-Z][a-z]+(?:['-][A-Z]?[a-z]+)*$/.test(token);
 }

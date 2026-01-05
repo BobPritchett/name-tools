@@ -6,7 +6,10 @@
       "Bash(cat:*)",
       "Bash(pnpm run build:all:*)",
       "Bash(pnpm test:run:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(wc:*)",
+      "Bash(node -e:*)",
+      "Bash(pnpm build:*)"
     ]
   }
 }

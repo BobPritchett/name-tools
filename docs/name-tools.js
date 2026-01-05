@@ -310,6 +310,14 @@ var PREFIX_AFFIX_ENTRIES = [
   { id: "miss", type: "honorific", ctx: "prefix", short: "Miss", variants: ["miss"] },
   { id: "mx", type: "honorific", ctx: "prefix", short: "Mx", variants: ["mx", "mx."] },
   { id: "madam", type: "honorific", ctx: "prefix", short: "Madam", variants: ["madam"] },
+  // ---------------------------------------------------------------------------
+  // Plural honorifics (for couples/groups)
+  // ---------------------------------------------------------------------------
+  { id: "messrs", type: "honorific", ctx: "prefix", short: "Messrs.", long: "Messieurs", variants: ["messrs", "messrs.", "messieurs"] },
+  { id: "mmes", type: "honorific", ctx: "prefix", short: "Mmes.", long: "Mesdames", variants: ["mmes", "mmes.", "mesdames"] },
+  { id: "drs", type: "honorific", ctx: "prefix", short: "Drs.", long: "Doctors", variants: ["drs", "drs.", "doctors"] },
+  { id: "profs", type: "honorific", ctx: "prefix", short: "Profs.", long: "Professors", variants: ["profs", "profs.", "professors"] },
+  { id: "revs", type: "honorific", ctx: "prefix", short: "Revs.", long: "Reverends", variants: ["revs", "revs.", "reverends"] },
   { id: "dr", type: "honorific", ctx: "prefix", short: "Dr.", long: "Doctor", variants: ["dr", "dr."] },
   { id: "prof", type: "honorific", ctx: "prefix", short: "Prof.", long: "Professor", variants: ["prof", "prof.", "professor"] },
   // Legal/professional (prefix usage varies; keep as tolerant input)
@@ -546,8 +554,19 @@ var PREFIX_AFFIX_ENTRIES = [
   { id: "lord_advocate", type: "judicial", ctx: "prefix", short: "Lord Advocate", variants: ["lord advocate"] },
   { id: "the_learned_judge", type: "judicial", ctx: "prefix", short: "The Learned Judge", variants: ["the learned judge"] },
   // ---------------------------------------------------------------------------
-  // Multi-person combined prefixes (UK)
+  // Multi-person combined prefixes (common couple/pair honorifics)
   // ---------------------------------------------------------------------------
+  // Common paired honorifics (Mr. & Mrs., etc.)
+  { id: "mr_and_mrs", type: "honorific", ctx: "prefix", short: "Mr. & Mrs.", variants: ["mr & mrs", "mr and mrs", "mr. & mrs.", "mr. and mrs.", "mr.&mrs.", "mr&mrs"] },
+  { id: "mr_and_ms", type: "honorific", ctx: "prefix", short: "Mr. & Ms.", variants: ["mr & ms", "mr and ms", "mr. & ms.", "mr. and ms."] },
+  { id: "mr_and_mr", type: "honorific", ctx: "prefix", short: "Mr. & Mr.", variants: ["mr & mr", "mr and mr", "mr. & mr.", "mr. and mr."] },
+  { id: "mrs_and_mrs", type: "honorific", ctx: "prefix", short: "Mrs. & Mrs.", variants: ["mrs & mrs", "mrs and mrs", "mrs. & mrs.", "mrs. and mrs."] },
+  { id: "ms_and_ms", type: "honorific", ctx: "prefix", short: "Ms. & Ms.", variants: ["ms & ms", "ms and ms", "ms. & ms.", "ms. and ms."] },
+  { id: "dr_and_mrs", type: "honorific", ctx: "prefix", short: "Dr. & Mrs.", variants: ["dr & mrs", "dr and mrs", "dr. & mrs.", "dr. and mrs."] },
+  { id: "dr_and_mr", type: "honorific", ctx: "prefix", short: "Dr. & Mr.", variants: ["dr & mr", "dr and mr", "dr. & mr.", "dr. and mr."] },
+  { id: "dr_and_ms", type: "honorific", ctx: "prefix", short: "Dr. & Ms.", variants: ["dr & ms", "dr and ms", "dr. & ms.", "dr. and ms."] },
+  { id: "dr_and_dr", type: "honorific", ctx: "prefix", short: "Dr. & Dr.", variants: ["dr & dr", "dr and dr", "dr. & dr.", "dr. and dr."] },
+  // UK/formal paired prefixes
   { id: "brig_and_mrs", type: "style", ctx: "prefix", short: "Brig & Mrs", variants: ["brig & mrs", "brig and mrs"] },
   { id: "commander_and_mrs", type: "style", ctx: "prefix", short: "Commander & Mrs", variants: ["commander & mrs", "commander and mrs"] },
   { id: "lord_and_lady", type: "style", ctx: "prefix", short: "Lord & Lady", variants: ["lord & lady", "lord and lady"] },
@@ -558,6 +577,10 @@ var PREFIX_AFFIX_ENTRIES = [
   { id: "prof_dr", type: "style", ctx: "prefix", short: "Prof Dr", variants: ["prof dr"] },
   { id: "rev_and_mrs", type: "style", ctx: "prefix", short: "Rev & Mrs", variants: ["rev & mrs", "rev and mrs"] },
   { id: "sir_and_lady", type: "style", ctx: "prefix", short: "Sir & Lady", variants: ["sir & lady", "sir and lady"] },
+  { id: "capt_and_mrs", type: "style", ctx: "prefix", short: "Capt. & Mrs.", variants: ["capt & mrs", "capt and mrs", "capt. & mrs.", "capt. and mrs."] },
+  { id: "col_and_mrs", type: "style", ctx: "prefix", short: "Col. & Mrs.", variants: ["col & mrs", "col and mrs", "col. & mrs.", "col. and mrs."] },
+  { id: "gen_and_mrs", type: "style", ctx: "prefix", short: "Gen. & Mrs.", variants: ["gen & mrs", "gen and mrs", "gen. & mrs.", "gen. and mrs."] },
+  { id: "maj_and_mrs", type: "style", ctx: "prefix", short: "Maj. & Mrs.", variants: ["maj & mrs", "maj and mrs", "maj. & mrs.", "maj. and mrs."] },
   // ---------------------------------------------------------------------------
   // European Union — common civil honorifics (local-language)
   // NOTE: canonical forms are local-language display forms. Matching folds diacritics.
@@ -983,6 +1006,8 @@ function tokenize(text) {
   return text.split(/\s+/).filter(Boolean);
 }
 function isNameLikeToken(token) {
+  if (/^[A-Z]\.?$/.test(token))
+    return true;
   return /^[A-Z][a-z]+(?:['-][A-Z]?[a-z]+)*$/.test(token);
 }
 function extractParenContent(text) {
@@ -1262,7 +1287,88 @@ function buildOrganizationEntity(result, raw, normalized, locale = "en") {
 }
 
 // src/detectors/compound.ts
-var COMPOUND_CONNECTOR_RE = /(?:^|\s)(&|and|\+|et)(?:\s|$)/i;
+var COMPOUND_CONNECTOR_RE = /(?:^|\s)(&|and|\+|et|;|\|)(?:\s|$)|(?:\s)(\/)\s/i;
+var PAIRED_HONORIFIC_PATTERNS = [
+  { pattern: /^mr\.?\s*[&+]\s*mrs\.?/i, first: "Mr.", second: "Mrs." },
+  { pattern: /^mr\.?\s+and\s+mrs\.?/i, first: "Mr.", second: "Mrs." },
+  { pattern: /^mr\.?\s*[&+]\s*ms\.?/i, first: "Mr.", second: "Ms." },
+  { pattern: /^mr\.?\s+and\s+ms\.?/i, first: "Mr.", second: "Ms." },
+  { pattern: /^mr\.?\s*[&+]\s*mr\.?/i, first: "Mr.", second: "Mr." },
+  { pattern: /^mr\.?\s+and\s+mr\.?/i, first: "Mr.", second: "Mr." },
+  { pattern: /^mrs\.?\s*[&+]\s*mrs\.?/i, first: "Mrs.", second: "Mrs." },
+  { pattern: /^mrs\.?\s+and\s+mrs\.?/i, first: "Mrs.", second: "Mrs." },
+  { pattern: /^ms\.?\s*[&+]\s*ms\.?/i, first: "Ms.", second: "Ms." },
+  { pattern: /^ms\.?\s+and\s+ms\.?/i, first: "Ms.", second: "Ms." },
+  { pattern: /^dr\.?\s*[&+]\s*mrs\.?/i, first: "Dr.", second: "Mrs." },
+  { pattern: /^dr\.?\s+and\s+mrs\.?/i, first: "Dr.", second: "Mrs." },
+  { pattern: /^dr\.?\s*[&+]\s*mr\.?/i, first: "Dr.", second: "Mr." },
+  { pattern: /^dr\.?\s+and\s+mr\.?/i, first: "Dr.", second: "Mr." },
+  { pattern: /^dr\.?\s*[&+]\s*ms\.?/i, first: "Dr.", second: "Ms." },
+  { pattern: /^dr\.?\s+and\s+ms\.?/i, first: "Dr.", second: "Ms." },
+  { pattern: /^dr\.?\s*[&+]\s*dr\.?/i, first: "Dr.", second: "Dr." },
+  { pattern: /^dr\.?\s+and\s+dr\.?/i, first: "Dr.", second: "Dr." }
+];
+var PLURAL_HONORIFICS = {
+  "drs": "Dr.",
+  "drs.": "Dr.",
+  "doctors": "Dr.",
+  "messrs": "Mr.",
+  "messrs.": "Mr.",
+  "messieurs": "Mr.",
+  "mmes": "Mrs.",
+  "mmes.": "Mrs.",
+  "mesdames": "Mrs.",
+  "profs": "Prof.",
+  "profs.": "Prof.",
+  "professors": "Prof.",
+  "revs": "Rev.",
+  "revs.": "Rev.",
+  "reverends": "Rev."
+};
+var SINGLE_HONORIFIC_RE = /^(mr|mrs|ms|miss|mx|dr|prof|sir|dame|rev|fr|rabbi|imam|pastor|judge|justice|capt|maj|col|gen|adm|sgt|lt)\.?\s+/i;
+var SUFFIX_SET = /* @__PURE__ */ new Set([
+  "jr",
+  "jr.",
+  "sr",
+  "sr.",
+  "ii",
+  "iii",
+  "iv",
+  "v",
+  "vi",
+  "vii",
+  "viii",
+  "ix",
+  "x",
+  "phd",
+  "ph.d.",
+  "ph.d",
+  "md",
+  "m.d.",
+  "dds",
+  "d.d.s.",
+  "dmd",
+  "d.m.d.",
+  "esq",
+  "esq.",
+  "jd",
+  "j.d.",
+  "mba",
+  "m.b.a.",
+  "cpa",
+  "cfa",
+  "rn",
+  "np",
+  "pa-c",
+  "obe",
+  "mbe",
+  "cbe",
+  "kbe",
+  "dbe"
+]);
+function isSuffixToken(token) {
+  return SUFFIX_SET.has(token.toLowerCase().replace(/\.$/, ""));
+}
 function getConnectorType(connector) {
   const lower = connector.toLowerCase().trim();
   if (lower === "&")
@@ -1275,15 +1381,187 @@ function getConnectorType(connector) {
     return "et";
   return "unknown";
 }
+function detectPairedHonorifics(text) {
+  for (const pair of PAIRED_HONORIFIC_PATTERNS) {
+    if (pair.pattern.test(text)) {
+      return pair;
+    }
+  }
+  return null;
+}
+function detectPluralHonorific(text) {
+  const tokens = tokenize(text);
+  if (tokens.length === 0)
+    return null;
+  const firstToken = tokens[0].toLowerCase();
+  const singular = PLURAL_HONORIFICS[firstToken];
+  if (singular) {
+    const remainder = tokens.slice(1).join(" ");
+    return { plural: tokens[0], singular, remainder };
+  }
+  return null;
+}
+function parseMemberTokens(text) {
+  let workingText = text.trim();
+  let honorific;
+  let suffix;
+  const honorificMatch = workingText.match(SINGLE_HONORIFIC_RE);
+  if (honorificMatch) {
+    honorific = honorificMatch[0].trim();
+    workingText = workingText.slice(honorificMatch[0].length).trim();
+  }
+  const commaIdx = workingText.lastIndexOf(",");
+  if (commaIdx > 0) {
+    const afterComma = workingText.slice(commaIdx + 1).trim();
+    const suffixTokens = tokenize(afterComma);
+    if (suffixTokens.length > 0 && isSuffixToken(suffixTokens[0])) {
+      suffix = afterComma;
+      workingText = workingText.slice(0, commaIdx).trim();
+    }
+  }
+  const tokens = tokenize(workingText);
+  while (tokens.length > 1 && isSuffixToken(tokens[tokens.length - 1])) {
+    const suffixToken = tokens.pop();
+    suffix = suffix ? `${suffixToken}, ${suffix}` : suffixToken;
+  }
+  workingText = tokens.join(" ");
+  const nameTokens = tokenize(workingText);
+  let given;
+  let middle;
+  let family;
+  if (nameTokens.length === 0) {
+  } else if (nameTokens.length === 1) {
+    given = nameTokens[0];
+  } else {
+    given = nameTokens[0];
+    family = nameTokens[nameTokens.length - 1];
+    if (nameTokens.length > 2) {
+      middle = nameTokens.slice(1, -1).join(" ");
+    }
+  }
+  return { honorific, given, middle, family, suffix, raw: text };
+}
 function detectCompound(normalized) {
   const reasons = [];
+  const pairedMatch = detectPairedHonorifics(normalized);
+  if (pairedMatch) {
+    const remainder = normalized.replace(pairedMatch.pattern, "").trim();
+    const tokens = tokenize(remainder);
+    reasons.push("COMPOUND_CONNECTOR");
+    reasons.push("COMPOUND_PAIRED_HONORIFIC");
+    if (tokens.length === 1 && isNameLikeToken(tokens[0])) {
+      reasons.push("COMPOUND_SHARED_FAMILY");
+      return {
+        isCompound: true,
+        confidence: 0.75,
+        reasons,
+        connector: "&",
+        leftPart: pairedMatch.first,
+        rightPart: pairedMatch.second,
+        sharedFamily: tokens[0],
+        pairedHonorifics: { first: pairedMatch.first, second: pairedMatch.second }
+      };
+    }
+    if (tokens.length === 2 && isNameLikeToken(tokens[0]) && isNameLikeToken(tokens[1])) {
+      reasons.push("COMPOUND_SHARED_FAMILY");
+      return {
+        isCompound: true,
+        confidence: 1,
+        reasons,
+        connector: "&",
+        leftPart: `${pairedMatch.first} ${tokens[0]}`,
+        rightPart: pairedMatch.second,
+        sharedFamily: tokens[1],
+        pairedHonorifics: { first: pairedMatch.first, second: pairedMatch.second }
+      };
+    }
+    const innerConnectorMatch = remainder.match(COMPOUND_CONNECTOR_RE);
+    if (innerConnectorMatch) {
+      const connectorIdx2 = innerConnectorMatch.index;
+      const fullMatch2 = innerConnectorMatch[0];
+      const connector2 = innerConnectorMatch[1] || innerConnectorMatch[2];
+      const leftName = remainder.slice(0, connectorIdx2).trim();
+      const rightName = remainder.slice(connectorIdx2 + fullMatch2.length).trim();
+      if (leftName && rightName) {
+        const rightTokens2 = tokenize(rightName);
+        let sharedFamily2;
+        if (rightTokens2.length >= 2) {
+          const lastToken = rightTokens2[rightTokens2.length - 1];
+          if (isNameLikeToken(lastToken) && !isSuffixToken(lastToken)) {
+            sharedFamily2 = lastToken;
+            reasons.push("COMPOUND_SHARED_FAMILY");
+          }
+        }
+        return {
+          isCompound: true,
+          confidence: sharedFamily2 ? 1 : 0.75,
+          reasons,
+          connector: getConnectorType(connector2),
+          leftPart: `${pairedMatch.first} ${leftName}`.trim(),
+          rightPart: `${pairedMatch.second} ${rightName}`.trim(),
+          sharedFamily: sharedFamily2,
+          pairedHonorifics: { first: pairedMatch.first, second: pairedMatch.second }
+        };
+      }
+    }
+    if (remainder) {
+      reasons.push("COMPOUND_SHARED_FAMILY");
+      return {
+        isCompound: true,
+        confidence: 0.75,
+        reasons,
+        connector: "&",
+        leftPart: pairedMatch.first,
+        rightPart: pairedMatch.second,
+        sharedFamily: remainder,
+        pairedHonorifics: { first: pairedMatch.first, second: pairedMatch.second }
+      };
+    }
+  }
+  const pluralMatch = detectPluralHonorific(normalized);
+  if (pluralMatch) {
+    const connectorMatch2 = pluralMatch.remainder.match(COMPOUND_CONNECTOR_RE);
+    if (connectorMatch2) {
+      const connectorIdx2 = connectorMatch2.index;
+      const fullMatch2 = connectorMatch2[0];
+      const connector2 = connectorMatch2[1] || connectorMatch2[2];
+      const leftName = pluralMatch.remainder.slice(0, connectorIdx2).trim();
+      const rightName = pluralMatch.remainder.slice(connectorIdx2 + fullMatch2.length).trim();
+      if (leftName && rightName) {
+        reasons.push("COMPOUND_CONNECTOR");
+        reasons.push("COMPOUND_PLURAL_HONORIFIC");
+        const leftPart2 = `${pluralMatch.singular} ${leftName}`.trim();
+        const rightPart2 = `${pluralMatch.singular} ${rightName}`.trim();
+        const rightTokens2 = tokenize(rightName);
+        let sharedFamily2;
+        if (rightTokens2.length >= 2) {
+          const lastToken = rightTokens2[rightTokens2.length - 1];
+          if (isNameLikeToken(lastToken) && !isSuffixToken(lastToken)) {
+            sharedFamily2 = lastToken;
+            reasons.push("COMPOUND_SHARED_FAMILY");
+          }
+        }
+        return {
+          isCompound: true,
+          confidence: sharedFamily2 ? 1 : 0.75,
+          reasons,
+          connector: getConnectorType(connector2),
+          leftPart: leftPart2,
+          rightPart: rightPart2,
+          sharedFamily: sharedFamily2,
+          pluralHonorific: pluralMatch.plural,
+          singularHonorific: pluralMatch.singular
+        };
+      }
+    }
+  }
   const connectorMatch = normalized.match(COMPOUND_CONNECTOR_RE);
   if (!connectorMatch) {
     return { isCompound: false, confidence: 0, reasons: [] };
   }
   const connectorIdx = connectorMatch.index;
   const fullMatch = connectorMatch[0];
-  const connector = connectorMatch[1];
+  const connector = connectorMatch[1] || connectorMatch[2];
   const connectorType = getConnectorType(connector);
   const leftPart = normalized.slice(0, connectorIdx).trim();
   const rightPart = normalized.slice(connectorIdx + fullMatch.length).trim();
@@ -1304,12 +1582,19 @@ function detectCompound(normalized) {
   }
   let sharedFamily;
   if (rightTokens.length >= 2) {
-    const potentialShared = rightTokens[rightTokens.length - 1];
-    if (isNameLikeToken(potentialShared)) {
-      if (leftTokens.length === 1 || !isNameLikeToken(leftTokens[leftTokens.length - 1])) {
-        sharedFamily = potentialShared;
-        reasons.push("COMPOUND_SHARED_FAMILY");
-        confidence = 1;
+    let familyIdx = rightTokens.length - 1;
+    while (familyIdx >= 0 && isSuffixToken(rightTokens[familyIdx])) {
+      familyIdx--;
+    }
+    if (familyIdx >= 1) {
+      const potentialShared = rightTokens[familyIdx];
+      if (isNameLikeToken(potentialShared)) {
+        const leftParsed = parseMemberTokens(leftPart);
+        if (!leftParsed.family || leftParsed.given === leftParsed.family) {
+          sharedFamily = potentialShared;
+          reasons.push("COMPOUND_SHARED_FAMILY");
+          confidence = 1;
+        }
       }
     }
   }
@@ -1317,6 +1602,14 @@ function detectCompound(normalized) {
     const leftLower = leftPart.toLowerCase();
     if (/^(mr|mrs|ms|dr|rev)\.?\s*/i.test(leftLower)) {
       sharedFamily = rightTokens[0];
+      reasons.push("COMPOUND_SHARED_FAMILY");
+      confidence = 0.75;
+    }
+  }
+  if (!sharedFamily && leftPart.includes(",")) {
+    const commaParts = leftPart.split(",").map((p) => p.trim());
+    if (commaParts.length >= 2 && isNameLikeToken(commaParts[0])) {
+      sharedFamily = commaParts[0];
       reasons.push("COMPOUND_SHARED_FAMILY");
       confidence = 0.75;
     }
@@ -1331,8 +1624,7 @@ function detectCompound(normalized) {
     sharedFamily
   };
 }
-function parseCompoundMember(text, raw, sharedFamily, locale = "en") {
-  const tokens = tokenize(text);
+function parseCompoundMember(text, raw, sharedFamily, inheritedHonorific, locale = "en") {
   const meta = {
     raw,
     normalized: text,
@@ -1340,20 +1632,30 @@ function parseCompoundMember(text, raw, sharedFamily, locale = "en") {
     reasons: [],
     locale
   };
-  if (tokens.length === 0) {
+  if (!text.trim()) {
     return {
       kind: "unknown",
       text,
       meta
     };
   }
-  const given = tokens[0];
-  const middle = tokens.length > 1 ? tokens.slice(1).join(" ") : void 0;
+  const parsed = parseMemberTokens(text);
+  const honorific = parsed.honorific || inheritedHonorific;
+  let family = parsed.family;
+  if (!family && sharedFamily) {
+    family = sharedFamily;
+  }
+  if (parsed.family && sharedFamily && parsed.family.toLowerCase() === sharedFamily.toLowerCase()) {
+  } else if (parsed.family && sharedFamily) {
+    family = parsed.family;
+  }
   return {
     kind: "person",
-    given,
-    middle,
-    family: sharedFamily,
+    honorific,
+    given: parsed.given,
+    middle: parsed.middle,
+    family,
+    suffix: parsed.suffix,
     meta
   };
 }
@@ -1367,11 +1669,64 @@ function buildCompoundEntity(result, raw, normalized, locale = "en") {
   };
   const members = [];
   if (result.leftPart) {
-    members.push(parseCompoundMember(result.leftPart, result.leftPart, result.sharedFamily, locale));
+    const inheritedHonorific = result.pairedHonorifics?.first || result.singularHonorific;
+    const leftText = result.leftPart;
+    const isJustHonorific = inheritedHonorific && leftText.toLowerCase().replace(/\./g, "") === inheritedHonorific.toLowerCase().replace(/\./g, "");
+    const hasOwnHonorific = SINGLE_HONORIFIC_RE.test(leftText);
+    if (isJustHonorific) {
+      members.push({
+        kind: "person",
+        honorific: inheritedHonorific,
+        family: result.sharedFamily,
+        meta: {
+          raw: leftText,
+          normalized: leftText,
+          confidence: 0.5,
+          reasons: [],
+          locale
+        }
+      });
+    } else {
+      members.push(parseCompoundMember(
+        leftText,
+        leftText,
+        result.sharedFamily,
+        hasOwnHonorific ? void 0 : inheritedHonorific,
+        locale
+      ));
+    }
   }
   if (result.rightPart) {
-    const rightWithoutShared = result.sharedFamily ? result.rightPart.replace(new RegExp(`\\s+${result.sharedFamily}\\s*$`, "i"), "").trim() : result.rightPart;
-    members.push(parseCompoundMember(rightWithoutShared || result.rightPart, result.rightPart, result.sharedFamily, locale));
+    let rightText = result.rightPart;
+    if (result.sharedFamily) {
+      const familyRegex = new RegExp(`\\s+${escapeRegex(result.sharedFamily)}\\s*$`, "i");
+      rightText = rightText.replace(familyRegex, "").trim() || result.rightPart;
+    }
+    const inheritedHonorific = result.pairedHonorifics?.second || result.singularHonorific;
+    const isJustHonorific = inheritedHonorific && rightText.toLowerCase().replace(/\./g, "") === inheritedHonorific.toLowerCase().replace(/\./g, "");
+    const hasOwnHonorific = SINGLE_HONORIFIC_RE.test(rightText);
+    if (isJustHonorific) {
+      members.push({
+        kind: "person",
+        honorific: inheritedHonorific,
+        family: result.sharedFamily,
+        meta: {
+          raw: result.rightPart,
+          normalized: rightText,
+          confidence: 0.5,
+          reasons: [],
+          locale
+        }
+      });
+    } else {
+      members.push(parseCompoundMember(
+        rightText || result.rightPart,
+        result.rightPart,
+        result.sharedFamily,
+        hasOwnHonorific ? void 0 : inheritedHonorific,
+        locale
+      ));
+    }
   }
   return {
     kind: "compound",
@@ -1380,6 +1735,9 @@ function buildCompoundEntity(result, raw, normalized, locale = "en") {
     sharedFamily: result.sharedFamily,
     meta
   };
+}
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 // src/detectors/family.ts

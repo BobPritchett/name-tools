@@ -249,20 +249,48 @@ function renderEntityDetails(entity) {
                 </tbody>
             </table>
         `;
-        // Show member details
+        // Show detailed member information
         if (entity.members.length > 0) {
-            html += '<div style="margin-top: 12px;"><strong>Members:</strong></div>';
+            html += '<div class="compound-members" style="margin-top: 16px;"><strong>Members:</strong></div>';
+            html += `
+                <table class="parsed-table" style="margin-top: 8px;">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Honorific</th>
+                            <th>Given</th>
+                            <th>Middle</th>
+                            <th>Family</th>
+                            <th>Suffix</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
             entity.members.forEach((member, i) => {
                 if (member.kind === 'person') {
-                    html += `<div style="margin-left: 16px; margin-top: 4px;">
-                        ${i + 1}. ${escapeHtml(member.given || '')} ${escapeHtml(member.family || '')}
-                    </div>`;
+                    html += `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td>${escapeHtml(member.honorific || '-')}</td>
+                            <td>${escapeHtml(member.given || '-')}</td>
+                            <td>${escapeHtml(member.middle || '-')}</td>
+                            <td>${escapeHtml(member.family || '-')}</td>
+                            <td>${escapeHtml(member.suffix || '-')}</td>
+                        </tr>
+                    `;
                 } else {
-                    html += `<div style="margin-left: 16px; margin-top: 4px;">
-                        ${i + 1}. ${escapeHtml(member.text || '')}
-                    </div>`;
+                    html += `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td colspan="5">${escapeHtml(member.text || '(unknown)')}</td>
+                        </tr>
+                    `;
                 }
             });
+            html += `
+                    </tbody>
+                </table>
+            `;
         }
     } else {
         html += `<p>Text: ${escapeHtml(entity.text || entity.meta?.raw || '')}</p>`;
