@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
         <header>
             <h1>name-tools</h1>
             <p class="subtitle">A utility library for parsing, formatting, and manipulating person names</p>
@@ -82,15 +81,15 @@
                 <h2>Quick Start</h2>
                 <pre><code>import { parseName, formatName } from 'name-tools';
 
-const parsed = parseName("Dr. Bob Pritchett Jr.");
+const parsed = parseName("Dr. John Franklin Jr.");
 console.log(parsed);
-// { prefix: 'Dr.', first: 'Bob', last: 'Pritchett', suffix: 'Jr.' }
+// { prefix: 'Dr.', first: 'John', last: 'Franklin', suffix: 'Jr.' }
 
-console.log(formatName("Dr. Bob Pritchett Jr."));
-// "Bob Pritchett, Jr." (NBSP used for nicer line breaks)
+console.log(formatName("Dr. John Franklin Jr."));
+// "John Franklin, Jr." (NBSP used for nicer line breaks)
 
-console.log(formatName("Dr. Bob Pritchett Jr.", { preset: "alphabetical" }));
-// "Pritchett, Bob, Jr."</code></pre>
+console.log(formatName("Dr. John Franklin Jr.", { preset: "alphabetical" }));
+// "Franklin, John, Jr."</code></pre>
             </section>
 
             <section class="info-section">
@@ -141,7 +140,6 @@ console.log(formatName("Dr. Bob Pritchett Jr.", { preset: "alphabetical" }));
                <a href="https://github.com/BobPritchett/name-tools/blob/main/LICENSE">MIT License</a>
             </p>
         </footer>
-    </div>
 
     <script type="module" src="script.js"></script>
 </body>

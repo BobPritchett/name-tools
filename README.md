@@ -116,11 +116,11 @@ formatName(
 ```
 
 ```javascript
-formatName("Dr. Bob Pritchett Jr.");
-// "Bob Pritchett, Jr."
+formatName("Dr. John Franklin Jr.");
+// "John, Jr."
 
-formatName("Dr. Bob Pritchett Jr.", { preset: "alphabetical" });
-// "Pritchett, Bob, Jr."
+formatName("Dr. John Franklin Jr.", { preset: "alphabetical" });
+// "Franklin, John, Jr."
 ```
 
 #### Preset Matrix (quick pick)
