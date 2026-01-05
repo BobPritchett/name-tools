@@ -56,20 +56,20 @@
       "description": "Name with suffix"
     },
     {
-      "input": "William Frederick Richardson",
+      "input": "Bob William Richardson",
       "expected": {
-        "first": "William",
-        "middle": "Frederick",
+        "first": "Bob",
+        "middle": "William",
         "last": "Richardson"
       },
       "description": "Name with middle name"
     },
     {
-      "input": "Dr. William Frederick Richardson Jr.",
+      "input": "Dr. Bob William Richardson Jr.",
       "expected": {
         "prefix": "Dr.",
-        "first": "William",
-        "middle": "Frederick",
+        "first": "Bob",
+        "middle": "William",
         "last": "Richardson",
         "suffix": "Jr."
       },
@@ -484,24 +484,24 @@
       "description": "Simple name formatting"
     },
     {
-      "input": "William Frederick Richardson",
+      "input": "Bob William Richardson",
       "formats": {
-        "lastFirst": "Richardson, William Frederick",
-        "firstLast": "William Frederick Richardson",
-        "withMiddleInitial": "William F. Richardson",
+        "lastFirst": "Richardson, Bob William",
+        "firstLast": "Bob William Richardson",
+        "withMiddleInitial": "Bob W. Richardson",
         "formal": "Mr/Ms Richardson",
-        "initials": "WFR"
+        "initials": "BWP"
       },
       "description": "Name with middle name formatting"
     },
     {
-      "input": "Dr. William Frederick Richardson Jr.",
+      "input": "Dr. Bob William Richardson Jr.",
       "formats": {
-        "lastFirst": "Richardson, William Frederick, Jr.",
-        "firstLast": "Dr. William Frederick Richardson Jr.",
-        "withMiddleInitial": "Dr. William F. Richardson Jr.",
+        "lastFirst": "Richardson, Bob William, Jr.",
+        "firstLast": "Dr. Bob William Richardson Jr.",
+        "withMiddleInitial": "Dr. Bob W. Richardson Jr.",
         "formal": "Dr. Richardson",
-        "initials": "WFR"
+        "initials": "BWP"
       },
       "description": "Full name formatting"
     },
@@ -536,10 +536,10 @@
       "initials": "BP"
     },
     {
-      "input": "Dr. William Frederick Richardson Jr.",
-      "firstName": "William",
+      "input": "Dr. Bob William Richardson Jr.",
+      "firstName": "Bob",
       "lastName": "Richardson",
-      "initials": "WFR"
+      "initials": "BWP"
     },
     {
       "input": "Mary Elizabeth Johnson",

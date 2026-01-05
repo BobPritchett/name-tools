@@ -966,8 +966,819 @@ function buildAffixTokens(displayValue, ctx) {
   return parts.map((p) => classifyAffixToken(p, ctx));
 }
 
+// src/normalize.ts
+function normalizeInput(raw) {
+  if (!raw)
+    return "";
+  let s = raw.trim();
+  s = s.replace(/\s+/g, " ");
+  s = s.replace(/[""]/g, '"');
+  s = s.replace(/['']/g, "'");
+  s = s.replace(/\s*&\s*/g, " & ");
+  s = s.replace(/\s*\+\s*/g, " + ");
+  s = s.replace(/[,\s]+$/g, "");
+  return s;
+}
+function tokenize(text) {
+  return text.split(/\s+/).filter(Boolean);
+}
+function isNameLikeToken(token) {
+  return /^[A-Z][a-z]+(?:['-][A-Z]?[a-z]+)*$/.test(token);
+}
+function extractParenContent(text) {
+  const match = text.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  if (match) {
+    return { main: match[1].trim(), paren: match[2].trim() };
+  }
+  return null;
+}
+function isAllCaps(text) {
+  const letters = text.replace(/[^a-zA-Z]/g, "");
+  return letters.length > 0 && letters === letters.toUpperCase();
+}
+function hasAtSymbol(text) {
+  return text.includes("@");
+}
+function extractAngleBrackets(text) {
+  const match = text.match(/^(.*?)\s*<([^>]+)>\s*$/);
+  if (match) {
+    return { display: match[1].trim(), bracket: match[2].trim() };
+  }
+  return null;
+}
+function startsWithThe(text) {
+  return /^the\s+/i.test(text);
+}
+function stripLeadingThe(text) {
+  return text.replace(/^the\s+/i, "");
+}
+function hasPluralSurnameEnding(text) {
+  return /\b[A-Z][a-z]+(s|es)\s*$/i.test(text);
+}
+function extractBaseSurname(plural) {
+  const word = plural.trim();
+  if (/([sc]h|[sxz])es$/i.test(word)) {
+    return word.slice(0, -2);
+  }
+  if (/ies$/i.test(word)) {
+    return word.slice(0, -3) + "y";
+  }
+  if (/s$/i.test(word)) {
+    return word.slice(0, -1);
+  }
+  return word;
+}
+
+// src/data/legal-forms.ts
+var LEGAL_FORM_ENTRIES = [
+  // US corporate forms (strong)
+  { id: "Inc", patterns: ["INC", "INCORPORATED"], strong: true },
+  { id: "Corp", patterns: ["CORP", "CORPORATION"], strong: true },
+  { id: "LLC", patterns: ["LLC", "L L C", "L.L.C."], strong: true },
+  { id: "LLP", patterns: ["LLP", "L L P", "L.L.P."], strong: true },
+  { id: "LP", patterns: ["LP", "L P", "L.P."], strong: true },
+  // UK/Commonwealth forms (strong)
+  { id: "Ltd", patterns: ["LTD", "LIMITED"], strong: true },
+  { id: "PLC", patterns: ["PLC", "P L C", "P.L.C."], strong: true },
+  // European forms (strong)
+  { id: "GmbH", patterns: ["GMBH", "G M B H"], strong: true },
+  { id: "AG", patterns: ["AG", "A G"], strong: true },
+  { id: "SA", patterns: ["SA", "S A", "S.A."], strong: true },
+  { id: "SAS", patterns: ["SAS", "S A S"], strong: true },
+  { id: "BV", patterns: ["BV", "B V", "B.V."], strong: true },
+  { id: "Oy", patterns: ["OY"], strong: true },
+  { id: "SRL", patterns: ["SRL", "S R L"], strong: true },
+  { id: "SpA", patterns: ["SPA", "S P A"], strong: true },
+  // Institutional forms (strong)
+  { id: "Trust", patterns: ["TRUST"], strong: true },
+  { id: "Foundation", patterns: ["FOUNDATION"], strong: true },
+  // Weaker signals (need context)
+  { id: "Company", patterns: ["COMPANY"], strong: false },
+  { id: "Co", patterns: ["CO"], strong: false }
+];
+function buildLegalFormIndex() {
+  const map = /* @__PURE__ */ new Map();
+  for (const entry of LEGAL_FORM_ENTRIES) {
+    for (const pattern of entry.patterns) {
+      const key = normalizeForMatch(pattern);
+      if (!map.has(key)) {
+        map.set(key, entry);
+      }
+    }
+  }
+  return map;
+}
+function normalizeForMatch(value) {
+  return value.toUpperCase().replace(/\./g, "").replace(/\s+/g, " ").trim();
+}
+var LEGAL_FORM_INDEX = buildLegalFormIndex();
+function matchLegalForm(token) {
+  const normalized = normalizeForMatch(token);
+  return LEGAL_FORM_INDEX.get(normalized);
+}
+var LEGAL_SUFFIX_END_RE = new RegExp(
+  "(?:^|[\\s,])(inc\\.?|incorporated|corp\\.?|corporation|llc|l\\.l\\.c\\.|llp|l\\.l\\.p\\.|lp|l\\.p\\.|ltd\\.?|limited|plc|p\\.l\\.c\\.|gmbh|ag|s\\.?a\\.?|sas|bv|b\\.v\\.|oy|srl|spa|trust|foundation)\\.?$",
+  "i"
+);
+var COMMA_LEGAL_RE = /,\s*(inc\.?|llc|l\.l\.c\.|corp\.?|ltd\.?|plc|gmbh|s\.a\.)\.?$/i;
+function extractLegalSuffix(text) {
+  const commaMatch = text.match(COMMA_LEGAL_RE);
+  if (commaMatch) {
+    const suffix = commaMatch[1];
+    const baseName = text.slice(0, commaMatch.index).trim();
+    const entry = matchLegalForm(suffix);
+    return {
+      baseName,
+      suffix: commaMatch[0].trim(),
+      legalForm: entry?.id ?? "UnknownLegalForm"
+    };
+  }
+  const endMatch = text.match(LEGAL_SUFFIX_END_RE);
+  if (endMatch) {
+    const suffix = endMatch[1];
+    const fullMatch = endMatch[0];
+    const baseName = text.slice(0, text.length - fullMatch.length).trim();
+    const entry = matchLegalForm(suffix);
+    return {
+      baseName: baseName || text.replace(new RegExp(suffix + "\\.?$", "i"), "").trim(),
+      suffix,
+      legalForm: entry?.id ?? "UnknownLegalForm"
+    };
+  }
+  return null;
+}
+
+// src/data/institutions.ts
+var INSTITUTION_PHRASES = [
+  // Banking/Financial (strong)
+  { pattern: /\bbank\s+of\b/i, legalForm: "Bank", strong: true },
+  { pattern: /\bfirst\s+national\s+bank\b/i, legalForm: "Bank", strong: true },
+  { pattern: /\btrust\s+company\b/i, legalForm: "TrustCompany", strong: true },
+  { pattern: /\bcredit\s+union\b/i, legalForm: "CreditUnion", strong: true },
+  { pattern: /\bsavings\s+(?:and\s+)?loan\b/i, legalForm: "Bank", strong: true },
+  { pattern: /\b(?:national|federal)\s+bank\b/i, legalForm: "Bank", strong: true },
+  // Educational (strong)
+  { pattern: /\buniversity\s+of\b/i, legalForm: "University", strong: true },
+  { pattern: /\buniversity$/i, legalForm: "University", strong: true },
+  { pattern: /\bcollege\s+of\b/i, legalForm: "University", strong: true },
+  { pattern: /\binstitute\s+of\b/i, legalForm: "University", strong: true },
+  // Healthcare (strong)
+  { pattern: /\bhospital\b/i, legalForm: "Hospital", strong: true },
+  { pattern: /\bmedical\s+center\b/i, legalForm: "Hospital", strong: true },
+  { pattern: /\bclinic\b/i, legalForm: "Hospital", strong: false },
+  // Religious (strong)
+  { pattern: /\bchurch\s+of\b/i, legalForm: "Church", strong: true },
+  { pattern: /\bchurch$/i, legalForm: "Church", strong: true },
+  { pattern: /\bministry\b/i, legalForm: "Church", strong: true },
+  { pattern: /\bsynagogue\b/i, legalForm: "Church", strong: true },
+  { pattern: /\bmosque\b/i, legalForm: "Church", strong: true },
+  { pattern: /\btemple\b/i, legalForm: "Church", strong: false },
+  // Government (strong)
+  { pattern: /\bcity\s+of\b/i, legalForm: "Government", strong: true },
+  { pattern: /\bcounty\s+of\b/i, legalForm: "Government", strong: true },
+  { pattern: /\bstate\s+of\b/i, legalForm: "Government", strong: true },
+  { pattern: /\bdepartment\s+of\b/i, legalForm: "Government", strong: true },
+  { pattern: /\bgovernment\s+of\b/i, legalForm: "Government", strong: true },
+  { pattern: /\boffice\s+of\b/i, legalForm: "Government", strong: false }
+];
+var ORG_WEAK_KEYWORDS_RE = /\b(bank|trust|holdings|partners|group|company|co\.|associates|enterprises|services|solutions|consulting)\b/i;
+var DBA_RE = /\b(d\/b\/a|doing\s+business\s+as|dba|aka|a\/k\/a)\b/i;
+var CARE_OF_RE = /\b(c\/o|care\s+of|attn:?|attention:?)\b/i;
+function matchInstitutionPhrase(text) {
+  for (const phrase of INSTITUTION_PHRASES) {
+    if (phrase.pattern.test(text)) {
+      return phrase;
+    }
+  }
+  return null;
+}
+function hasWeakOrgKeyword(text) {
+  return ORG_WEAK_KEYWORDS_RE.test(text);
+}
+function hasDbaPattern(text) {
+  return DBA_RE.test(text);
+}
+function hasCareOfPattern(text) {
+  return CARE_OF_RE.test(text);
+}
+function extractDba(text) {
+  const match = text.match(DBA_RE);
+  if (!match)
+    return null;
+  const idx = match.index;
+  const primary = text.slice(0, idx).trim();
+  const aka = text.slice(idx + match[0].length).trim();
+  if (primary && aka) {
+    return { primary, aka };
+  }
+  return null;
+}
+
+// src/detectors/organization.ts
+function detectOrganization(normalized, raw) {
+  const reasons = [];
+  let confidence = 0.5;
+  let baseName = normalized;
+  let legalSuffixRaw;
+  let legalForm;
+  let aka;
+  const legalSuffixResult = extractLegalSuffix(normalized);
+  if (legalSuffixResult) {
+    reasons.push("ORG_LEGAL_SUFFIX");
+    confidence = 1;
+    baseName = legalSuffixResult.baseName;
+    legalSuffixRaw = legalSuffixResult.suffix;
+    legalForm = legalSuffixResult.legalForm;
+    if (COMMA_LEGAL_RE.test(normalized)) {
+      reasons.push("ORG_COMMA_LEGAL");
+    }
+  }
+  const institutionMatch = matchInstitutionPhrase(normalized);
+  if (institutionMatch) {
+    reasons.push("ORG_INSTITUTION_PHRASE");
+    if (institutionMatch.strong) {
+      confidence = Math.max(confidence, 0.75);
+    } else {
+      confidence = Math.max(confidence, 0.5);
+    }
+    if (!legalForm) {
+      legalForm = institutionMatch.legalForm;
+    }
+  }
+  if (hasDbaPattern(normalized)) {
+    reasons.push("ORG_DBA");
+    confidence = Math.max(confidence, 0.75);
+    const dbaResult = extractDba(normalized);
+    if (dbaResult) {
+      baseName = dbaResult.primary;
+      aka = [dbaResult.aka];
+    }
+  }
+  if (hasCareOfPattern(normalized)) {
+    reasons.push("ORG_CARE_OF");
+    if (reasons.length > 1) {
+      confidence = Math.max(confidence, 0.5);
+    }
+  }
+  if (reasons.length === 0 && hasWeakOrgKeyword(normalized)) {
+    reasons.push("ORG_WEAK_KEYWORD");
+    confidence = 0.5;
+  }
+  const isOrg = reasons.some(
+    (r) => r === "ORG_LEGAL_SUFFIX" || r === "ORG_INSTITUTION_PHRASE" || r === "ORG_DBA"
+  );
+  if (!isOrg) {
+    return { isOrg: false, confidence: 0, reasons: [] };
+  }
+  return {
+    isOrg: true,
+    confidence,
+    reasons,
+    entity: {
+      kind: "organization",
+      baseName: baseName || normalized,
+      legalForm,
+      legalSuffixRaw,
+      aka
+    }
+  };
+}
+function buildOrganizationEntity(result, raw, normalized, locale = "en") {
+  const meta = {
+    raw,
+    normalized,
+    confidence: result.confidence,
+    reasons: result.reasons,
+    locale
+  };
+  return {
+    kind: "organization",
+    baseName: result.entity?.baseName || normalized,
+    legalForm: result.entity?.legalForm,
+    legalSuffixRaw: result.entity?.legalSuffixRaw,
+    aka: result.entity?.aka,
+    meta
+  };
+}
+
+// src/detectors/compound.ts
+var COMPOUND_CONNECTOR_RE = /(?:^|\s)(&|and|\+|et)(?:\s|$)/i;
+function getConnectorType(connector) {
+  const lower = connector.toLowerCase().trim();
+  if (lower === "&")
+    return "&";
+  if (lower === "and")
+    return "and";
+  if (lower === "+")
+    return "+";
+  if (lower === "et")
+    return "et";
+  return "unknown";
+}
+function detectCompound(normalized) {
+  const reasons = [];
+  const connectorMatch = normalized.match(COMPOUND_CONNECTOR_RE);
+  if (!connectorMatch) {
+    return { isCompound: false, confidence: 0, reasons: [] };
+  }
+  const connectorIdx = connectorMatch.index;
+  const fullMatch = connectorMatch[0];
+  const connector = connectorMatch[1];
+  const connectorType = getConnectorType(connector);
+  const leftPart = normalized.slice(0, connectorIdx).trim();
+  const rightPart = normalized.slice(connectorIdx + fullMatch.length).trim();
+  if (!leftPart || !rightPart) {
+    return { isCompound: false, confidence: 0, reasons: [] };
+  }
+  const leftTokens = tokenize(leftPart);
+  const rightTokens = tokenize(rightPart);
+  const leftHasName = leftTokens.some(isNameLikeToken);
+  const rightHasName = rightTokens.some(isNameLikeToken);
+  if (!leftHasName || !rightHasName) {
+    return { isCompound: false, confidence: 0, reasons: [] };
+  }
+  reasons.push("COMPOUND_CONNECTOR");
+  let confidence = 0.5;
+  if (leftHasName && rightHasName) {
+    confidence = 0.75;
+  }
+  let sharedFamily;
+  if (rightTokens.length >= 2) {
+    const potentialShared = rightTokens[rightTokens.length - 1];
+    if (isNameLikeToken(potentialShared)) {
+      if (leftTokens.length === 1 || !isNameLikeToken(leftTokens[leftTokens.length - 1])) {
+        sharedFamily = potentialShared;
+        reasons.push("COMPOUND_SHARED_FAMILY");
+        confidence = 1;
+      }
+    }
+  }
+  if (!sharedFamily && rightTokens.length === 1 && isNameLikeToken(rightTokens[0])) {
+    const leftLower = leftPart.toLowerCase();
+    if (/^(mr|mrs|ms|dr|rev)\.?\s*/i.test(leftLower)) {
+      sharedFamily = rightTokens[0];
+      reasons.push("COMPOUND_SHARED_FAMILY");
+      confidence = 0.75;
+    }
+  }
+  return {
+    isCompound: true,
+    confidence,
+    reasons,
+    connector: connectorType,
+    leftPart,
+    rightPart,
+    sharedFamily
+  };
+}
+function parseCompoundMember(text, raw, sharedFamily, locale = "en") {
+  const tokens = tokenize(text);
+  const meta = {
+    raw,
+    normalized: text,
+    confidence: 0.5,
+    reasons: [],
+    locale
+  };
+  if (tokens.length === 0) {
+    return {
+      kind: "unknown",
+      text,
+      meta
+    };
+  }
+  const given = tokens[0];
+  const middle = tokens.length > 1 ? tokens.slice(1).join(" ") : void 0;
+  return {
+    kind: "person",
+    given,
+    middle,
+    family: sharedFamily,
+    meta
+  };
+}
+function buildCompoundEntity(result, raw, normalized, locale = "en") {
+  const meta = {
+    raw,
+    normalized,
+    confidence: result.confidence,
+    reasons: result.reasons,
+    locale
+  };
+  const members = [];
+  if (result.leftPart) {
+    members.push(parseCompoundMember(result.leftPart, result.leftPart, result.sharedFamily, locale));
+  }
+  if (result.rightPart) {
+    const rightWithoutShared = result.sharedFamily ? result.rightPart.replace(new RegExp(`\\s+${result.sharedFamily}\\s*$`, "i"), "").trim() : result.rightPart;
+    members.push(parseCompoundMember(rightWithoutShared || result.rightPart, result.rightPart, result.sharedFamily, locale));
+  }
+  return {
+    kind: "compound",
+    connector: result.connector || "unknown",
+    members,
+    sharedFamily: result.sharedFamily,
+    meta
+  };
+}
+
+// src/detectors/family.ts
+var FAMILY_WORD_END_RE = /\b(family|household)\s*$/i;
+var FAMILY_WORD_RE = /\b(family|household)\b/i;
+function hasGivenNameTokens(text) {
+  const tokens = tokenize(text);
+  const familyWordIdx = tokens.findIndex((t) => /^(family|household)$/i.test(t));
+  if (familyWordIdx > 0) {
+    const beforeFamily = tokens.slice(0, familyWordIdx);
+    return beforeFamily.length > 2 && beforeFamily.every(isNameLikeToken);
+  }
+  return false;
+}
+function detectFamily(normalized) {
+  const reasons = [];
+  let confidence = 0.5;
+  let kind = "family";
+  let style = "familyWord";
+  let familyName = normalized;
+  let article;
+  let familyWord;
+  const hasThe = startsWithThe(normalized);
+  if (hasThe) {
+    reasons.push("FAMILY_STARTS_WITH_THE");
+    article = "The";
+  }
+  const withoutThe = hasThe ? stripLeadingThe(normalized) : normalized;
+  const familyWordMatch = withoutThe.match(FAMILY_WORD_END_RE);
+  if (familyWordMatch) {
+    reasons.push("FAMILY_ENDS_WITH_FAMILY");
+    reasons.push("FAMILY_HAS_FAMILY_WORD");
+    confidence = 1;
+    const word = familyWordMatch[1].toLowerCase();
+    kind = word === "household" ? "household" : "family";
+    familyWord = word === "household" ? "Household" : "Family";
+    style = "familyWord";
+    familyName = withoutThe.slice(0, familyWordMatch.index).trim();
+    if (hasGivenNameTokens(withoutThe)) {
+      confidence = 0.75;
+    }
+    return {
+      isFamily: true,
+      confidence,
+      reasons,
+      entity: {
+        kind,
+        article,
+        familyName,
+        style,
+        familyWord
+      }
+    };
+  }
+  if (hasThe && hasPluralSurnameEnding(withoutThe)) {
+    reasons.push("FAMILY_PLURAL_SURNAME");
+    style = "pluralSurname";
+    familyName = extractBaseSurname(withoutThe);
+    confidence = 0.75;
+    if (!FAMILY_WORD_RE.test(normalized)) {
+      reasons.push("AMBIGUOUS_THE_PLURAL");
+      confidence = 0.5;
+    }
+    return {
+      isFamily: true,
+      confidence,
+      reasons,
+      entity: {
+        kind,
+        article,
+        familyName,
+        style
+      }
+    };
+  }
+  if (hasThe) {
+    return { isFamily: false, confidence: 0, reasons: [] };
+  }
+  return { isFamily: false, confidence: 0, reasons: [] };
+}
+function buildFamilyEntity(result, raw, normalized, locale = "en") {
+  const meta = {
+    raw,
+    normalized,
+    confidence: result.confidence,
+    reasons: result.reasons,
+    locale
+  };
+  return {
+    kind: result.entity?.kind || "family",
+    article: result.entity?.article,
+    familyName: result.entity?.familyName || normalized,
+    style: result.entity?.style || "familyWord",
+    familyWord: result.entity?.familyWord,
+    meta
+  };
+}
+
+// src/detectors/person.ts
+var SUFFIX_ALLOW_LIST = /* @__PURE__ */ new Set([
+  "jr",
+  "jr.",
+  "sr",
+  "sr.",
+  "ii",
+  "iii",
+  "iv",
+  "v",
+  "vi",
+  "vii",
+  "viii",
+  "ix",
+  "x",
+  "phd",
+  "ph.d.",
+  "ph.d",
+  "md",
+  "m.d.",
+  "dds",
+  "d.d.s.",
+  "esq",
+  "esq.",
+  "jd",
+  "j.d.",
+  "mba",
+  "m.b.a.",
+  "cpa"
+]);
+var HONORIFIC_RE = /^(mr|mrs|ms|miss|mx|dr|prof|sir|dame|rev|fr|rabbi|imam|pastor|judge|justice|capt|maj|col|gen|adm|sgt|lt)\.?\s*/i;
+function isKnownSuffix(token) {
+  return SUFFIX_ALLOW_LIST.has(token.toLowerCase().replace(/\.$/, ""));
+}
+function tryParseReversed(normalized) {
+  const parts = normalized.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length < 2 || parts.length > 4) {
+    return null;
+  }
+  const reasons = [];
+  const familyPart = parts[0];
+  if (!familyPart || !isNameLikeToken(familyPart.split(/\s+/)[0])) {
+    return null;
+  }
+  const givenPart = parts[1];
+  const givenTokens = tokenize(givenPart);
+  if (givenTokens.length === 0 || !isNameLikeToken(givenTokens[0])) {
+    return null;
+  }
+  let suffix;
+  const remainingParts = parts.slice(2);
+  for (const part of remainingParts) {
+    const firstWord = part.split(/\s+/)[0];
+    if (isKnownSuffix(firstWord)) {
+      suffix = suffix ? `${suffix}, ${part}` : part;
+      reasons.push("PERSON_HAS_SUFFIX");
+    } else {
+      return null;
+    }
+  }
+  reasons.push("PERSON_REVERSED_FORMAT");
+  const given = givenTokens[0];
+  const middle = givenTokens.length > 1 ? givenTokens.slice(1).join(" ") : void 0;
+  const familyTokens = tokenize(familyPart);
+  const family = familyPart;
+  const confidence = suffix ? 1 : 0.75;
+  return {
+    isPerson: true,
+    confidence,
+    reasons,
+    entity: {
+      kind: "person",
+      given,
+      middle,
+      family,
+      suffix,
+      reversed: true
+    }
+  };
+}
+function parseStandardFormat(normalized) {
+  const reasons = [];
+  let confidence = 0.5;
+  let text = normalized;
+  let honorific;
+  let nickname;
+  let suffix;
+  const honorificMatch = text.match(HONORIFIC_RE);
+  if (honorificMatch) {
+    honorific = honorificMatch[0].trim();
+    text = text.slice(honorificMatch[0].length).trim();
+    reasons.push("PERSON_HAS_HONORIFIC");
+    confidence = 0.75;
+  }
+  const parenResult = extractParenContent(text);
+  if (parenResult) {
+    nickname = parenResult.paren;
+    text = parenResult.main;
+    reasons.push("HAS_PAREN_ANNOTATION");
+  } else {
+    const quoteMatch = text.match(/[""']([^""']+)[""']/);
+    if (quoteMatch) {
+      nickname = quoteMatch[1].trim();
+      text = text.replace(quoteMatch[0], " ").replace(/\s+/g, " ").trim();
+    }
+  }
+  const commaIdx = text.lastIndexOf(",");
+  if (commaIdx > 0) {
+    const afterComma = text.slice(commaIdx + 1).trim();
+    const firstWord = afterComma.split(/\s+/)[0];
+    if (isKnownSuffix(firstWord)) {
+      suffix = afterComma;
+      text = text.slice(0, commaIdx).trim();
+      reasons.push("PERSON_HAS_SUFFIX");
+      confidence = Math.max(confidence, 0.75);
+    }
+  }
+  const tokens = tokenize(text);
+  while (tokens.length > 1) {
+    const lastToken = tokens[tokens.length - 1];
+    if (isKnownSuffix(lastToken)) {
+      suffix = suffix ? `${lastToken}, ${suffix}` : lastToken;
+      tokens.pop();
+      if (!reasons.includes("PERSON_HAS_SUFFIX")) {
+        reasons.push("PERSON_HAS_SUFFIX");
+      }
+    } else {
+      break;
+    }
+  }
+  if (tokens.length === 0) {
+    return { isPerson: false, confidence: 0, reasons: [] };
+  }
+  reasons.push("PERSON_STANDARD_FORMAT");
+  let given;
+  let middle;
+  let family;
+  if (tokens.length === 1) {
+    given = tokens[0];
+    reasons.push("AMBIGUOUS_SHORT_NAME");
+  } else {
+    given = tokens[0];
+    family = tokens[tokens.length - 1];
+    if (tokens.length > 2) {
+      middle = tokens.slice(1, -1).join(" ");
+    }
+    confidence = Math.max(confidence, 0.75);
+  }
+  return {
+    isPerson: true,
+    confidence,
+    reasons,
+    entity: {
+      kind: "person",
+      honorific,
+      given,
+      middle,
+      family,
+      suffix,
+      nickname,
+      reversed: false
+    }
+  };
+}
+function detectPerson(normalized) {
+  const reversedResult = tryParseReversed(normalized);
+  if (reversedResult) {
+    return reversedResult;
+  }
+  return parseStandardFormat(normalized);
+}
+function buildPersonEntity(result, raw, normalized, locale = "en") {
+  const meta = {
+    raw,
+    normalized,
+    confidence: result.confidence,
+    reasons: result.reasons,
+    locale
+  };
+  return {
+    kind: "person",
+    honorific: result.entity?.honorific,
+    given: result.entity?.given,
+    middle: result.entity?.middle,
+    family: result.entity?.family,
+    suffix: result.entity?.suffix,
+    nickname: result.entity?.nickname,
+    reversed: result.entity?.reversed,
+    meta
+  };
+}
+
+// src/classifier.ts
+function classifyName(input, options = {}) {
+  const raw = input;
+  const locale = options.locale ?? "en";
+  if (!input || typeof input !== "string" || !input.trim()) {
+    return buildUnknown("", "", locale, [], "person");
+  }
+  let normalized = normalizeInput(input);
+  const reasons = [];
+  const angleBracketResult = extractAngleBrackets(normalized);
+  if (angleBracketResult) {
+    normalized = angleBracketResult.display || normalized;
+    if (hasAtSymbol(angleBracketResult.bracket)) {
+      reasons.push("HAS_EMAIL_OR_HANDLE");
+    }
+  }
+  if (hasAtSymbol(normalized)) {
+    reasons.push("HAS_EMAIL_OR_HANDLE");
+    return applyStrict(buildUnknown(raw, normalized, locale, reasons), options);
+  }
+  if (isAllCaps(normalized)) {
+    reasons.push("HAS_ALLCAPS");
+  }
+  const orgResult = detectOrganization(normalized, raw);
+  if (orgResult.isOrg) {
+    const entity = buildOrganizationEntity(orgResult, raw, normalized, locale);
+    return applyStrict(entity, options);
+  }
+  const compoundResult = detectCompound(normalized);
+  if (compoundResult.isCompound) {
+    const entity = buildCompoundEntity(compoundResult, raw, normalized, locale);
+    return applyStrict(entity, options);
+  }
+  const familyResult = detectFamily(normalized);
+  if (familyResult.isFamily) {
+    const entity = buildFamilyEntity(familyResult, raw, normalized, locale);
+    return applyStrict(entity, options);
+  }
+  const personResult = detectPerson(normalized);
+  if (personResult.isPerson) {
+    const entity = buildPersonEntity(personResult, raw, normalized, locale);
+    return applyStrict(entity, options);
+  }
+  return applyStrict(buildUnknown(raw, normalized, locale, reasons, guessType(normalized)), options);
+}
+function guessType(text) {
+  if (text.length < 20 && /^[A-Z][a-z]+(\s+[A-Z][a-z]+)*$/.test(text)) {
+    return "person";
+  }
+  if (/\b(corp|company|group|holdings|services|consulting)\b/i.test(text)) {
+    return "organization";
+  }
+  return void 0;
+}
+function buildUnknown(raw, normalized, locale, reasons, guess) {
+  const meta = {
+    raw,
+    normalized,
+    confidence: 0.25,
+    reasons,
+    locale
+  };
+  return {
+    kind: "unknown",
+    text: normalized || raw,
+    guess,
+    meta
+  };
+}
+function applyStrict(entity, options) {
+  if (options.strictKind === "person" && entity.kind !== "person") {
+    const meta = {
+      ...entity.meta,
+      confidence: 1,
+      reasons: [...entity.meta.reasons]
+    };
+    const rejected = {
+      kind: "rejected",
+      rejectedAs: entity.kind === "rejected" ? "unknown" : entity.kind,
+      meta
+    };
+    return rejected;
+  }
+  return entity;
+}
+function isPerson(entity) {
+  return entity.kind === "person";
+}
+function isOrganization(entity) {
+  return entity.kind === "organization";
+}
+function isFamily(entity) {
+  return entity.kind === "family" || entity.kind === "household";
+}
+function isCompound(entity) {
+  return entity.kind === "compound";
+}
+function isUnknown(entity) {
+  return entity.kind === "unknown";
+}
+function isRejected(entity) {
+  return entity.kind === "rejected";
+}
+
 // src/parsers.ts
-function parseName(fullName) {
+function parseName(input, options) {
+  return classifyName(input, options);
+}
+function parsePersonName(fullName) {
   if (!fullName || typeof fullName !== "string") {
     throw new Error("Invalid name: expected non-empty string");
   }
@@ -1189,13 +2000,276 @@ function deriveSortHelpers(result) {
   result.sort = { display, key };
 }
 function getFirstName(fullName) {
-  return parseName(fullName).first;
+  return parsePersonName(fullName).first;
 }
 function getLastName(fullName) {
-  return parseName(fullName).last;
+  return parsePersonName(fullName).last;
 }
 function getNickname(fullName) {
-  return parseName(fullName).nickname;
+  return parsePersonName(fullName).nickname;
+}
+function entityToLegacy(entity) {
+  if (entity.kind !== "person") {
+    return null;
+  }
+  const person = entity;
+  const result = {};
+  if (person.honorific)
+    result.prefix = person.honorific;
+  if (person.given)
+    result.first = person.given;
+  if (person.middle)
+    result.middle = person.middle;
+  if (person.family)
+    result.last = person.family;
+  if (person.suffix)
+    result.suffix = person.suffix;
+  if (person.nickname)
+    result.nickname = person.nickname;
+  result.prefixTokens = buildAffixTokens(result.prefix, "prefix");
+  result.suffixTokens = buildAffixTokens(result.suffix, "suffix");
+  return result;
+}
+
+// src/email-extractor.ts
+var EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+var ANGLE_BRACKET_RE = /^(.*?)\s*<([^>]+)>\s*$/;
+var PAREN_EMAIL_RE = /^([^(]+)\s*\(([^)]+)\)\s*$/;
+var MAILTO_RE = /\[mailto:([^\]]+)\]/i;
+var SMTP_RE = /<SMTP:([^>]+)>/i;
+var X500_RE = /\/O=[^/]+\/.*\/CN=([^/\s]+)/i;
+function normalizeEmail(email) {
+  return email.toLowerCase().replace(/^mailto:/i, "").replace(/^smtp:/i, "").trim();
+}
+function extractEmail(text) {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const angleMatch = trimmed.match(ANGLE_BRACKET_RE);
+  if (angleMatch) {
+    const display = angleMatch[1].trim();
+    const bracket = angleMatch[2].trim();
+    if (EMAIL_RE.test(bracket)) {
+      return {
+        displayName: unquoteDisplay(display),
+        email: normalizeEmail(bracket),
+        addressRaw: bracket
+      };
+    }
+    const smtpMatch2 = bracket.match(/^SMTP:(.+)$/i);
+    if (smtpMatch2) {
+      return {
+        displayName: unquoteDisplay(display),
+        email: normalizeEmail(smtpMatch2[1]),
+        addressRaw: bracket
+      };
+    }
+    const x500Match = bracket.match(X500_RE);
+    if (x500Match) {
+      return {
+        displayName: unquoteDisplay(display),
+        email: normalizeEmail(x500Match[1]),
+        addressRaw: bracket
+      };
+    }
+  }
+  const mailtoMatch = trimmed.match(MAILTO_RE);
+  if (mailtoMatch) {
+    const email = normalizeEmail(mailtoMatch[1]);
+    const display = trimmed.replace(MAILTO_RE, "").trim();
+    return {
+      displayName: unquoteDisplay(display),
+      email,
+      addressRaw: mailtoMatch[0]
+    };
+  }
+  const smtpMatch = trimmed.match(SMTP_RE);
+  if (smtpMatch) {
+    const email = normalizeEmail(smtpMatch[1]);
+    const display = trimmed.replace(SMTP_RE, "").trim();
+    return {
+      displayName: unquoteDisplay(display),
+      email,
+      addressRaw: smtpMatch[0]
+    };
+  }
+  const parenMatch = trimmed.match(PAREN_EMAIL_RE);
+  if (parenMatch) {
+    const beforeParen = parenMatch[1].trim();
+    const inParen = parenMatch[2].trim();
+    if (EMAIL_RE.test(beforeParen)) {
+      return {
+        displayName: inParen,
+        email: normalizeEmail(beforeParen),
+        addressRaw: beforeParen
+      };
+    }
+  }
+  const bareEmailMatch = trimmed.match(EMAIL_RE);
+  if (bareEmailMatch) {
+    const email = normalizeEmail(bareEmailMatch[0]);
+    const display = trimmed.replace(EMAIL_RE, "").trim();
+    return {
+      displayName: display,
+      email,
+      addressRaw: bareEmailMatch[0]
+    };
+  }
+  return null;
+}
+function unquoteDisplay(display) {
+  let result = display.trim();
+  if (result.startsWith('"') && result.endsWith('"')) {
+    result = result.slice(1, -1);
+  }
+  if (result.startsWith("'") && result.endsWith("'")) {
+    result = result.slice(1, -1);
+  }
+  return result.trim();
+}
+function hasEmail(text) {
+  return EMAIL_RE.test(text);
+}
+
+// src/list-parser.ts
+function splitRecipients(input) {
+  const results = [];
+  let current = "";
+  let inQuotes = false;
+  let inAngleBrackets = false;
+  let quoteChar = "";
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i];
+    const nextChar = input[i + 1];
+    if ((char === '"' || char === "'") && !inAngleBrackets) {
+      if (!inQuotes) {
+        inQuotes = true;
+        quoteChar = char;
+      } else if (char === quoteChar) {
+        inQuotes = false;
+        quoteChar = "";
+      }
+    }
+    if (char === "<" && !inQuotes) {
+      inAngleBrackets = true;
+    } else if (char === ">" && !inQuotes) {
+      inAngleBrackets = false;
+    }
+    if (!inQuotes && !inAngleBrackets) {
+      if (char === ";") {
+        const trimmed2 = current.trim();
+        if (trimmed2) {
+          results.push(trimmed2);
+        }
+        current = "";
+        continue;
+      }
+      if (char === "\n") {
+        const trimmed2 = current.trim();
+        if (trimmed2) {
+          results.push(trimmed2);
+        }
+        current = "";
+        continue;
+      }
+      if (char === ",") {
+        if (!isReversedNameComma(current, input.slice(i + 1))) {
+          const trimmed2 = current.trim();
+          if (trimmed2) {
+            results.push(trimmed2);
+          }
+          current = "";
+          continue;
+        }
+      }
+    }
+    current += char;
+  }
+  const trimmed = current.trim();
+  if (trimmed) {
+    results.push(trimmed);
+  }
+  return results.map((r) => {
+    return r.replace(/^(To|Cc|Bcc|From):\s*/i, "").trim();
+  }).filter(Boolean);
+}
+function isReversedNameComma(before, after) {
+  const beforeTrimmed = before.trim();
+  const afterTrimmed = after.trim();
+  if (!beforeTrimmed)
+    return false;
+  const beforeTokens = beforeTrimmed.split(/\s+/).filter(Boolean);
+  const afterTokens = afterTrimmed.split(/[\s,;]+/).filter(Boolean);
+  if (hasEmail(afterTrimmed.split(/[,;]/)[0])) {
+    return false;
+  }
+  if (beforeTokens.length <= 2) {
+    const firstAfter = afterTokens[0];
+    if (firstAfter && /^[A-Z][a-z]+$/.test(firstAfter)) {
+      const commaIdx = afterTrimmed.indexOf(",");
+      if (commaIdx > 0 && commaIdx < 30) {
+        const betweenCommas = afterTrimmed.slice(0, commaIdx).trim();
+        const suffixPattern = /^[A-Z][a-z]+(\s+[A-Z]\.?)?$/;
+        if (suffixPattern.test(betweenCommas)) {
+          return true;
+        }
+      }
+      return true;
+    }
+  }
+  return false;
+}
+function parseNameList(input, options = {}) {
+  if (!input || typeof input !== "string") {
+    return [];
+  }
+  const recipients = splitRecipients(input);
+  const results = [];
+  for (const recipientRaw of recipients) {
+    const reasons = [];
+    const emailResult = extractEmail(recipientRaw);
+    if (emailResult) {
+      const displayName = emailResult.displayName;
+      reasons.push("HAS_EMAIL_OR_HANDLE");
+      if (displayName) {
+        const entity = classifyName(displayName, options);
+        results.push({
+          raw: recipientRaw,
+          display: entity,
+          email: emailResult.email,
+          addressRaw: emailResult.addressRaw,
+          meta: {
+            confidence: entity.meta.confidence,
+            reasons: [...reasons, ...entity.meta.reasons],
+            warnings: entity.meta.warnings
+          }
+        });
+      } else {
+        results.push({
+          raw: recipientRaw,
+          email: emailResult.email,
+          addressRaw: emailResult.addressRaw,
+          meta: {
+            confidence: 0.5,
+            reasons
+          }
+        });
+      }
+    } else {
+      const entity = classifyName(recipientRaw, options);
+      results.push({
+        raw: recipientRaw,
+        display: entity,
+        meta: {
+          confidence: entity.meta.confidence,
+          reasons: entity.meta.reasons,
+          warnings: entity.meta.warnings
+        }
+      });
+    }
+  }
+  return results;
 }
 
 // src/formatters.ts
@@ -1256,9 +2330,6 @@ function resolveOptions(options) {
     punctuation: options?.punctuation ?? "canonical",
     apostrophes: options?.apostrophes ?? "canonical"
   };
-}
-function ensureParsed(name) {
-  return typeof name === "string" ? parseName(name) : name;
 }
 function toWords(value) {
   return value.split(/\s+/).map((w) => w.trim()).filter(Boolean);
@@ -1584,23 +2655,180 @@ function joinCouple(a, b, o) {
   }
   return `${a.fullText} ${o.conjunction} ${b.fullText}`;
 }
+function isParsedNameEntity(input) {
+  return typeof input === "object" && input !== null && "kind" in input && typeof input.kind === "string";
+}
+function personEntityToLegacy(entity) {
+  const result = {};
+  if (entity.honorific)
+    result.prefix = entity.honorific;
+  if (entity.given)
+    result.first = entity.given;
+  if (entity.middle)
+    result.middle = entity.middle;
+  if (entity.family)
+    result.last = entity.family;
+  if (entity.suffix)
+    result.suffix = entity.suffix;
+  if (entity.nickname)
+    result.nickname = entity.nickname;
+  return result;
+}
+function formatOrganization(org, o) {
+  const t = getSpaceTokens(o.output);
+  const fullName = org.meta.raw.trim();
+  const baseName = org.baseName;
+  const legalSuffix = org.legalSuffixRaw;
+  switch (o.preset) {
+    case "informal":
+    case "firstOnly":
+    case "preferredFirst":
+      return baseName;
+    case "formalShort":
+      return baseName;
+    case "alphabetical":
+      if (legalSuffix) {
+        return `${baseName},${boundarySpace("commaSpace", o, t)}${legalSuffix}`;
+      }
+      return baseName;
+    case "initialed":
+      return baseName;
+    case "display":
+    case "preferredDisplay":
+    case "formalFull":
+    default:
+      return fullName;
+  }
+}
+function formatFamily(family, o) {
+  const t = getSpaceTokens(o.output);
+  const familyName = family.familyName;
+  const article = family.article;
+  const familyWord = family.familyWord;
+  const style = family.style;
+  switch (o.preset) {
+    case "informal":
+    case "firstOnly":
+    case "preferredFirst":
+      if (style === "pluralSurname") {
+        return `The${boundarySpace("prefixToNext", o, t)}${familyName}`;
+      }
+      return familyName;
+    case "formalShort":
+      if (style === "pluralSurname") {
+        return `The${boundarySpace("prefixToNext", o, t)}${familyName}`;
+      }
+      return `${familyName}${boundarySpace("givenToLast", o, t)}${familyWord || "Family"}`;
+    case "alphabetical":
+      if (familyWord) {
+        return `${familyName}${boundarySpace("givenToLast", o, t)}${familyWord}`;
+      }
+      return familyName;
+    case "initialed":
+      return familyName;
+    case "display":
+    case "preferredDisplay":
+    case "formalFull":
+    default:
+      if (article && familyWord) {
+        return `${article}${boundarySpace("prefixToNext", o, t)}${familyName}${boundarySpace("givenToLast", o, t)}${familyWord}`;
+      }
+      if (article) {
+        return `${article}${boundarySpace("prefixToNext", o, t)}${familyName}`;
+      }
+      if (familyWord) {
+        return `${familyName}${boundarySpace("givenToLast", o, t)}${familyWord}`;
+      }
+      return familyName;
+  }
+}
+function formatCompound(compound, o) {
+  const t = getSpaceTokens(o.output);
+  const connector = compound.connector === "&" ? "&" : compound.connector === "+" ? "+" : compound.connector === "et" ? "et" : "and";
+  const sharedFamily = compound.sharedFamily;
+  const formattedMembers = compound.members.map((member) => {
+    if (member.kind === "person") {
+      const parsed = personEntityToLegacy(member);
+      if (sharedFamily && o.preset !== "alphabetical") {
+        const withoutFamily = { ...parsed, last: void 0 };
+        return renderSingle(withoutFamily, o).fullText;
+      }
+      return renderSingle(parsed, o).fullText;
+    }
+    return member.text || "";
+  }).filter(Boolean);
+  if (formattedMembers.length === 0) {
+    return compound.meta.raw;
+  }
+  const joined = formattedMembers.join(` ${connector} `);
+  if (sharedFamily && o.preset !== "alphabetical") {
+    return `${joined}${boundarySpace("givenToLast", o, t)}${sharedFamily}`;
+  }
+  return joined;
+}
+function formatUnknown(unknown, _o) {
+  return unknown.text || unknown.meta.raw || "";
+}
+function formatRejected(rejected, _o) {
+  return rejected.meta.raw || "";
+}
+function formatEntity(entity, o) {
+  switch (entity.kind) {
+    case "person":
+      return renderSingle(personEntityToLegacy(entity), o).fullText;
+    case "organization":
+      return formatOrganization(entity, o);
+    case "family":
+    case "household":
+      return formatFamily(entity, o);
+    case "compound":
+      return formatCompound(entity, o);
+    case "unknown":
+      return formatUnknown(entity, o);
+    case "rejected":
+      return formatRejected(entity, o);
+    default:
+      return entity.meta?.raw || "";
+  }
+}
+function ensureParsedLegacy(input) {
+  if (typeof input === "string") {
+    return parsePersonName(input);
+  }
+  if (isParsedNameEntity(input)) {
+    if (input.kind === "person") {
+      return personEntityToLegacy(input);
+    }
+    return parsePersonName(input.meta.raw);
+  }
+  return input;
+}
 function formatName(input, options) {
   const o = resolveOptions(options);
   if (Array.isArray(input)) {
     if (o.join === "none") {
       throw new Error('formatName: array input requires options.join !== "none"');
     }
-    const parsedPeople = input.map(ensureParsed);
-    if (o.join === "list" || parsedPeople.length !== 2) {
-      const rendered = parsedPeople.map((p) => renderSingle(p, { ...o, join: "none" }).fullText);
+    const formatItem = (item) => {
+      if (isParsedNameEntity(item)) {
+        return formatEntity(item, o);
+      }
+      return renderSingle(ensureParsedLegacy(item), o).fullText;
+    };
+    if (o.join === "list" || input.length !== 2) {
+      const rendered = input.map(formatItem);
       return joinList(rendered, o);
     }
+    const parsedPeople = input.map(ensureParsedLegacy);
     const [p1, p2] = parsedPeople;
     const r1 = renderSingle(p1, { ...o, join: "none" });
     const r2 = renderSingle(p2, { ...o, join: "none" });
     return joinCouple(r1, r2, o);
   }
-  const parsed = ensureParsed(input);
+  if (isParsedNameEntity(input)) {
+    return formatEntity(input, o);
+  }
+  const parsed = ensureParsedLegacy(input);
   return renderSingle(parsed, o).fullText;
 }
 export {
@@ -1608,13 +2836,23 @@ export {
   COMMON_SURNAMES,
   MULTI_WORD_PARTICLES,
   PARTICLES,
+  classifyName,
+  entityToLegacy,
   formatName,
   getFirstName,
   getLastName,
   getNickname,
   isCommonFirstName,
   isCommonSurname,
+  isCompound,
+  isFamily,
   isMultiWordParticle,
+  isOrganization,
   isParticle,
-  parseName
+  isPerson,
+  isRejected,
+  isUnknown,
+  parseName,
+  parseNameList,
+  parsePersonName
 };

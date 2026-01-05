@@ -3,17 +3,20 @@
 [![npm version](https://img.shields.io/npm/v/name-tools.svg)](https://www.npmjs.com/package/name-tools)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-A lightweight, zero-dependency utility library for parsing, formatting, and manipulating person names.
+A lightweight, zero-dependency utility library for parsing, formatting, and manipulating person names. Now with **entity classification** to distinguish between people, organizations, families, and compound names.
 
 **[Interactive Demo](https://bobpritchett.github.io/name-tools/)**
 
 ## Features
 
+- **Entity Classification** - Automatically detect if input is a person, organization, family, or compound name
 - Parse full names into components (prefix, first, middle, last, suffix, nickname)
 - **Single** formatting entry point with presets + options (`formatName`)
 - Smart no-break spacing for nicer UI rendering (NBSP/NNBSP, optional HTML entities output)
 - Render lists/couples from arrays of names
 - Extract specific parts (first name, last name, nickname)
+- **Reversed name support** (e.g., "Smith, John, Jr.")
+- **Email recipient list parsing** (`parseNameList` for To/CC lines)
 - Comprehensive data sets of common prefixes and suffixes
 - Full TypeScript support with type definitions
 - Zero dependencies
@@ -28,63 +31,150 @@ pnpm add name-tools
 ## Quick Start
 
 ```javascript
-import { parseName, formatName } from "name-tools";
+import { parseName, formatName, parseNameList } from "name-tools";
 
-// Parse a full name
-const parsed = parseName("Dr. William Frederick Richardson Jr.");
-console.log(parsed);
+// Parse and classify a name - returns a typed entity
+const person = parseName("Dr. William Frederick Richardson Jr.");
+console.log(person);
 // {
-//   prefix: 'Dr.',
-//   first: 'William',
+//   kind: 'person',
+//   given: 'William',
 //   middle: 'Frederick',
-//   last: 'Richardson',
-//   suffix: 'Jr.'
+//   family: 'Richardson',
+//   honorific: 'Dr.',
+//   suffix: 'Jr.',
+//   meta: { confidence: 1, reasons: ['PERSON_STANDARD_FORMAT'], ... }
 // }
+
+// Detect organizations automatically
+const org = parseName("Acme Corporation, Inc.");
+console.log(org.kind); // 'organization'
+console.log(org.legalForm); // 'Inc.'
+
+// Detect compound names (couples)
+const couple = parseName("Bob & Mary Smith");
+console.log(couple.kind); // 'compound'
+console.log(couple.sharedFamily); // 'Smith'
 
 // Format a name (single entry point)
 console.log(formatName("Dr. William Frederick Richardson Jr."));
-// "William Richardson, Jr." (NBSP used in smart mode)
+// "William Richardson, Jr."
 
 console.log(
   formatName("Dr. William Frederick Richardson Jr.", { preset: "formalFull" })
 );
-// "Dr. Bob William Pritchett, Jr."
+// "Dr. William Frederick Richardson, Jr."
 
-// Render a list or couple
-console.log(formatName(["John Smith", "Mary Jones"], { join: "list" }));
-// "John Smith and Mary Jones"
-
-console.log(formatName(["John Smith", "Mary Smith"], { join: "couple" }));
-// "John and Mary Smith"
+// Parse email recipient lists (To/CC lines)
+const recipients = parseNameList("John Smith <john@example.com>; Jane Doe");
+// Returns array of parsed recipients with emails and classified names
 ```
 
 ## API Reference
 
+### Entity Classification
+
+The library classifies input into one of these entity types:
+
+| Kind           | Description                                    | Example                          |
+| -------------- | ---------------------------------------------- | -------------------------------- |
+| `person`       | Individual human name                          | "Dr. John Smith Jr."             |
+| `organization` | Company, institution, trust, foundation        | "Acme Corp, Inc.", "First Bank"  |
+| `family`       | Family or household                            | "The Smith Family", "The Smiths" |
+| `compound`     | Multiple people in one field                   | "Bob & Mary Smith"               |
+| `unknown`      | Could not be classified                        | "@handle", ambiguous input       |
+| `rejected`     | Strict mode rejection (not the requested type) | -                                |
+
 ### Parsing Functions
 
-#### `parseName(fullName: string): ParsedName`
+#### `parseName(input: string, options?: ParseOptions): ParsedNameEntity`
 
-Parse a full name string into its component parts.
+Parse and classify a name string into a typed entity.
 
 ```javascript
-const result = parseName("Mr. John Robert Smith Jr.");
-// Returns:
+// Person
+const person = parseName("Mr. John Robert Smith Jr.");
 // {
-//   prefix: 'Mr.',
-//   first: 'John',
+//   kind: 'person',
+//   honorific: 'Mr.',
+//   given: 'John',
 //   middle: 'Robert',
-//   last: 'Smith',
-//   suffix: 'Jr.'
+//   family: 'Smith',
+//   suffix: 'Jr.',
+//   meta: { confidence: 1, reasons: ['PERSON_STANDARD_FORMAT'], locale: 'en', ... }
+// }
+
+// Organization (detected by legal suffix)
+const org = parseName("Smith Family Trust");
+// {
+//   kind: 'organization',
+//   name: 'Smith Family Trust',
+//   legalForm: 'Trust',
+//   meta: { confidence: 1, reasons: ['ORG_LEGAL_SUFFIX'], ... }
+// }
+
+// Compound name (couple)
+const couple = parseName("John and Mary Smith");
+// {
+//   kind: 'compound',
+//   connector: 'and',
+//   members: [...],
+//   sharedFamily: 'Smith',
+//   meta: { ... }
+// }
+
+// Reversed name format
+const reversed = parseName("Smith, John, Jr.");
+// {
+//   kind: 'person',
+//   given: 'John',
+//   family: 'Smith',
+//   suffix: 'Jr.',
+//   meta: { reasons: ['PERSON_REVERSED_FORMAT'], ... }
 // }
 ```
 
-**Returns:** `ParsedName` object with the following properties:
+**Options:**
 
-- `prefix?`: string - Title or honorific (Mr., Dr., etc.)
-- `first`: string - First name
-- `middle?`: string - Middle name(s)
-- `last`: string - Last name
-- `suffix?`: string - Suffix (Jr., PhD, etc.)
+- `locale?: string` - Locale hint (default: 'en')
+- `strictKind?: 'person'` - Reject non-person entities
+
+#### `parseNameList(input: string, options?: ParseListOptions): ParsedRecipient[]`
+
+Parse email recipient lists (To/CC lines) into individual recipients.
+
+```javascript
+const recipients = parseNameList(
+  "John Smith <john@example.com>; Jane Doe <jane@example.com>, Bob"
+);
+// [
+//   {
+//     raw: 'John Smith <john@example.com>',
+//     display: { kind: 'person', given: 'John', family: 'Smith', ... },
+//     email: 'john@example.com',
+//     meta: { confidence: 1, ... }
+//   },
+//   {
+//     raw: 'Jane Doe <jane@example.com>',
+//     display: { kind: 'person', given: 'Jane', family: 'Doe', ... },
+//     email: 'jane@example.com',
+//     meta: { ... }
+//   },
+//   {
+//     raw: 'Bob',
+//     display: { kind: 'person', given: 'Bob', ... },
+//     meta: { ... }
+//   }
+// ]
+```
+
+**Supports:**
+
+- Semicolon separator (Outlook default)
+- Comma separator (context-aware, respects reversed names)
+- Newline separator
+- Email formats: `Name <email>`, `email (Name)`, bare emails
+- Reversed names: `Smith, John` won't split on the comma
 
 #### `getFirstName(fullName: string): string`
 
@@ -102,6 +192,35 @@ Extract just the last name from a full name.
 getLastName("William Frederick Richardson"); // "Richardson"
 ```
 
+### Type Guards
+
+The library exports type guard functions for working with classified entities:
+
+```typescript
+import {
+  parseName,
+  isPerson,
+  isOrganization,
+  isFamily,
+  isCompound,
+  isUnknown,
+  isRejected,
+} from "name-tools";
+
+const entity = parseName(input);
+
+if (isPerson(entity)) {
+  // entity is PersonName - access given, family, etc.
+  console.log(entity.given, entity.family);
+} else if (isOrganization(entity)) {
+  // entity is OrganizationName - access name, legalForm, etc.
+  console.log(entity.name, entity.legalForm);
+} else if (isCompound(entity)) {
+  // entity is CompoundName - access members, sharedFamily, etc.
+  console.log(entity.members, entity.sharedFamily);
+}
+```
+
 ### Formatting Functions
 
 All formatting uses a single entry point. Input can be a string, a `ParsedName`, or an array of either.
@@ -117,10 +236,10 @@ formatName(
 
 ```javascript
 formatName("Dr. John Franklin Jr.");
-// "John, Jr."
+// "John Franklin, Jr."
 
 formatName("Dr. John Franklin Jr.", { preset: "alphabetical" });
-// "Franklin, John, Jr."
+// "Franklin, John, Jr."
 ```
 
 #### Preset Matrix (quick pick)
@@ -133,15 +252,15 @@ const input = "Dr. William Frederick Richardson Jr.";
 
 | preset              | intent                   | defaults (high level)                                     | output example                                                                                                         |
 | ------------------- | ------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `display` (default) | best UI display name     | prefix omit, middle none, suffix auto, given-family       | `formatName(input)` → `William Richardson, Jr.`                                                                        |
-| `preferredDisplay`  | nickname + family for UI | prefer nickname, middle none, suffix auto                 | `formatName(input, { preset: "preferredDisplay" })` → `William Richardson, Jr.` _(falls back to first if no nickname)_ |
-| `informal`          | given + family           | prefix omit, middle none, suffix omit                     | `formatName(input, { preset: "informal" })` → `William Richardson`                                                     |
+| `display` (default) | best UI display name     | prefix omit, middle none, suffix auto, given-family       | `formatName(input)` → `William Richardson, Jr.`                                                                        |
+| `preferredDisplay`  | nickname + family for UI | prefer nickname, middle none, suffix auto                 | `formatName(input, { preset: "preferredDisplay" })` → `William Richardson, Jr.` _(falls back to first if no nickname)_ |
+| `informal`          | given + family           | prefix omit, middle none, suffix omit                     | `formatName(input, { preset: "informal" })` → `William Richardson`                                                     |
 | `firstOnly`         | given only               | prefix omit, middle none, suffix omit                     | `formatName(input, { preset: "firstOnly" })` → `William`                                                               |
 | `preferredFirst`    | nickname only            | prefer nickname, middle none, suffix omit                 | `formatName(input, { preset: "preferredFirst" })` → `William` _(falls back to first if no nickname)_                   |
-| `formalFull`        | full formal name         | prefix include, middle full, suffix include, given-family | `formatName(input, { preset: "formalFull" })` → `Dr. Bob William Pritchett, Jr.`                                       |
-| `formalShort`       | title + family           | prefix include, middle none, suffix omit                  | `formatName(input, { preset: "formalShort" })` → `Dr. Pritchett`                                                       |
-| `alphabetical`      | sortable family-first    | family-given, middle initial, suffix auto                 | `formatName(input, { preset: "alphabetical" })` → `Pritchett, Bob W., Jr.`                                             |
-| `initialed`         | initials + family        | middle initial, suffix omit                               | `formatName(input, { preset: "initialed" })` → `B. W. Pritchett`                                                       |
+| `formalFull`        | full formal name         | prefix include, middle full, suffix include, given-family | `formatName(input, { preset: "formalFull" })` → `Dr. William Frederick Richardson, Jr.`                                |
+| `formalShort`       | title + family           | prefix include, middle none, suffix omit                  | `formatName(input, { preset: "formalShort" })` → `Dr. Richardson`                                                      |
+| `alphabetical`      | sortable family-first    | family-given, middle initial, suffix auto                 | `formatName(input, { preset: "alphabetical" })` → `Richardson, William F., Jr.`                                        |
+| `initialed`         | initials + family        | middle initial, suffix omit                               | `formatName(input, { preset: "initialed" })` → `W. F. Richardson`                                                      |
 
 See `NameFormatOptions` for presets, typography, no-break behavior, and array rendering.
 
@@ -160,13 +279,27 @@ This library is written in TypeScript and includes full type definitions.
 ```typescript
 import {
   parseName,
-  ParsedName,
   formatName,
+  parseNameList,
+  ParsedNameEntity,
+  PersonName,
+  OrganizationName,
+  CompoundName,
+  ParsedRecipient,
+  isPerson,
   NameFormatOptions,
 } from "name-tools";
 
-const parsed: ParsedName = parseName("Bob Pritchett");
-const formatted: string = formatName(parsed, {
+// Entity classification with type narrowing
+const entity: ParsedNameEntity = parseName("John Franklin Jr.");
+
+if (isPerson(entity)) {
+  const person: PersonName = entity;
+  console.log(person.given, person.family); // "John", "Franklin"
+}
+
+// Formatting
+const formatted: string = formatName("John Franklin Jr.", {
   preset: "display",
 } satisfies NameFormatOptions);
 ```
@@ -180,8 +313,49 @@ const formatted: string = formatName(parsed, {
 - Name-based sorting and indexing
 - Form validation and processing
 - Business card and document generation
+- CRM data normalization
+- Donor/customer record deduplication
 
 ## Examples
+
+### Entity Classification
+
+```javascript
+import { parseName, isPerson, isOrganization } from "name-tools";
+
+function processEntry(input) {
+  const entity = parseName(input);
+
+  switch (entity.kind) {
+    case "person":
+      return `Hello, ${entity.given}!`;
+    case "organization":
+      return `Business: ${entity.name}`;
+    case "family":
+      return `The ${entity.surname} household`;
+    case "compound":
+      return `${entity.members.length} people`;
+    default:
+      return input; // unknown/rejected
+  }
+}
+
+processEntry("Dr. John Smith"); // "Hello, John!"
+processEntry("Acme Corp, LLC"); // "Business: Acme Corp, LLC"
+processEntry("The Smith Family"); // "The Smith household"
+processEntry("Bob & Mary Smith"); // "2 people"
+```
+
+### Strict Mode (Person Only)
+
+```javascript
+import { parseName } from "name-tools";
+
+// Reject non-person entities
+const result = parseName("Acme Corp, Inc.", { strictKind: "person" });
+console.log(result.kind); // 'rejected'
+console.log(result.rejectedAs); // 'organization'
+```
 
 ### Building an Email Address
 
@@ -194,30 +368,36 @@ function createEmail(fullName, domain) {
   return `${first}.${last}@${domain}`;
 }
 
-createEmail("Bob Pritchett", "example.com");
-// "bob.pritchett@example.com"
+createEmail("John Franklin Jr.", "example.com");
+// "john.franklin@example.com"
 ```
 
 ### Formatting for Display
 
 ```javascript
-import { parseName, formatName } from "name-tools";
+import { parseName, formatName, isPerson } from "name-tools";
 
 function displayName(fullName) {
-  const parsed = parseName(fullName);
+  const entity = parseName(fullName);
+
+  if (!isPerson(entity)) {
+    return fullName; // Return as-is for non-persons
+  }
 
   // Use a more formal preset for VIPs with titles
-  if (parsed.prefix) return formatName(parsed, { preset: "formalFull" });
+  if (entity.honorific) {
+    return formatName(fullName, { preset: "formalFull" });
+  }
 
   // Otherwise the default display preset
-  return formatName(parsed);
+  return formatName(fullName);
 }
 
 displayName("Dr. William Frederick Richardson Jr.");
-// "Dr. William Frederick Richardson, Jr."
+// "Dr. William Frederick Richardson, Jr."
 
 displayName("William Frederick Richardson Jr.");
-// "William Richardson, Jr."
+// "William Richardson, Jr."
 ```
 
 ### Sorting Names
@@ -225,7 +405,7 @@ displayName("William Frederick Richardson Jr.");
 ```javascript
 import { formatName } from "name-tools";
 
-const names = ["Bob Pritchett", "Alice Johnson", "Dr. Charlie Brown"];
+const names = ["John Franklin Jr.", "Alice Johnson", "Dr. Charlie Brown"];
 
 const sorted = names
   .map((name) => ({
@@ -235,7 +415,27 @@ const sorted = names
   .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
   .map((item) => item.original);
 
-// ["Dr. Charlie Brown", "Alice Johnson", "Bob Pritchett"]
+// ["Dr. Charlie Brown", "Alice Johnson", "John Franklin Jr."]
+```
+
+### Processing Email Recipient Lists
+
+```javascript
+import { parseNameList, isPerson } from "name-tools";
+
+const toLine =
+  "John Smith <john@example.com>; Jane Doe; sales@company.com; The Smiths";
+
+const recipients = parseNameList(toLine);
+
+for (const r of recipients) {
+  if (r.email) {
+    console.log(`Email: ${r.email}`);
+  }
+  if (r.display && isPerson(r.display)) {
+    console.log(`Name: ${r.display.given} ${r.display.family}`);
+  }
+}
 ```
 
 ## Running the Demo Locally & Troubleshooting
@@ -307,15 +507,23 @@ pnpm run dev
 
 ```
 name-tools/
-├── src/              # Source code (TypeScript)
-│   ├── data/         # Data sets (prefixes, suffixes)
-│   ├── parsers.ts    # Parsing functions
-│   ├── formatters.ts # Formatting functions
-│   └── index.ts      # Main entry point
-├── dist/             # Compiled output (generated)
-├── docs/             # Demo site (GitHub Pages)
-├── tests/            # Unit tests
-└── package.json      # Package configuration
+├── src/                  # Source code (TypeScript)
+│   ├── data/             # Data sets (prefixes, suffixes, legal forms)
+│   ├── detectors/        # Entity detection modules
+│   │   ├── person.ts     # Person name detection
+│   │   ├── organization.ts # Organization detection
+│   │   ├── family.ts     # Family/household detection
+│   │   └── compound.ts   # Compound name detection
+│   ├── classifier.ts     # Main classification orchestrator
+│   ├── parsers.ts        # Parsing functions
+│   ├── formatters.ts     # Formatting functions
+│   ├── list-parser.ts    # Recipient list parsing
+│   ├── types.ts          # TypeScript type definitions
+│   └── index.ts          # Main entry point
+├── dist/                 # Compiled output (generated)
+├── docs/                 # Demo site (GitHub Pages)
+├── tests/                # Unit tests
+└── package.json          # Package configuration
 ```
 
 ### Building for NPM and GitHub Pages

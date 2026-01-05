@@ -1,26 +1,88 @@
 /**
  * name-tools - A utility library for parsing, formatting, and manipulating person names
  * Supports international names with particles, compound surnames, and nicknames
+ * Now with entity classification for organizations, families, and compound names.
  * @packageDocumentation
  */
 
-// Export data sets
+// =============================================================================
+// DATA SETS
+// =============================================================================
 export { PARTICLES, MULTI_WORD_PARTICLES, isParticle, isMultiWordParticle } from './data/particles';
 export { COMMON_SURNAMES, COMMON_FIRST_NAMES, isCommonSurname, isCommonFirstName } from './data/surnames';
 
-// Export parsers
+// =============================================================================
+// PARSING
+// =============================================================================
 export {
   parseName,
+  parsePersonName,
   getFirstName,
   getLastName,
   getNickname,
+  entityToLegacy,
 } from './parsers';
 
-export type { ParsedName, NameAffixToken, NameAffixTokenType, NameToken, NameTokenType } from './types';
+export { parseNameList } from './list-parser';
 
-// Export formatters
+// =============================================================================
+// CLASSIFICATION
+// =============================================================================
 export {
-  formatName,
-} from './formatters';
+  classifyName,
+  isPerson,
+  isOrganization,
+  isFamily,
+  isCompound,
+  isUnknown,
+  isRejected,
+} from './classifier';
 
-export type { NameFormatOptions, NamePreset } from './types';
+// =============================================================================
+// FORMATTING
+// =============================================================================
+export { formatName } from './formatters';
+
+// =============================================================================
+// TYPES - Entity Classification
+// =============================================================================
+export type {
+  // Entity kinds
+  NameKind,
+  Confidence,
+  ReasonCode,
+  ParseMeta,
+  BaseEntity,
+  LegalForm,
+  FamilyStyle,
+  CompoundConnector,
+
+  // Entity types
+  ParsedNameEntity,
+  PersonName,
+  OrganizationName,
+  FamilyName,
+  CompoundName,
+  UnknownName,
+  RejectedName,
+
+  // Options
+  ParseOptions,
+  ParseListOptions,
+
+  // Recipient parsing
+  ParsedRecipient,
+} from './types';
+
+// =============================================================================
+// TYPES - Legacy (for formatName compatibility)
+// =============================================================================
+export type {
+  ParsedName,
+  NameAffixToken,
+  NameAffixTokenType,
+  NameToken,
+  NameTokenType,
+  NameFormatOptions,
+  NamePreset,
+} from './types';

@@ -1,6 +1,11 @@
 import {
     parseName,
-    formatName
+    parsePersonName,
+    formatName,
+    isPerson,
+    isOrganization,
+    isFamily,
+    isCompound
 } from './name-tools.js';
 
 // Global variable to hold examples data
@@ -20,7 +25,7 @@ function updateResults() {
     }
 
     const lines = inputContent.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    
+
     if (lines.length === 0) {
         resultsDiv.innerHTML = '<p style="color: #636c76; font-size: 14px;">Enter a name to see results...</p>';
         demoActions.style.display = 'none';
@@ -28,141 +33,158 @@ function updateResults() {
     }
 
     try {
-        let html = `
-            <div class="result-group">
-                <table class="parsed-table">
-                    <thead>
-                        <tr>
-                            <th>Input</th>
-                            <th>Prefix</th>
-                            <th>First</th>
-                            <th>Nickname</th>
-                            <th>Middle</th>
-                            <th>Last</th>
-                            <th>Suffix</th>
-                            <th class="actions-col"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
+        let html = '';
 
-        const allParsed = [];
+        // Single input - show detailed entity classification
+        if (lines.length === 1) {
+            const entity = parseName(lines[0]);
 
-        lines.forEach((line, index) => {
-            const parsed = parseName(line);
-            allParsed.push({ line, parsed });
-            
-            const detailsId = `details-${index}`;
+            // Entity Classification section
             html += `
-                <tr>
-                    <td class="test-input">${line}</td>
-                    <td>${parsed.prefix || '-'}</td>
-                    <td>${parsed.first || '-'}</td>
-                    <td>${parsed.nickname || '-'}</td>
-                    <td>${parsed.middle || '-'}</td>
-                    <td>${parsed.last || '-'}</td>
-                    <td>${parsed.suffix || '-'}</td>
-                    <td class="actions-col">
-                        <button class="copy-row-btn" title="Copy to JSON" data-index="${index}">Copy</button>
-                        <button class="copy-row-btn" title="Toggle details" data-toggle="${detailsId}">Details</button>
-                    </td>
-                </tr>
-                <tr id="${detailsId}" class="details-row" style="display: none;">
-                    <td colspan="8">
+                <div class="result-group">
+                    <h3>Entity Classification</h3>
+                    <div class="entity-result">
+                        <span class="entity-kind entity-kind-${entity.kind}">${entity.kind}</span>
+                        <span class="entity-confidence">Confidence: ${(entity.meta.confidence * 100).toFixed(0)}%</span>
+                    </div>
+                    ${renderEntityDetails(entity)}
+                </div>
+            `;
+
+            // Only show parsed components table for person entities
+            if (isPerson(entity)) {
+                const parsed = parsePersonName(lines[0]);
+                html += `
+                    <div class="result-group">
+                        <h3>Parsed Components</h3>
+                        <table class="parsed-table">
+                            <thead>
+                                <tr>
+                                    <th>Prefix</th>
+                                    <th>First</th>
+                                    <th>Nickname</th>
+                                    <th>Middle</th>
+                                    <th>Last</th>
+                                    <th>Suffix</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${escapeHtml(parsed.prefix || '-')}</td>
+                                    <td>${escapeHtml(parsed.first || '-')}</td>
+                                    <td>${escapeHtml(parsed.nickname || '-')}</td>
+                                    <td>${escapeHtml(parsed.middle || '-')}</td>
+                                    <td>${escapeHtml(parsed.last || '-')}</td>
+                                    <td>${escapeHtml(parsed.suffix || '-')}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                // Extended details for person
+                html += `
+                    <div class="result-group">
                         ${renderExtendedPanel(parsed)}
-                    </td>
-                </tr>
-            `;
-        });
+                    </div>
+                `;
+            }
 
-        html += `
-                    </tbody>
-                </table>
-            </div>
-        `;
-
-        // For single line input, show the extended panel prominently once (outside the table)
-        if (lines.length === 1) {
+            // Formatted outputs - use the entity directly for proper formatting
             html += `
                 <div class="result-group">
-                    ${renderExtendedPanel(allParsed[0].parsed)}
-                </div>
-            `;
-        }
-
-        // Formatting outputs (single entry point)
-        if (lines.length === 1) {
-            const parsed = allParsed[0].parsed;
-            html += `
-                <div class="result-group">
+                    <h3>Formatted Outputs</h3>
                     <div class="formatted-outputs">
-                        <div class="formatted-item"><strong>Display:</strong> <span>${formatName(parsed)}</span></div>
-                        <div class="formatted-item"><strong>Formal Full:</strong> <span>${formatName(parsed, { preset: 'formalFull' })}</span></div>
-                        <div class="formatted-item"><strong>Formal Short:</strong> <span>${formatName(parsed, { preset: 'formalShort' })}</span></div>
-                        <div class="formatted-item"><strong>Alphabetical:</strong> <span>${formatName(parsed, { preset: 'alphabetical' })}</span></div>
-                        <div class="formatted-item"><strong>Initialed:</strong> <span>${formatName(parsed, { preset: 'initialed' })}</span></div>
-                        <div class="formatted-item"><strong>Preferred Display:</strong> <span>${formatName(parsed, { preset: 'preferredDisplay' })}</span></div>
+                        <div class="formatted-item"><strong>Display:</strong> <span>${escapeHtml(formatName(entity))}</span></div>
+                        <div class="formatted-item"><strong>Formal Full:</strong> <span>${escapeHtml(formatName(entity, { preset: 'formalFull' }))}</span></div>
+                        <div class="formatted-item"><strong>Formal Short:</strong> <span>${escapeHtml(formatName(entity, { preset: 'formalShort' }))}</span></div>
+                        <div class="formatted-item"><strong>Alphabetical:</strong> <span>${escapeHtml(formatName(entity, { preset: 'alphabetical' }))}</span></div>
+                        <div class="formatted-item"><strong>Informal:</strong> <span>${escapeHtml(formatName(entity, { preset: 'informal' }))}</span></div>
                     </div>
                 </div>
             `;
-        } else if (lines.length === 2) {
-            // Show list + couple renderings for 2 names
+
+        } else {
+            // Multiple inputs - show classification for each and list formatting
             html += `
                 <div class="result-group">
-                    <div class="formatted-outputs">
-                        <div class="formatted-item"><strong>List:</strong> <span>${formatName(lines, { join: 'list' })}</span></div>
-                        <div class="formatted-item"><strong>Couple:</strong> <span>${formatName(lines, { join: 'couple' })}</span></div>
-                    </div>
-                </div>
+                    <h3>Entity Classifications</h3>
+                    <table class="parsed-table entity-table">
+                        <thead>
+                            <tr>
+                                <th>Input</th>
+                                <th>Kind</th>
+                                <th>Display</th>
+                                <th>Formal Full</th>
+                                <th>Formal Short</th>
+                                <th>Alphabetical</th>
+                            </tr>
+                        </thead>
+                        <tbody>
             `;
-        } else if (lines.length > 2) {
-            // Show list rendering for 3+ names
+
+            const entities = lines.map(line => parseName(line));
+
+            entities.forEach((entity, index) => {
+                const rowId = `entity-details-${index}`;
+                html += `
+                    <tr class="entity-row" onclick="toggleEntityDetails('${rowId}')">
+                        <td class="test-input">${escapeHtml(lines[index])}</td>
+                        <td><span class="entity-kind entity-kind-${entity.kind}" style="padding: 2px 8px; font-size: 11px;">${entity.kind}</span></td>
+                        <td class="format-cell">${escapeHtml(formatName(entity))}</td>
+                        <td class="format-cell">${escapeHtml(formatName(entity, { preset: 'formalFull' }))}</td>
+                        <td class="format-cell">${escapeHtml(formatName(entity, { preset: 'formalShort' }))}</td>
+                        <td class="format-cell">${escapeHtml(formatName(entity, { preset: 'alphabetical' }))}</td>
+                    </tr>
+                    <tr id="${rowId}" class="entity-details-row">
+                        <td colspan="6">
+                            ${renderCompactEntityDetails(entity)}
+                        </td>
+                    </tr>
+                `;
+            });
+
             html += `
-                <div class="result-group">
-                    <div class="formatted-outputs">
-                        <div class="formatted-item"><strong>List:</strong> <span>${formatName(lines, { join: 'list' })}</span></div>
-                    </div>
+                        </tbody>
+                    </table>
                 </div>
             `;
+
+            // Show list/couple formatting
+            if (lines.length === 2) {
+                html += `
+                    <div class="result-group">
+                        <h3>Combined Formats</h3>
+                        <div class="formatted-outputs">
+                            <div class="formatted-item"><strong>List:</strong> <span>${escapeHtml(formatName(entities, { join: 'list' }))}</span></div>
+                            <div class="formatted-item"><strong>Couple:</strong> <span>${escapeHtml(formatName(entities, { join: 'couple' }))}</span></div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="result-group">
+                        <h3>Combined Formats</h3>
+                        <div class="formatted-outputs">
+                            <div class="formatted-item"><strong>List:</strong> <span>${escapeHtml(formatName(entities, { join: 'list' }))}</span></div>
+                        </div>
+                    </div>
+                `;
+            }
         }
 
         resultsDiv.innerHTML = html;
         demoActions.style.display = 'flex';
 
-        // Add event listeners to copy buttons
-        document.querySelectorAll('.copy-row-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const index = parseInt(btn.getAttribute('data-index'));
-                if (!Number.isNaN(index)) {
-                    const { line, parsed } = allParsed[index];
-                    copyParsedToJson(line, parsed, btn);
-                }
-            });
-        });
-
-        // Toggle details buttons
-        document.querySelectorAll('[data-toggle]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const id = btn.getAttribute('data-toggle');
-                const row = document.getElementById(id);
-                if (!row) return;
-                row.style.display = row.style.display === 'none' ? '' : 'none';
-            });
-        });
-
-        // Main copy button copies everything or the single one
+        // Main copy button
         const copyJsonBtn = document.getElementById('copyJsonBtn');
         copyJsonBtn.onclick = () => {
-            if (allParsed.length === 1) {
-                copyParsedToJson(allParsed[0].line, allParsed[0].parsed, copyJsonBtn);
-            } else {
-                const json = JSON.stringify(allParsed.map(item => ({
-                    input: item.line,
-                    expected: item.parsed,
-                    description: "New example"
-                })), null, 2);
-                copyToClipboard(json, copyJsonBtn);
-            }
+            const entities = lines.map(line => ({
+                input: line,
+                entity: parseName(line)
+            }));
+            const json = JSON.stringify(entities, null, 2);
+            copyToClipboard(json, copyJsonBtn);
         };
 
     } catch (error) {
@@ -179,6 +201,134 @@ function escapeHtml(value) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
+
+function renderEntityDetails(entity) {
+    let html = '<div class="entity-details">';
+
+    if (isPerson(entity)) {
+        html += `
+            <table class="details-kv">
+                <tbody>
+                    ${entity.honorific ? `<tr><th>Honorific</th><td>${escapeHtml(entity.honorific)}</td></tr>` : ''}
+                    ${entity.given ? `<tr><th>Given</th><td>${escapeHtml(entity.given)}</td></tr>` : ''}
+                    ${entity.middle ? `<tr><th>Middle</th><td>${escapeHtml(entity.middle)}</td></tr>` : ''}
+                    ${entity.family ? `<tr><th>Family</th><td>${escapeHtml(entity.family)}</td></tr>` : ''}
+                    ${entity.suffix ? `<tr><th>Suffix</th><td>${escapeHtml(entity.suffix)}</td></tr>` : ''}
+                    ${entity.nickname ? `<tr><th>Nickname</th><td>${escapeHtml(entity.nickname)}</td></tr>` : ''}
+                </tbody>
+            </table>
+        `;
+    } else if (isOrganization(entity)) {
+        html += `
+            <table class="details-kv">
+                <tbody>
+                    <tr><th>Base Name</th><td>${escapeHtml(entity.baseName)}</td></tr>
+                    ${entity.legalForm ? `<tr><th>Legal Form</th><td>${escapeHtml(entity.legalForm)}</td></tr>` : ''}
+                    ${entity.legalSuffixRaw ? `<tr><th>Legal Suffix</th><td>${escapeHtml(entity.legalSuffixRaw)}</td></tr>` : ''}
+                </tbody>
+            </table>
+        `;
+    } else if (isFamily(entity)) {
+        html += `
+            <table class="details-kv">
+                <tbody>
+                    <tr><th>Family Name</th><td>${escapeHtml(entity.familyName)}</td></tr>
+                    ${entity.article ? `<tr><th>Article</th><td>${escapeHtml(entity.article)}</td></tr>` : ''}
+                    ${entity.familyWord ? `<tr><th>Family Word</th><td>${escapeHtml(entity.familyWord)}</td></tr>` : ''}
+                    <tr><th>Style</th><td>${escapeHtml(entity.style)}</td></tr>
+                </tbody>
+            </table>
+        `;
+    } else if (isCompound(entity)) {
+        html += `
+            <table class="details-kv">
+                <tbody>
+                    <tr><th>Connector</th><td>${escapeHtml(entity.connector)}</td></tr>
+                    ${entity.sharedFamily ? `<tr><th>Shared Family</th><td>${escapeHtml(entity.sharedFamily)}</td></tr>` : ''}
+                    <tr><th>Members</th><td>${entity.members.length} member(s)</td></tr>
+                </tbody>
+            </table>
+        `;
+        // Show member details
+        if (entity.members.length > 0) {
+            html += '<div style="margin-top: 12px;"><strong>Members:</strong></div>';
+            entity.members.forEach((member, i) => {
+                if (member.kind === 'person') {
+                    html += `<div style="margin-left: 16px; margin-top: 4px;">
+                        ${i + 1}. ${escapeHtml(member.given || '')} ${escapeHtml(member.family || '')}
+                    </div>`;
+                } else {
+                    html += `<div style="margin-left: 16px; margin-top: 4px;">
+                        ${i + 1}. ${escapeHtml(member.text || '')}
+                    </div>`;
+                }
+            });
+        }
+    } else {
+        html += `<p>Text: ${escapeHtml(entity.text || entity.meta?.raw || '')}</p>`;
+    }
+
+    // Show reasons
+    if (entity.meta.reasons && entity.meta.reasons.length > 0) {
+        html += `<div class="entity-reasons"><strong>Reasons:</strong> ${entity.meta.reasons.map(r => `<code>${escapeHtml(r)}</code>`).join(', ')}</div>`;
+    }
+
+    html += '</div>';
+    return html;
+}
+
+function renderCompactEntityDetails(entity) {
+    let parts = [];
+
+    if (isPerson(entity)) {
+        if (entity.honorific) parts.push(`<span class="detail-label">Honorific:</span> ${escapeHtml(entity.honorific)}`);
+        if (entity.given) parts.push(`<span class="detail-label">Given:</span> ${escapeHtml(entity.given)}`);
+        if (entity.middle) parts.push(`<span class="detail-label">Middle:</span> ${escapeHtml(entity.middle)}`);
+        if (entity.family) parts.push(`<span class="detail-label">Family:</span> ${escapeHtml(entity.family)}`);
+        if (entity.suffix) parts.push(`<span class="detail-label">Suffix:</span> ${escapeHtml(entity.suffix)}`);
+        if (entity.nickname) parts.push(`<span class="detail-label">Nickname:</span> ${escapeHtml(entity.nickname)}`);
+        if (entity.reversed) parts.push(`<span class="detail-label">Reversed:</span> yes`);
+    } else if (isOrganization(entity)) {
+        parts.push(`<span class="detail-label">Base Name:</span> ${escapeHtml(entity.baseName)}`);
+        if (entity.legalForm) parts.push(`<span class="detail-label">Legal Form:</span> ${escapeHtml(entity.legalForm)}`);
+        if (entity.legalSuffixRaw) parts.push(`<span class="detail-label">Legal Suffix:</span> ${escapeHtml(entity.legalSuffixRaw)}`);
+    } else if (isFamily(entity)) {
+        parts.push(`<span class="detail-label">Family Name:</span> ${escapeHtml(entity.familyName)}`);
+        if (entity.article) parts.push(`<span class="detail-label">Article:</span> ${escapeHtml(entity.article)}`);
+        if (entity.familyWord) parts.push(`<span class="detail-label">Family Word:</span> ${escapeHtml(entity.familyWord)}`);
+        parts.push(`<span class="detail-label">Style:</span> ${escapeHtml(entity.style)}`);
+    } else if (isCompound(entity)) {
+        parts.push(`<span class="detail-label">Connector:</span> ${escapeHtml(entity.connector)}`);
+        if (entity.sharedFamily) parts.push(`<span class="detail-label">Shared Family:</span> ${escapeHtml(entity.sharedFamily)}`);
+        const memberNames = entity.members.map(m => {
+            if (m.kind === 'person') {
+                return `${m.given || ''}${m.family ? ' ' + m.family : ''}`.trim();
+            }
+            return m.text || '';
+        }).filter(Boolean);
+        if (memberNames.length > 0) {
+            parts.push(`<span class="detail-label">Members:</span> ${memberNames.map(n => escapeHtml(n)).join(', ')}`);
+        }
+    } else {
+        parts.push(`<span class="detail-label">Text:</span> ${escapeHtml(entity.text || entity.meta?.raw || '')}`);
+    }
+
+    // Add confidence and reasons
+    parts.push(`<span class="detail-label">Confidence:</span> ${(entity.meta.confidence * 100).toFixed(0)}%`);
+    if (entity.meta.reasons && entity.meta.reasons.length > 0) {
+        parts.push(`<span class="detail-label">Reasons:</span> ${entity.meta.reasons.map(r => `<code>${escapeHtml(r)}</code>`).join(' ')}`);
+    }
+
+    return `<div class="compact-details">${parts.join('<span class="detail-sep">|</span>')}</div>`;
+}
+
+// Toggle visibility of entity details row
+window.toggleEntityDetails = function(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) {
+        row.classList.toggle('expanded');
+    }
+};
 
 function renderTokenList(tokens) {
     if (!tokens || tokens.length === 0) return '-';
@@ -213,24 +363,6 @@ function renderExtendedPanel(parsed) {
             </details>
         </div>
     `;
-}
-
-function copyParsedToJson(input, parsed, btn) {
-    const result = {
-        input,
-        expected: { ...parsed },
-        description: "New example"
-    };
-    
-    // Clean up empty fields from expected to match typical style
-    Object.keys(result.expected).forEach(key => {
-        if (result.expected[key] === undefined || result.expected[key] === '') {
-            delete result.expected[key];
-        }
-    });
-
-    const json = JSON.stringify(result, null, 2);
-    copyToClipboard(json, btn);
 }
 
 async function copyToClipboard(text, btn) {
@@ -279,8 +411,8 @@ function populateTestResultsTable() {
     // Process each parse example
     examplesData.parseExamples.forEach(({ input, expected, description }) => {
         try {
-            // Parse the name
-            const actual = parseName(input);
+            // Parse the name using legacy parsePersonName
+            const actual = parsePersonName(input);
 
             // Create row
             const row = document.createElement('tr');

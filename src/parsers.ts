@@ -1,10 +1,32 @@
 import { isParticle } from './data/particles';
 import { isCommonSurname, isCommonFirstName } from './data/surnames';
 import { buildAffixTokens } from './affixes';
-import { ParsedName } from './types';
+import { ParsedName, ParsedNameEntity, ParseOptions, PersonName as PersonNameEntity } from './types';
+import { classifyName, isPerson } from './classifier';
+
+/**
+ * Parse a name string into a classified entity
+ *
+ * This is the main entry point for name parsing. It classifies the input as:
+ * - person: Individual human name
+ * - organization: Company, institution, trust, etc.
+ * - family: Family or household (e.g., "The Smith Family")
+ * - compound: Multiple people (e.g., "Bob & Mary Smith")
+ * - unknown: Could not be classified
+ * - rejected: Strict mode rejection
+ *
+ * @param input - The name string to parse
+ * @param options - Parsing options
+ * @returns Classified entity with metadata
+ */
+export function parseName(input: string, options?: ParseOptions): ParsedNameEntity {
+  return classifyName(input, options);
+}
 
 /**
  * Parse a full name string into its component parts using international name parsing rules
+ * (Legacy function for internal use by formatName)
+ *
  * Supports:
  * - Surname particles (van, von, de, da, etc.)
  * - Compound surnames (García Márquez)
@@ -13,8 +35,9 @@ import { ParsedName } from './types';
  *
  * @param fullName - The full name to parse
  * @returns Object containing parsed name components
+ * @internal
  */
-export function parseName(fullName: string): ParsedName {
+export function parsePersonName(fullName: string): ParsedName {
   if (!fullName || typeof fullName !== 'string') {
     throw new Error('Invalid name: expected non-empty string');
   }
@@ -333,21 +356,50 @@ function deriveSortHelpers(result: ParsedName): void {
 
 /**
  * Extract first name from a full name
+ * Uses the legacy person parser for compatibility
  */
 export function getFirstName(fullName: string): string | undefined {
-  return parseName(fullName).first;
+  return parsePersonName(fullName).first;
 }
 
 /**
  * Extract last name from a full name
+ * Uses the legacy person parser for compatibility
  */
 export function getLastName(fullName: string): string | undefined {
-  return parseName(fullName).last;
+  return parsePersonName(fullName).last;
 }
 
 /**
  * Extract nickname from a full name
+ * Uses the legacy person parser for compatibility
  */
 export function getNickname(fullName: string): string | undefined {
-  return parseName(fullName).nickname;
+  return parsePersonName(fullName).nickname;
+}
+
+/**
+ * Convert a ParsedNameEntity to a ParsedName (legacy format)
+ * Useful for formatName compatibility when working with new API
+ */
+export function entityToLegacy(entity: ParsedNameEntity): ParsedName | null {
+  if (entity.kind !== 'person') {
+    return null;
+  }
+
+  const person = entity as PersonNameEntity;
+  const result: ParsedName = {};
+
+  if (person.honorific) result.prefix = person.honorific;
+  if (person.given) result.first = person.given;
+  if (person.middle) result.middle = person.middle;
+  if (person.family) result.last = person.family;
+  if (person.suffix) result.suffix = person.suffix;
+  if (person.nickname) result.nickname = person.nickname;
+
+  // Build affix tokens
+  result.prefixTokens = buildAffixTokens(result.prefix, 'prefix');
+  result.suffixTokens = buildAffixTokens(result.suffix, 'suffix');
+
+  return result;
 }

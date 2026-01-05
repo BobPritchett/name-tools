@@ -1,5 +1,19 @@
-import { parseName } from './parsers';
-import type { NameFormatOptions, NamePreset, ParsedName } from './types';
+import { parsePersonName } from './parsers';
+import type {
+  NameFormatOptions,
+  NamePreset,
+  ParsedName,
+  ParsedNameEntity,
+  PersonName as PersonNameEntity,
+  OrganizationName,
+  FamilyName,
+  CompoundName,
+  UnknownName,
+  RejectedName,
+} from './types';
+
+// Type for any input that formatName can accept
+type FormatInput = string | ParsedName | ParsedNameEntity;
 
 type ResolvedOptions = Required<
   Pick<
@@ -112,9 +126,6 @@ function resolveOptions(options?: NameFormatOptions): ResolvedOptions {
   };
 }
 
-function ensureParsed(name: string | ParsedName): ParsedName {
-  return typeof name === 'string' ? parseName(name) : name;
-}
 
 function toWords(value: string): string[] {
   return value.split(/\s+/).map(w => w.trim()).filter(Boolean);
@@ -530,11 +541,239 @@ function joinCouple(a: RenderedPersonParts, b: RenderedPersonParts, o: ResolvedO
   return `${a.fullText} ${o.conjunction} ${b.fullText}`;
 }
 
+// =============================================================================
+// ENTITY TYPE DETECTION AND FORMATTING
+// =============================================================================
+
+/**
+ * Check if input is a ParsedNameEntity (has 'kind' property)
+ */
+function isParsedNameEntity(input: unknown): input is ParsedNameEntity {
+  return (
+    typeof input === 'object' &&
+    input !== null &&
+    'kind' in input &&
+    typeof (input as ParsedNameEntity).kind === 'string'
+  );
+}
+
+/**
+ * Convert a PersonNameEntity to legacy ParsedName format
+ */
+function personEntityToLegacy(entity: PersonNameEntity): ParsedName {
+  const result: ParsedName = {};
+  if (entity.honorific) result.prefix = entity.honorific;
+  if (entity.given) result.first = entity.given;
+  if (entity.middle) result.middle = entity.middle;
+  if (entity.family) result.last = entity.family;
+  if (entity.suffix) result.suffix = entity.suffix;
+  if (entity.nickname) result.nickname = entity.nickname;
+  return result;
+}
+
+/**
+ * Format an organization name based on preset
+ */
+function formatOrganization(org: OrganizationName, o: ResolvedOptions): string {
+  const t = getSpaceTokens(o.output);
+
+  // Get the full name from meta.raw or construct from parts
+  const fullName = org.meta.raw.trim();
+  const baseName = org.baseName;
+  const legalSuffix = org.legalSuffixRaw;
+
+  switch (o.preset) {
+    case 'informal':
+    case 'firstOnly':
+    case 'preferredFirst':
+      // Short/informal: just the base name without legal suffix
+      return baseName;
+
+    case 'formalShort':
+      // Short formal: base name only
+      return baseName;
+
+    case 'alphabetical':
+      // For sorting: base name, then legal suffix
+      if (legalSuffix) {
+        return `${baseName},${boundarySpace('commaSpace', o, t)}${legalSuffix}`;
+      }
+      return baseName;
+
+    case 'initialed':
+      // Initials don't make sense for orgs, return base name
+      return baseName;
+
+    case 'display':
+    case 'preferredDisplay':
+    case 'formalFull':
+    default:
+      // Full name as written
+      return fullName;
+  }
+}
+
+/**
+ * Format a family/household name based on preset
+ */
+function formatFamily(family: FamilyName, o: ResolvedOptions): string {
+  const t = getSpaceTokens(o.output);
+  const familyName = family.familyName;
+  const article = family.article;
+  const familyWord = family.familyWord;
+  const style = family.style;
+
+  switch (o.preset) {
+    case 'informal':
+    case 'firstOnly':
+    case 'preferredFirst':
+      // Just the family name
+      if (style === 'pluralSurname') {
+        return `The${boundarySpace('prefixToNext', o, t)}${familyName}`;
+      }
+      return familyName;
+
+    case 'formalShort':
+      // Short: The Smiths or Smith Family
+      if (style === 'pluralSurname') {
+        return `The${boundarySpace('prefixToNext', o, t)}${familyName}`;
+      }
+      return `${familyName}${boundarySpace('givenToLast', o, t)}${familyWord || 'Family'}`;
+
+    case 'alphabetical':
+      // For sorting: family name first
+      if (familyWord) {
+        return `${familyName}${boundarySpace('givenToLast', o, t)}${familyWord}`;
+      }
+      return familyName;
+
+    case 'initialed':
+      // Initials don't make sense for families
+      return familyName;
+
+    case 'display':
+    case 'preferredDisplay':
+    case 'formalFull':
+    default:
+      // Full form: "The Smith Family" or "The Smiths"
+      if (article && familyWord) {
+        return `${article}${boundarySpace('prefixToNext', o, t)}${familyName}${boundarySpace('givenToLast', o, t)}${familyWord}`;
+      }
+      if (article) {
+        return `${article}${boundarySpace('prefixToNext', o, t)}${familyName}`;
+      }
+      if (familyWord) {
+        return `${familyName}${boundarySpace('givenToLast', o, t)}${familyWord}`;
+      }
+      return familyName;
+  }
+}
+
+/**
+ * Format a compound name (multiple people) based on preset
+ */
+function formatCompound(compound: CompoundName, o: ResolvedOptions): string {
+  const t = getSpaceTokens(o.output);
+  const connector = compound.connector === '&' ? '&' :
+                    compound.connector === '+' ? '+' :
+                    compound.connector === 'et' ? 'et' : 'and';
+  const sharedFamily = compound.sharedFamily;
+
+  // Format each member
+  const formattedMembers = compound.members.map(member => {
+    if (member.kind === 'person') {
+      const parsed = personEntityToLegacy(member);
+      // For compound with shared family, omit family from individual rendering
+      if (sharedFamily && o.preset !== 'alphabetical') {
+        const withoutFamily = { ...parsed, last: undefined };
+        return renderSingle(withoutFamily, o).fullText;
+      }
+      return renderSingle(parsed, o).fullText;
+    }
+    // Unknown member
+    return (member as UnknownName).text || '';
+  }).filter(Boolean);
+
+  if (formattedMembers.length === 0) {
+    return compound.meta.raw;
+  }
+
+  // Join members
+  const joined = formattedMembers.join(` ${connector} `);
+
+  // Append shared family if present and not alphabetical
+  if (sharedFamily && o.preset !== 'alphabetical') {
+    return `${joined}${boundarySpace('givenToLast', o, t)}${sharedFamily}`;
+  }
+
+  return joined;
+}
+
+/**
+ * Format an unknown entity
+ */
+function formatUnknown(unknown: UnknownName, _o: ResolvedOptions): string {
+  return unknown.text || unknown.meta.raw || '';
+}
+
+/**
+ * Format a rejected entity (return raw input)
+ */
+function formatRejected(rejected: RejectedName, _o: ResolvedOptions): string {
+  return rejected.meta.raw || '';
+}
+
+/**
+ * Format any ParsedNameEntity based on its kind
+ */
+function formatEntity(entity: ParsedNameEntity, o: ResolvedOptions): string {
+  switch (entity.kind) {
+    case 'person':
+      return renderSingle(personEntityToLegacy(entity as PersonNameEntity), o).fullText;
+    case 'organization':
+      return formatOrganization(entity as OrganizationName, o);
+    case 'family':
+    case 'household':
+      return formatFamily(entity as FamilyName, o);
+    case 'compound':
+      return formatCompound(entity as CompoundName, o);
+    case 'unknown':
+      return formatUnknown(entity as UnknownName, o);
+    case 'rejected':
+      return formatRejected(entity as RejectedName, o);
+    default:
+      return (entity as any).meta?.raw || '';
+  }
+}
+
+/**
+ * Ensure input is converted to ParsedName (legacy format) for person rendering
+ */
+function ensureParsedLegacy(input: FormatInput): ParsedName {
+  if (typeof input === 'string') {
+    return parsePersonName(input);
+  }
+  if (isParsedNameEntity(input)) {
+    if (input.kind === 'person') {
+      return personEntityToLegacy(input as PersonNameEntity);
+    }
+    // For non-person entities, try to parse the raw string
+    return parsePersonName(input.meta.raw);
+  }
+  return input as ParsedName;
+}
+
 /**
  * Public formatting entry point (single name or array of names).
+ *
+ * Accepts:
+ * - string: Will be parsed as a person name
+ * - ParsedName: Legacy parsed name object
+ * - ParsedNameEntity: Entity from parseName() (person, organization, family, compound, etc.)
+ * - Array of any of the above
  */
 export function formatName(
-  input: string | ParsedName | Array<string | ParsedName>,
+  input: FormatInput | Array<FormatInput>,
   options?: NameFormatOptions
 ): string {
   const o = resolveOptions(options);
@@ -544,19 +783,33 @@ export function formatName(
       throw new Error('formatName: array input requires options.join !== "none"');
     }
 
-    const parsedPeople = input.map(ensureParsed);
-    if (o.join === 'list' || parsedPeople.length !== 2) {
-      const rendered = parsedPeople.map(p => renderSingle(p, { ...o, join: 'none' }).fullText);
+    // Format each item, respecting entity types
+    const formatItem = (item: FormatInput): string => {
+      if (isParsedNameEntity(item)) {
+        return formatEntity(item, o);
+      }
+      return renderSingle(ensureParsedLegacy(item), o).fullText;
+    };
+
+    if (o.join === 'list' || input.length !== 2) {
+      const rendered = input.map(formatItem);
       return joinList(rendered, o);
     }
 
-    // couple (length === 2)
+    // couple (length === 2) - use legacy rendering for couple compression
+    const parsedPeople = input.map(ensureParsedLegacy);
     const [p1, p2] = parsedPeople;
     const r1 = renderSingle(p1, { ...o, join: 'none' });
     const r2 = renderSingle(p2, { ...o, join: 'none' });
     return joinCouple(r1, r2, o);
   }
 
-  const parsed = ensureParsed(input);
+  // Single input - check if it's a ParsedNameEntity
+  if (isParsedNameEntity(input)) {
+    return formatEntity(input, o);
+  }
+
+  // Legacy ParsedName or string
+  const parsed = ensureParsedLegacy(input);
   return renderSingle(parsed, o).fullText;
 }

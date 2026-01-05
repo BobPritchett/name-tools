@@ -9,7 +9,7 @@
 <body>
         <header>
             <h1>name-tools</h1>
-            <p class="subtitle">A utility library for parsing, formatting, and manipulating person names</p>
+            <p class="subtitle">A utility library for parsing, formatting, and classifying names (person, organization, family, compound)</p>
             <div class="badges">
                 <a href="https://www.npmjs.com/package/name-tools" class="badge">
                     <img src="https://img.shields.io/npm/v/name-tools.svg" alt="npm version">
@@ -29,14 +29,18 @@
                         <textarea
                             id="nameInput"
                             placeholder="e.g., Dr. John Robert Smith Jr."
-                            rows="1"
-                        >Dr. William Frederick Richardson Jr.</textarea>
+                            rows="6"
+                        >Dr. William Frederick Richardson Jr.
+Acme Corporation, Inc.
+The Smith Family
+Bob & Mary Johnson
+Smith, John, Jr.
+"Doe, Jane" <jane.doe@example.com></textarea>
                     </div>
 
                     <p class="demo-hint">
-                        The parser returns the original string fields (<code>prefix</code>, <code>first</code>, <code>middle</code>, <code>last</code>, <code>suffix</code>, <code>nickname</code>)
-                        plus additive structured metadata: <code>prefixTokens</code>, <code>suffixTokens</code>, <code>familyParticle</code>, <code>familyParts</code>, <code>familyParticleBehavior</code>,
-                        <code>preferredGiven</code>, and <code>sort</code>.
+                        Enter any name to see it classified (person, organization, family, compound) with confidence scores.
+                        Try: <code>Acme Corp, Inc.</code> | <code>Bob & Mary Smith</code> | <code>The Smith Family</code> | <code>Smith, John, Jr.</code>
                     </p>
 
                     <div id="results">
@@ -81,25 +85,34 @@
                 <h2>Quick Start</h2>
                 <pre><code>import { parseName, formatName } from 'name-tools';
 
-const parsed = parseName("Dr. John Franklin Jr.");
-console.log(parsed);
-// { prefix: 'Dr.', first: 'John', last: 'Franklin', suffix: 'Jr.' }
+// Parse and classify a name - returns a typed entity
+const person = parseName("Dr. John Franklin Jr.");
+console.log(person.kind);    // 'person'
+console.log(person.given);   // 'John'
+console.log(person.family);  // 'Franklin'
 
+// Detect organizations automatically
+const org = parseName("Acme Corporation, Inc.");
+console.log(org.kind);       // 'organization'
+
+// Detect compound names (couples)
+const couple = parseName("Bob & Mary Smith");
+console.log(couple.kind);    // 'compound'
+
+// Format names with presets
 console.log(formatName("Dr. John Franklin Jr."));
-// "John Franklin, Jr." (NBSP used for nicer line breaks)
-
-console.log(formatName("Dr. John Franklin Jr.", { preset: "alphabetical" }));
-// "Franklin, John, Jr."</code></pre>
+// "John Franklin, Jr."</code></pre>
             </section>
 
             <section class="info-section">
                 <h2>Features</h2>
                 <ul class="features-list">
-                    <li><strong>Parse Names:</strong> Extract components (prefix, first, middle, last, suffix)</li>
-                    <li><strong>Format Names:</strong> Multiple formatting options (Last-First, First-Last, with initials)</li>
-                    <li><strong>Extract Data:</strong> Get first name, last name, initials</li>
-                    <li><strong>Data Sets:</strong> Includes common prefixes (Mr., Dr., etc.) and suffixes (Jr., PhD, etc.)</li>
-                    <li><strong>TypeScript Support:</strong> Full type definitions included</li>
+                    <li><strong>Entity Classification:</strong> Automatically detect person, organization, family, or compound names</li>
+                    <li><strong>Parse Names:</strong> Extract components (prefix, first, middle, last, suffix, nickname)</li>
+                    <li><strong>Format Names:</strong> Multiple formatting presets (display, formal, alphabetical, initialed)</li>
+                    <li><strong>Reversed Names:</strong> Support for "Smith, John, Jr." format</li>
+                    <li><strong>Recipient Lists:</strong> Parse email To/CC lines with parseNameList()</li>
+                    <li><strong>TypeScript Support:</strong> Full type definitions with discriminated unions</li>
                     <li><strong>Zero Dependencies:</strong> Lightweight and fast</li>
                 </ul>
             </section>
@@ -107,11 +120,20 @@ console.log(formatName("Dr. John Franklin Jr.", { preset: "alphabetical" }));
             <section class="info-section">
                 <h2>API Reference</h2>
                 <div class="api-list">
-                    <h3>Parsing Functions</h3>
+                    <h3>Classification & Parsing</h3>
                     <ul>
-                        <li><code>parseName(fullName: string)</code> - Parse a full name into components</li>
-                        <li><code>getFirstName(fullName: string)</code> - Extract first name</li>
-                        <li><code>getLastName(fullName: string)</code> - Extract last name</li>
+                        <li><code>parseName(input, options?)</code> - Classify and parse into entity type (person, org, family, compound)</li>
+                        <li><code>parseNameList(input)</code> - Parse email recipient lists (To/CC lines)</li>
+                        <li><code>getFirstName(fullName)</code> - Extract first name</li>
+                        <li><code>getLastName(fullName)</code> - Extract last name</li>
+                    </ul>
+
+                    <h3>Type Guards</h3>
+                    <ul>
+                        <li><code>isPerson(entity)</code> - Check if entity is a person</li>
+                        <li><code>isOrganization(entity)</code> - Check if entity is an organization</li>
+                        <li><code>isFamily(entity)</code> - Check if entity is a family/household</li>
+                        <li><code>isCompound(entity)</code> - Check if entity is a compound name</li>
                     </ul>
 
                     <h3>Formatting Functions</h3>
@@ -121,14 +143,9 @@ console.log(formatName("Dr. John Franklin Jr.", { preset: "alphabetical" }));
 
                     <h3>Data & Utilities</h3>
                     <ul>
-                        <li><code>PARTICLES</code> - Array of surname particles</li>
-                        <li><code>MULTI_WORD_PARTICLES</code> - Array of multi-word particles</li>
-                        <li><code>COMMON_SURNAMES</code> - Array of common surnames</li>
-                        <li><code>COMMON_FIRST_NAMES</code> - Array of common first names</li>
-                        <li><code>isParticle(str: string)</code> - Check if string is a particle</li>
-                        <li><code>isMultiWordParticle(str: string)</code> - Check if string is a multi-word particle</li>
-                        <li><code>isCommonSurname(str: string)</code> - Check if string is a common surname</li>
-                        <li><code>isCommonFirstName(str: string)</code> - Check if string is a common first name</li>
+                        <li><code>PARTICLES</code> - Array of surname particles (van, von, de, etc.)</li>
+                        <li><code>COMMON_SURNAMES</code>, <code>COMMON_FIRST_NAMES</code> - Name datasets</li>
+                        <li><code>isParticle()</code>, <code>isCommonSurname()</code>, <code>isCommonFirstName()</code></li>
                     </ul>
                 </div>
             </section>

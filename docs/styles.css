@@ -371,6 +371,154 @@ footer a:hover {
     text-decoration: underline;
 }
 
+/* Entity Classification */
+.result-group h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #636c76;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.entity-result {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.entity-kind {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.entity-kind-person {
+    background-color: #ddf4ff;
+    color: #0969da;
+}
+
+.entity-kind-organization {
+    background-color: #fff8c5;
+    color: #9a6700;
+}
+
+.entity-kind-family,
+.entity-kind-household {
+    background-color: #dafbe1;
+    color: #1a7f37;
+}
+
+.entity-kind-compound {
+    background-color: #fbefff;
+    color: #8250df;
+}
+
+.entity-kind-unknown {
+    background-color: #f6f8fa;
+    color: #636c76;
+}
+
+.entity-kind-rejected {
+    background-color: #ffebe9;
+    color: #cf222e;
+}
+
+.entity-confidence {
+    font-size: 13px;
+    color: #636c76;
+}
+
+.entity-details {
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.entity-details .details-kv {
+    margin-top: 0;
+}
+
+.entity-reasons {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #636c76;
+}
+
+.entity-reasons code {
+    background: rgba(175,184,193,0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-left: 4px;
+}
+
+/* Entity table styles */
+.entity-table {
+    table-layout: auto;
+}
+
+.entity-row {
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.entity-row:hover {
+    background-color: #f6f8fa;
+}
+
+.entity-details-row {
+    display: none;
+    background-color: #f6f8fa;
+}
+
+.entity-details-row.expanded {
+    display: table-row;
+}
+
+.entity-details-row td {
+    padding: 8px 12px !important;
+    border-top: none !important;
+}
+
+.compact-details {
+    font-size: 11px;
+    color: #636c76;
+    line-height: 1.8;
+    padding: 4px 0;
+}
+
+.detail-label {
+    color: #1f2328;
+    font-weight: 500;
+}
+
+.detail-sep {
+    color: #d0d7de;
+    margin: 0 8px;
+}
+
+.compact-details code {
+    background: rgba(175,184,193,0.2);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    margin-left: 2px;
+}
+
+.format-cell {
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
 @media (max-width: 768px) {
     main {
         padding: 20px;
