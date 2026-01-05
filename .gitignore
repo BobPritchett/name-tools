@@ -17,3 +17,7 @@ yarn-error.log*
 .vscode/
 .cursor/
 .idea/
+
+# SSA data files (manually downloaded from ssa.gov)
+data/*.txt
+data/*.zip

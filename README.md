@@ -12,6 +12,7 @@ A lightweight, zero-dependency utility library for parsing, formatting, and mani
 - **Entity Classification** - Automatically detect if input is a person, organization, family, or compound name
 - Parse full names into components (prefix, first, middle, last, suffix, nickname)
 - **Single** formatting entry point with presets + options (`formatName`)
+- **Gender guessing** from first names using US Social Security Administration birth data (140+ years of statistics)
 - Smart no-break spacing for nicer UI rendering (NBSP/NNBSP, optional HTML entities output)
 - Render lists/couples from arrays of names
 - Extract specific parts (first name, last name, nickname)
@@ -19,7 +20,7 @@ A lightweight, zero-dependency utility library for parsing, formatting, and mani
 - **Email recipient list parsing** (`parseNameList` for To/CC lines)
 - Comprehensive data sets of common prefixes and suffixes
 - Full TypeScript support with type definitions
-- Zero dependencies
+- Zero dependencies (gender data is tree-shakeable)
 - Lightweight and fast
 
 ## Installation
@@ -85,88 +86,168 @@ The library classifies input into one of these entity types:
 | `unknown`      | Could not be classified                        | "@handle", ambiguous input       |
 | `rejected`     | Strict mode rejection (not the requested type) | -                                |
 
+### Entity Type Structures
+
+Each entity type has specific fields. All types include a `meta` property with parsing metadata.
+
+#### `PersonName`
+
+| Field       | Type       | Description                                |
+| ----------- | ---------- | ------------------------------------------ |
+| `kind`      | `'person'` | Entity type discriminator                  |
+| `honorific` | `string?`  | Title/honorific (Dr., Mr., etc.)           |
+| `given`     | `string?`  | Given/first name                           |
+| `middle`    | `string?`  | Middle name(s)                             |
+| `family`    | `string?`  | Family/last name                           |
+| `suffix`    | `string?`  | Suffix (Jr., PhD, etc.)                    |
+| `nickname`  | `string?`  | Nickname                                   |
+| `particles` | `string[]?`| Surname particles (von, de, etc.)          |
+| `reversed`  | `boolean?` | Whether name was in reversed format        |
+| `meta`      | `ParseMeta`| Parsing metadata                           |
+
+#### `OrganizationName`
+
+| Field           | Type             | Description                           |
+| --------------- | ---------------- | ------------------------------------- |
+| `kind`          | `'organization'` | Entity type discriminator             |
+| `baseName`      | `string`         | Base name without legal suffix        |
+| `legalForm`     | `LegalForm?`     | Detected legal form (Inc, LLC, etc.)  |
+| `legalSuffixRaw`| `string?`        | Raw legal suffix as written           |
+| `qualifiers`    | `string[]?`      | Additional qualifiers ("of", etc.)    |
+| `aka`           | `string[]?`      | Alternate names (d/b/a)               |
+| `meta`          | `ParseMeta`      | Parsing metadata                      |
+
+#### `FamilyName`
+
+| Field        | Type                          | Description                         |
+| ------------ | ----------------------------- | ----------------------------------- |
+| `kind`       | `'family'` \| `'household'`   | Entity type discriminator           |
+| `article`    | `'The'?`                      | Leading article if present          |
+| `familyName` | `string`                      | Core family/surname                 |
+| `style`      | `'familyWord'` \| `'pluralSurname'` | How the family was expressed  |
+| `familyWord` | `'Family'` \| `'Household'?`  | The word used (if style is familyWord) |
+| `meta`       | `ParseMeta`                   | Parsing metadata                    |
+
+#### `CompoundName`
+
+| Field          | Type                              | Description                      |
+| -------------- | --------------------------------- | -------------------------------- |
+| `kind`         | `'compound'`                      | Entity type discriminator        |
+| `connector`    | `'&'` \| `'and'` \| `'+'` \| `'et'` \| `'unknown'` | The connector detected |
+| `members`      | `(PersonName \| UnknownName)[]`   | Parsed members                   |
+| `sharedFamily` | `string?`                         | Shared family name if inferred   |
+| `meta`         | `ParseMeta`                       | Parsing metadata                 |
+
+#### `UnknownName`
+
+| Field   | Type        | Description                              |
+| ------- | ----------- | ---------------------------------------- |
+| `kind`  | `'unknown'` | Entity type discriminator                |
+| `text`  | `string`    | Best-effort normalized text              |
+| `guess` | `NameKind?` | Best guess at what it might be           |
+| `meta`  | `ParseMeta` | Parsing metadata                         |
+
+#### `RejectedName`
+
+| Field        | Type         | Description                              |
+| ------------ | ------------ | ---------------------------------------- |
+| `kind`       | `'rejected'` | Entity type discriminator                |
+| `rejectedAs` | `NameKind`   | What kind it would have been classified as |
+| `meta`       | `ParseMeta`  | Parsing metadata                         |
+
+#### `ParseMeta` (included in all entities)
+
+| Field        | Type           | Description                              |
+| ------------ | -------------- | ---------------------------------------- |
+| `raw`        | `string`       | Exact input string                       |
+| `normalized` | `string`       | Normalized string used for parsing       |
+| `confidence` | `0` \| `0.25` \| `0.5` \| `0.75` \| `1` | Overall confidence in classification |
+| `reasons`    | `ReasonCode[]` | Reason codes explaining the classification |
+| `warnings`   | `string[]?`    | Human-readable warnings                  |
+| `locale`     | `string?`      | Locale hint (default: "en")              |
+
+---
+
 ### Parsing Functions
 
-#### `parseName(input: string, options?: ParseOptions): ParsedNameEntity`
+#### `parseName(input, options?)`
+
+```ts
+parseName(input: string, options?: ParseOptions): ParsedNameEntity
+```
 
 Parse and classify a name string into a typed entity.
+
+**Parameters:**
+
+| Parameter          | Type     | Description                                  |
+| ------------------ | -------- | -------------------------------------------- |
+| `input`            | `string` | The name string to parse                     |
+| `options.locale`   | `string` | Locale hint (default: `'en'`)                |
+| `options.strictKind` | `'person'` | If set, reject non-person entities        |
+
+**Returns:** `ParsedNameEntity` - One of `PersonName`, `OrganizationName`, `FamilyName`, `CompoundName`, `UnknownName`, or `RejectedName`
 
 ```javascript
 // Person
 const person = parseName("Mr. John Robert Smith Jr.");
-// {
-//   kind: 'person',
-//   honorific: 'Mr.',
-//   given: 'John',
-//   middle: 'Robert',
-//   family: 'Smith',
-//   suffix: 'Jr.',
-//   meta: { confidence: 1, reasons: ['PERSON_STANDARD_FORMAT'], locale: 'en', ... }
-// }
+// { kind: 'person', honorific: 'Mr.', given: 'John', middle: 'Robert', family: 'Smith', suffix: 'Jr.', meta: {...} }
 
-// Organization (detected by legal suffix)
+// Organization
 const org = parseName("Smith Family Trust");
-// {
-//   kind: 'organization',
-//   name: 'Smith Family Trust',
-//   legalForm: 'Trust',
-//   meta: { confidence: 1, reasons: ['ORG_LEGAL_SUFFIX'], ... }
-// }
+// { kind: 'organization', baseName: 'Smith Family Trust', legalForm: 'Trust', meta: {...} }
 
 // Compound name (couple)
 const couple = parseName("John and Mary Smith");
-// {
-//   kind: 'compound',
-//   connector: 'and',
-//   members: [...],
-//   sharedFamily: 'Smith',
-//   meta: { ... }
-// }
+// { kind: 'compound', connector: 'and', members: [...], sharedFamily: 'Smith', meta: {...} }
 
-// Reversed name format
+// Reversed format
 const reversed = parseName("Smith, John, Jr.");
-// {
-//   kind: 'person',
-//   given: 'John',
-//   family: 'Smith',
-//   suffix: 'Jr.',
-//   meta: { reasons: ['PERSON_REVERSED_FORMAT'], ... }
-// }
+// { kind: 'person', given: 'John', family: 'Smith', suffix: 'Jr.', reversed: true, meta: {...} }
 ```
 
-**Options:**
+---
 
-- `locale?: string` - Locale hint (default: 'en')
-- `strictKind?: 'person'` - Reject non-person entities
+#### `parsePersonName(fullName)`
 
-#### `parseNameList(input: string, options?: ParseListOptions): ParsedRecipient[]`
+```ts
+parsePersonName(fullName: string): ParsedName
+```
+
+Parse a name string into legacy `ParsedName` format (for use with `formatName`).
+
+**Parameters:**
+
+| Parameter  | Type     | Description              |
+| ---------- | -------- | ------------------------ |
+| `fullName` | `string` | The name string to parse |
+
+**Returns:** `ParsedName` with `prefix`, `first`, `middle`, `last`, `suffix`, `nickname` fields
+
+```javascript
+const parsed = parsePersonName("Dr. John William Smith Jr.");
+// { prefix: 'Dr.', first: 'John', middle: 'William', last: 'Smith', suffix: 'Jr.' }
+```
+
+---
+
+#### `parseNameList(input, options?)`
+
+```ts
+parseNameList(input: string, options?: ParseListOptions): ParsedRecipient[]
+```
 
 Parse email recipient lists (To/CC lines) into individual recipients.
 
-```javascript
-const recipients = parseNameList(
-  "John Smith <john@example.com>; Jane Doe <jane@example.com>, Bob"
-);
-// [
-//   {
-//     raw: 'John Smith <john@example.com>',
-//     display: { kind: 'person', given: 'John', family: 'Smith', ... },
-//     email: 'john@example.com',
-//     meta: { confidence: 1, ... }
-//   },
-//   {
-//     raw: 'Jane Doe <jane@example.com>',
-//     display: { kind: 'person', given: 'Jane', family: 'Doe', ... },
-//     email: 'jane@example.com',
-//     meta: { ... }
-//   },
-//   {
-//     raw: 'Bob',
-//     display: { kind: 'person', given: 'Bob', ... },
-//     meta: { ... }
-//   }
-// ]
-```
+**Parameters:**
+
+| Parameter          | Type     | Description                                  |
+| ------------------ | -------- | -------------------------------------------- |
+| `input`            | `string` | The recipient list string                    |
+| `options.locale`   | `string` | Locale hint (default: `'en'`)                |
+| `options.strictKind` | `'person'` | If set, reject non-person entities        |
+
+**Returns:** `ParsedRecipient[]` - Array of recipients with `raw`, `display`, `email`, and `meta` fields
 
 **Supports:**
 
@@ -176,56 +257,144 @@ const recipients = parseNameList(
 - Email formats: `Name <email>`, `email (Name)`, bare emails
 - Reversed names: `Smith, John` won't split on the comma
 
-#### `getFirstName(fullName: string): string`
+```javascript
+const recipients = parseNameList(
+  "John Smith <john@example.com>; Jane Doe <jane@example.com>, Bob"
+);
+// [
+//   { raw: 'John Smith <john@example.com>', display: { kind: 'person', ... }, email: 'john@example.com', meta: {...} },
+//   { raw: 'Jane Doe <jane@example.com>', display: { kind: 'person', ... }, email: 'jane@example.com', meta: {...} },
+//   { raw: 'Bob', display: { kind: 'person', given: 'Bob', ... }, meta: {...} }
+// ]
+```
 
-Extract just the first name from a full name.
+---
+
+#### `getFirstName(fullName)`
+
+```ts
+getFirstName(fullName: string): string | undefined
+```
+
+Extract just the first/given name from a full name string.
+
+**Parameters:**
+
+| Parameter  | Type     | Description              |
+| ---------- | -------- | ------------------------ |
+| `fullName` | `string` | The full name to extract from |
+
+**Returns:** `string | undefined` - The first name, or `undefined` if not found
 
 ```javascript
 getFirstName("William Frederick Richardson"); // "William"
+getFirstName("Dr. John Smith Jr."); // "John"
 ```
 
-#### `getLastName(fullName: string): string`
+---
 
-Extract just the last name from a full name.
+#### `getLastName(fullName)`
+
+```ts
+getLastName(fullName: string): string | undefined
+```
+
+Extract just the last/family name from a full name string.
+
+**Parameters:**
+
+| Parameter  | Type     | Description              |
+| ---------- | -------- | ------------------------ |
+| `fullName` | `string` | The full name to extract from |
+
+**Returns:** `string | undefined` - The last name, or `undefined` if not found
 
 ```javascript
 getLastName("William Frederick Richardson"); // "Richardson"
+getLastName("Dr. John van der Berg Jr."); // "van der Berg"
 ```
+
+---
+
+#### `getNickname(fullName)`
+
+```ts
+getNickname(fullName: string): string | undefined
+```
+
+Extract the nickname from a full name string (if present).
+
+**Parameters:**
+
+| Parameter  | Type     | Description              |
+| ---------- | -------- | ------------------------ |
+| `fullName` | `string` | The full name to extract from |
+
+**Returns:** `string | undefined` - The nickname, or `undefined` if not found
+
+```javascript
+getNickname('William "Bill" Smith'); // "Bill"
+getNickname("Robert (Bob) Jones"); // "Bob"
+```
+
+---
+
+#### `entityToLegacy(entity)`
+
+```ts
+entityToLegacy(entity: ParsedNameEntity): ParsedName | null
+```
+
+Convert a `ParsedNameEntity` to legacy `ParsedName` format (for use with `formatName`).
+
+**Parameters:**
+
+| Parameter | Type               | Description                |
+| --------- | ------------------ | -------------------------- |
+| `entity`  | `ParsedNameEntity` | The entity to convert      |
+
+**Returns:** `ParsedName | null` - Legacy format, or `null` if not a person
+
+```javascript
+const entity = parseName("Dr. John Smith Jr.");
+const legacy = entityToLegacy(entity);
+// { prefix: 'Dr.', first: 'John', last: 'Smith', suffix: 'Jr.' }
+```
+
+---
 
 ### Type Guards
 
-The library exports type guard functions for working with classified entities:
+Type guard functions for TypeScript type narrowing:
+
+| Function           | Returns `true` when                |
+| ------------------ | ---------------------------------- |
+| `isPerson(entity)` | `entity.kind === 'person'`         |
+| `isOrganization(entity)` | `entity.kind === 'organization'` |
+| `isFamily(entity)` | `entity.kind === 'family'`         |
+| `isCompound(entity)` | `entity.kind === 'compound'`     |
+| `isUnknown(entity)` | `entity.kind === 'unknown'`       |
+| `isRejected(entity)` | `entity.kind === 'rejected'`     |
 
 ```typescript
-import {
-  parseName,
-  isPerson,
-  isOrganization,
-  isFamily,
-  isCompound,
-  isUnknown,
-  isRejected,
-} from "name-tools";
+import { parseName, isPerson, isOrganization } from "name-tools";
 
 const entity = parseName(input);
 
 if (isPerson(entity)) {
-  // entity is PersonName - access given, family, etc.
+  // TypeScript knows: entity is PersonName
   console.log(entity.given, entity.family);
 } else if (isOrganization(entity)) {
-  // entity is OrganizationName - access name, legalForm, etc.
-  console.log(entity.name, entity.legalForm);
-} else if (isCompound(entity)) {
-  // entity is CompoundName - access members, sharedFamily, etc.
-  console.log(entity.members, entity.sharedFamily);
+  // TypeScript knows: entity is OrganizationName
+  console.log(entity.baseName, entity.legalForm);
 }
 ```
 
+---
+
 ### Formatting Functions
 
-All formatting uses a single entry point. Input can be a string, a `ParsedName`, or an array of either.
-
-#### `formatName(input, options?) -> string`
+#### `formatName(input, options?)`
 
 ```ts
 formatName(
@@ -234,12 +403,43 @@ formatName(
 ): string
 ```
 
+Format a name (or array of names) according to a preset or custom options.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| `input` | `string \| ParsedName \| Array` | Name(s) to format |
+| `options` | `NameFormatOptions` | Formatting options (see below) |
+
+**Returns:** `string` - The formatted name
+
+**Key Options:**
+
+| Option          | Type                                      | Default         | Description                              |
+| --------------- | ----------------------------------------- | --------------- | ---------------------------------------- |
+| `preset`        | `NamePreset`                              | `'display'`     | Preset format (see Preset Matrix below)  |
+| `output`        | `'text' \| 'html'`                        | `'text'`        | Output format                            |
+| `typography`    | `'plain' \| 'ui' \| 'fine'`               | `'ui'`          | Typography level for spacing/punctuation |
+| `noBreak`       | `'none' \| 'smart' \| 'all'`              | `'smart'`       | Non-breaking space behavior              |
+| `join`          | `'none' \| 'list' \| 'couple'`            | `'none'`        | Array rendering mode                     |
+| `conjunction`   | `'and' \| '&' \| string`                  | `'and'`         | Word between last two names              |
+| `oxfordComma`   | `boolean`                                 | `true`          | Use Oxford comma in lists                |
+| `prefer`        | `'auto' \| 'nickname' \| 'first'`         | `'auto'`        | Which given name to prefer               |
+| `middle`        | `'full' \| 'initial' \| 'none'`           | varies          | Middle name handling                     |
+| `prefix`        | `'include' \| 'omit' \| 'auto'`           | varies          | Honorific handling                       |
+| `suffix`        | `'include' \| 'omit' \| 'auto'`           | varies          | Suffix handling                          |
+| `order`         | `'given-family' \| 'family-given' \| 'auto'` | `'given-family'` | Name order                            |
+
 ```javascript
 formatName("Dr. John Franklin Jr.");
 // "John Franklin, Jr."
 
 formatName("Dr. John Franklin Jr.", { preset: "alphabetical" });
 // "Franklin, John, Jr."
+
+formatName(["John Smith", "Jane Doe"], { join: "list" });
+// "John Smith and Jane Doe"
 ```
 
 #### Preset Matrix (quick pick)
@@ -266,11 +466,68 @@ See `NameFormatOptions` for presets, typography, no-break behavior, and array re
 
 ### Data Sets & Utilities
 
-The library exports surname particle datasets and helpers:
+#### Data Sets
 
-- `PARTICLES`, `MULTI_WORD_PARTICLES`
-- `COMMON_SURNAMES`, `COMMON_FIRST_NAMES`
-- `isParticle()`, `isMultiWordParticle()`, `isCommonSurname()`, `isCommonFirstName()`
+| Export                  | Type                | Description                                      |
+| ----------------------- | ------------------- | ------------------------------------------------ |
+| `PARTICLES`             | `readonly string[]` | Surname particles: "von", "van", "de", "la", etc. |
+| `MULTI_WORD_PARTICLES`  | `readonly string[]` | Multi-word particles: "de la", "van der", etc.   |
+| `COMMON_SURNAMES`       | `readonly string[]` | ~1000 most common US surnames                    |
+| `COMMON_FIRST_NAMES`    | `readonly string[]` | ~1000 most common US first names                 |
+
+#### Utility Functions
+
+```ts
+isParticle(str: string): boolean
+```
+
+Check if a string is a surname particle (case-insensitive).
+
+```javascript
+isParticle("von"); // true
+isParticle("Van"); // true
+isParticle("Smith"); // false
+```
+
+---
+
+```ts
+isMultiWordParticle(words: string[]): string | null
+```
+
+Check if an array of words starts with a multi-word particle. Returns the matched particle or `null`.
+
+```javascript
+isMultiWordParticle(["de", "la", "Cruz"]); // "de la"
+isMultiWordParticle(["van", "der", "Berg"]); // "van der"
+isMultiWordParticle(["Smith", "Jones"]); // null
+```
+
+---
+
+```ts
+isCommonSurname(str: string): boolean
+```
+
+Check if a string is a common US surname (case-insensitive).
+
+```javascript
+isCommonSurname("Smith"); // true
+isCommonSurname("Xyzzy"); // false
+```
+
+---
+
+```ts
+isCommonFirstName(str: string): boolean
+```
+
+Check if a string is a common US first name (case-insensitive).
+
+```javascript
+isCommonFirstName("John"); // true
+isCommonFirstName("Xyzzy"); // false
+```
 
 ## TypeScript Support
 
@@ -514,16 +771,104 @@ name-tools/
 │   │   ├── organization.ts # Organization detection
 │   │   ├── family.ts     # Family/household detection
 │   │   └── compound.ts   # Compound name detection
+│   ├── gender/           # Gender probability module
+│   │   ├── GenderDB.ts   # Binary trie lookup class
+│   │   ├── all.ts        # Full dataset entry point
+│   │   ├── coverage99.ts # 99% coverage entry point
+│   │   ├── coverage95.ts # 95% coverage entry point
+│   │   └── data/         # Generated binary data (base64)
 │   ├── classifier.ts     # Main classification orchestrator
 │   ├── parsers.ts        # Parsing functions
 │   ├── formatters.ts     # Formatting functions
 │   ├── list-parser.ts    # Recipient list parsing
 │   ├── types.ts          # TypeScript type definitions
 │   └── index.ts          # Main entry point
+├── scripts/              # Build scripts
+│   └── build-gender-data.js  # Generates binary trie from SSA data
+├── data/                 # SSA source data (yobYYYY.txt files)
 ├── dist/                 # Compiled output (generated)
 ├── docs/                 # Demo site (GitHub Pages)
 ├── tests/                # Unit tests
 └── package.json          # Package configuration
+```
+
+### Rebuilding Gender Probability Data
+
+The library includes gender probability data derived from US Social Security Administration birth name records. The data is pre-built and included in the source, but you can rebuild it if you need to update or customize it.
+
+#### Step 1: Download SSA Data
+
+1. Go to the [SSA Baby Names page](https://www.ssa.gov/oact/babynames/limits.html)
+2. Click **"National data"** to download `names.zip` (~9 MB)
+3. Extract the zip file contents into the `data/` folder in this project
+4. You should now have files like `data/yob1880.txt`, `data/yob1881.txt`, ..., `data/yob2023.txt`
+
+The zip contains ~145 files covering births from 1880 to present.
+
+#### Step 2: Build the Data
+
+```bash
+pnpm build:gender
+```
+
+This generates three tree-shakeable data files with different coverage levels:
+
+| File                            | Coverage | Names   | Size    |
+| ------------------------------- | -------- | ------- | ------- |
+| `src/gender/data/all.ts`        | 100%     | ~83,000 | ~757 KB |
+| `src/gender/data/coverage99.ts` | 99%      | ~27,000 | ~257 KB |
+| `src/gender/data/coverage95.ts` | 95%      | ~7,000  | ~75 KB  |
+
+#### Configuration
+
+Edit `scripts/build-gender-data.js` to customize:
+
+```javascript
+const CONFIG = {
+  // Minimum occurrences to include a name (higher = smaller file)
+  MIN_OCCURRENCES: 10,
+
+  // Coverage levels to generate
+  COVERAGE_LEVELS: {
+    all: 1.0, // 100% - all names meeting threshold
+    coverage99: 0.99, // 99% of population
+    coverage95: 0.95, // 95% of population
+  },
+};
+```
+
+**How the filters interact:**
+
+1. `MIN_OCCURRENCES` is applied **first** to all names - any name with fewer total occurrences across all years is discarded
+2. `COVERAGE_LEVELS` then filters the remaining names by cumulative population coverage (sorted by popularity)
+
+So `MIN_OCCURRENCES` affects **all** output files, not just the "all" dataset. Increasing it removes rare names from every coverage level, making all files smaller but potentially missing some valid obscure names.
+
+#### Usage
+
+Import the data size you need - tree-shaking drops the unused ones:
+
+```typescript
+// Smallest bundle (~75 KB)
+import { createGenderDB } from "name-tools/gender/coverage95";
+
+// Medium bundle (~257 KB)
+import { createGenderDB } from "name-tools/gender/coverage99";
+
+// Full dataset (~757 KB)
+import { createGenderDB } from "name-tools/gender/all";
+
+const db = createGenderDB();
+
+db.getMaleProbability("John"); // ~0.996 (male)
+db.getMaleProbability("Mary"); // ~0.004 (female)
+db.getMaleProbability("Chris"); // ~0.7 (leans male)
+
+// Guess gender with 80% confidence threshold (default)
+db.guessGender("John"); // 'male' (>80% male probability)
+db.guessGender("Mary"); // 'female' (<20% male probability)
+db.guessGender("Chris"); // 'unknown' (between 20-80%)
+db.guessGender("Alex", 0.6); // custom threshold: 'male' | 'female' | 'unknown'
 ```
 
 ### Building for NPM and GitHub Pages
@@ -544,7 +889,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-MIT © Bob Pritchett
+MIT © 2025-2026 Bob Pritchett
 
 ## Author
 

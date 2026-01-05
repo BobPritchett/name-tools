@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts && node -e \"require('fs').copyFileSync('dist/index.mjs', 'docs/name-tools.js'); require('fs').copyFileSync('src/data/examples.json', 'docs/examples.json')\"",
+    "build:gender": "node scripts/build-gender-data.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "pnpm run build",
