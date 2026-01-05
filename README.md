@@ -28,24 +28,26 @@ pnpm add name-tools
 ## Quick Start
 
 ```javascript
-import { parseName, formatName } from 'name-tools';
+import { parseName, formatName } from "name-tools";
 
 // Parse a full name
-const parsed = parseName("Dr. Bob William Pritchett Jr.");
+const parsed = parseName("Dr. William Frederick Richardson Jr.");
 console.log(parsed);
 // {
 //   prefix: 'Dr.',
-//   first: 'Bob',
-//   middle: 'William',
-//   last: 'Pritchett',
+//   first: 'William',
+//   middle: 'Frederick',
+//   last: 'Richardson',
 //   suffix: 'Jr.'
 // }
 
 // Format a name (single entry point)
-console.log(formatName("Dr. Bob William Pritchett Jr."));
-// "Bob Pritchett, Jr." (NBSP used in smart mode)
+console.log(formatName("Dr. William Frederick Richardson Jr."));
+// "William Richardson, Jr." (NBSP used in smart mode)
 
-console.log(formatName("Dr. Bob William Pritchett Jr.", { preset: "formalFull" }));
+console.log(
+  formatName("Dr. William Frederick Richardson Jr.", { preset: "formalFull" })
+);
 // "Dr. Bob William Pritchett, Jr."
 
 // Render a list or couple
@@ -77,6 +79,7 @@ const result = parseName("Mr. John Robert Smith Jr.");
 ```
 
 **Returns:** `ParsedName` object with the following properties:
+
 - `prefix?`: string - Title or honorific (Mr., Dr., etc.)
 - `first`: string - First name
 - `middle?`: string - Middle name(s)
@@ -88,7 +91,7 @@ const result = parseName("Mr. John Robert Smith Jr.");
 Extract just the first name from a full name.
 
 ```javascript
-getFirstName("Bob William Pritchett"); // "Bob"
+getFirstName("William Frederick Richardson"); // "William"
 ```
 
 #### `getLastName(fullName: string): string`
@@ -96,7 +99,7 @@ getFirstName("Bob William Pritchett"); // "Bob"
 Extract just the last name from a full name.
 
 ```javascript
-getLastName("Bob William Pritchett"); // "Pritchett"
+getLastName("William Frederick Richardson"); // "Richardson"
 ```
 
 ### Formatting Functions
@@ -125,20 +128,20 @@ formatName("Dr. Bob Pritchett Jr.", { preset: "alphabetical" });
 Example input used below:
 
 ```javascript
-const input = "Dr. Bob William Pritchett Jr.";
+const input = "Dr. William Frederick Richardson Jr.";
 ```
 
-| preset | intent | defaults (high level) | output example |
-| --- | --- | --- | --- |
-| `display` (default) | best UI display name | prefix omit, middle none, suffix auto, given-family | `formatName(input)` → `Bob Pritchett, Jr.` |
-| `preferredDisplay` | nickname + family for UI | prefer nickname, middle none, suffix auto | `formatName(input, { preset: "preferredDisplay" })` → `Bob Pritchett, Jr.` *(falls back to first if no nickname)* |
-| `informal` | given + family | prefix omit, middle none, suffix omit | `formatName(input, { preset: "informal" })` → `Bob Pritchett` |
-| `firstOnly` | given only | prefix omit, middle none, suffix omit | `formatName(input, { preset: "firstOnly" })` → `Bob` |
-| `preferredFirst` | nickname only | prefer nickname, middle none, suffix omit | `formatName(input, { preset: "preferredFirst" })` → `Bob` *(falls back to first if no nickname)* |
-| `formalFull` | full formal name | prefix include, middle full, suffix include, given-family | `formatName(input, { preset: "formalFull" })` → `Dr. Bob William Pritchett, Jr.` |
-| `formalShort` | title + family | prefix include, middle none, suffix omit | `formatName(input, { preset: "formalShort" })` → `Dr. Pritchett` |
-| `alphabetical` | sortable family-first | family-given, middle initial, suffix auto | `formatName(input, { preset: "alphabetical" })` → `Pritchett, Bob W., Jr.` |
-| `initialed` | initials + family | middle initial, suffix omit | `formatName(input, { preset: "initialed" })` → `B. W. Pritchett` |
+| preset              | intent                   | defaults (high level)                                     | output example                                                                                                         |
+| ------------------- | ------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `display` (default) | best UI display name     | prefix omit, middle none, suffix auto, given-family       | `formatName(input)` → `William Richardson, Jr.`                                                                        |
+| `preferredDisplay`  | nickname + family for UI | prefer nickname, middle none, suffix auto                 | `formatName(input, { preset: "preferredDisplay" })` → `William Richardson, Jr.` _(falls back to first if no nickname)_ |
+| `informal`          | given + family           | prefix omit, middle none, suffix omit                     | `formatName(input, { preset: "informal" })` → `William Richardson`                                                     |
+| `firstOnly`         | given only               | prefix omit, middle none, suffix omit                     | `formatName(input, { preset: "firstOnly" })` → `William`                                                               |
+| `preferredFirst`    | nickname only            | prefer nickname, middle none, suffix omit                 | `formatName(input, { preset: "preferredFirst" })` → `William` _(falls back to first if no nickname)_                   |
+| `formalFull`        | full formal name         | prefix include, middle full, suffix include, given-family | `formatName(input, { preset: "formalFull" })` → `Dr. Bob William Pritchett, Jr.`                                       |
+| `formalShort`       | title + family           | prefix include, middle none, suffix omit                  | `formatName(input, { preset: "formalShort" })` → `Dr. Pritchett`                                                       |
+| `alphabetical`      | sortable family-first    | family-given, middle initial, suffix auto                 | `formatName(input, { preset: "alphabetical" })` → `Pritchett, Bob W., Jr.`                                             |
+| `initialed`         | initials + family        | middle initial, suffix omit                               | `formatName(input, { preset: "initialed" })` → `B. W. Pritchett`                                                       |
 
 See `NameFormatOptions` for presets, typography, no-break behavior, and array rendering.
 
@@ -155,10 +158,17 @@ The library exports surname particle datasets and helpers:
 This library is written in TypeScript and includes full type definitions.
 
 ```typescript
-import { parseName, ParsedName, formatName, NameFormatOptions } from 'name-tools';
+import {
+  parseName,
+  ParsedName,
+  formatName,
+  NameFormatOptions,
+} from "name-tools";
 
 const parsed: ParsedName = parseName("Bob Pritchett");
-const formatted: string = formatName(parsed, { preset: "display" } satisfies NameFormatOptions);
+const formatted: string = formatName(parsed, {
+  preset: "display",
+} satisfies NameFormatOptions);
 ```
 
 ## Use Cases
@@ -176,7 +186,7 @@ const formatted: string = formatName(parsed, { preset: "display" } satisfies Nam
 ### Building an Email Address
 
 ```javascript
-import { getFirstName, getLastName } from 'name-tools';
+import { getFirstName, getLastName } from "name-tools";
 
 function createEmail(fullName, domain) {
   const first = getFirstName(fullName).toLowerCase();
@@ -191,7 +201,7 @@ createEmail("Bob Pritchett", "example.com");
 ### Formatting for Display
 
 ```javascript
-import { parseName, formatName } from 'name-tools';
+import { parseName, formatName } from "name-tools";
 
 function displayName(fullName) {
   const parsed = parseName(fullName);
@@ -203,31 +213,73 @@ function displayName(fullName) {
   return formatName(parsed);
 }
 
-displayName("Dr. Bob William Pritchett Jr.");
-// "Dr. Bob William Pritchett, Jr."
+displayName("Dr. William Frederick Richardson Jr.");
+// "Dr. William Frederick Richardson, Jr."
 
-displayName("Bob William Pritchett Jr.");
-// "Bob Pritchett, Jr."
+displayName("William Frederick Richardson Jr.");
+// "William Richardson, Jr."
 ```
 
 ### Sorting Names
 
 ```javascript
-import { formatName } from 'name-tools';
+import { formatName } from "name-tools";
 
-const names = [
-  "Bob Pritchett",
-  "Alice Johnson",
-  "Dr. Charlie Brown"
-];
+const names = ["Bob Pritchett", "Alice Johnson", "Dr. Charlie Brown"];
 
 const sorted = names
-  .map(name => ({ original: name, sortKey: formatName(name, { preset: "alphabetical" }) }))
+  .map((name) => ({
+    original: name,
+    sortKey: formatName(name, { preset: "alphabetical" }),
+  }))
   .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
-  .map(item => item.original);
+  .map((item) => item.original);
 
 // ["Dr. Charlie Brown", "Alice Johnson", "Bob Pritchett"]
 ```
+
+## Running the Demo Locally & Troubleshooting
+
+### Opening the Demo Page
+
+To test your changes live in the demo page:
+
+1. Build the library and copy the latest code to the demo:
+   ```bash
+   pnpm run build
+   ```
+2. Open `docs/index.html` in your browser.
+
+#### CORS Error: "Access to script at ... has been blocked by CORS policy"
+
+Modern browsers block JavaScript modules and some resource loading when opening an HTML file directly from disk (`file://`), due to security (CORS) restrictions. If you see errors like:
+
+```
+Access to script at 'file:///C:/.../script.js' from origin 'null' has been blocked by CORS policy
+```
+
+**Solution:** Serve the `docs/` folder with a local web server instead of opening the file directly.
+
+##### Quick Start with a Local Server
+
+From your project root, run one of the following:
+
+- Using pnpm (if you have `serve`):
+  ```bash
+  pnpm dlx serve docs
+  ```
+- Using npx (npm):
+  ```bash
+  npx serve docs
+  ```
+- Using Python (if installed):
+  ```bash
+  python -m http.server 8000 --directory docs
+  ```
+
+Then open your browser to the address shown in the terminal (e.g., http://localhost:3000 or http://localhost:8000).
+
+---
 
 ## Development
 
@@ -271,6 +323,7 @@ name-tools/
 This project uses a dual-output setup:
 
 1. **NPM Package**: The `dist/` folder contains the compiled library code
+
    - Built with `tsup` in both CommonJS and ESM formats
    - Includes TypeScript type definitions
 
@@ -288,11 +341,13 @@ MIT © Bob Pritchett
 ## Author
 
 **Bob Pritchett**
+
 - GitHub: [@BobPritchett](https://github.com/BobPritchett)
 
 ## Acknowledgments
 
 Built with:
+
 - [TypeScript](https://www.typescriptlang.org/)
 - [tsup](https://github.com/egoist/tsup) - Zero-config TypeScript bundler
 - [Vitest](https://vitest.dev/) - Unit testing framework
