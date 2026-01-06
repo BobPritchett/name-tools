@@ -179,7 +179,18 @@ describe('parseName (entity classification)', () => {
       const result = parseName('The Smiths');
       expect(result.kind).toBe('family');
       if (result.kind === 'family') {
-        expect(result.familyName).toBe('Smith');
+        // Keep plural form as-is to avoid incorrectly singularizing
+        // surnames that naturally end in 's' (Hicks, Williams, etc.)
+        expect(result.familyName).toBe('Smiths');
+        expect(result.style).toBe('pluralSurname');
+      }
+    });
+
+    it('should preserve surnames that naturally end in s', () => {
+      const result = parseName('The Hicks');
+      expect(result.kind).toBe('family');
+      if (result.kind === 'family') {
+        expect(result.familyName).toBe('Hicks');
         expect(result.style).toBe('pluralSurname');
       }
     });

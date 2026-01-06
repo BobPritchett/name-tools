@@ -54,6 +54,30 @@ Smith, John, Jr.
                 </div>
             </section>
 
+            <section class="demo-section">
+                <h2>Gender Probability Lookup</h2>
+                <div class="demo-box">
+                    <div class="input-group">
+                        <label for="genderInput">Enter a first name:</label>
+                        <input
+                            type="text"
+                            id="genderInput"
+                            placeholder="e.g., Alex, John, Mary"
+                            value="Alex"
+                        />
+                    </div>
+
+                    <p class="demo-hint">
+                        Look up gender probability based on US Social Security Administration data.
+                        Try: <code>Chris</code> | <code>Taylor</code> | <code>Jordan</code> | <code>Michael</code> | <code>Jennifer</code>
+                    </p>
+
+                    <div id="genderResults">
+                        <!-- Gender results will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
             <section class="test-results-section">
                 <h2>Test Results - Live Parsing Validation</h2>
                 <p class="test-summary">All test cases validated in real-time. Green = passing, Red = failing.</p>

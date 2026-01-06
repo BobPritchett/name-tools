@@ -3,7 +3,7 @@
  */
 
 import type { FamilyName, FamilyStyle, ReasonCode, Confidence, ParseMeta } from '../types';
-import { startsWithThe, stripLeadingThe, hasPluralSurnameEnding, extractBaseSurname, tokenize, isNameLikeToken } from '../normalize';
+import { startsWithThe, stripLeadingThe, hasPluralSurnameEnding, tokenize, isNameLikeToken } from '../normalize';
 
 /**
  * Regex to match "Family" or "Household" at the end
@@ -105,8 +105,9 @@ export function detectFamily(normalized: string): FamilyDetectionResult {
     reasons.push('FAMILY_PLURAL_SURNAME');
     style = 'pluralSurname';
 
-    // Extract base surname
-    familyName = extractBaseSurname(withoutThe);
+    // Keep the plural form as-is to avoid incorrectly singularizing
+    // surnames that naturally end in 's' (Hicks, Williams, Adams, etc.)
+    familyName = withoutThe.trim();
 
     // This is medium confidence (could be a band, etc.)
     confidence = 0.75;

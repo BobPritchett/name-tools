@@ -6,11 +6,36 @@ import {
     isPerson,
     isOrganization,
     isFamily,
-    isCompound
+    isCompound,
+    createGenderDB
 } from './name-tools.js';
+
+// Initialize gender database (singleton)
+const genderDB = createGenderDB();
 
 // Global variable to hold examples data
 let examplesData = null;
+
+// Helper function to get gender display for an entity
+function getGenderDisplay(entity) {
+    if (!isPerson(entity)) {
+        return '?';
+    }
+    const firstName = entity.given || '';
+    if (!firstName) {
+        return '?';
+    }
+    const gender = genderDB.guessGender(firstName);
+    if (gender === 'male') return 'M';
+    if (gender === 'female') return 'F';
+    return '?';
+}
+
+// Helper function to format probability as percentage
+function formatProbability(prob) {
+    if (prob === null) return '-';
+    return (prob * 100).toFixed(1) + '%';
+}
 
 // Demo functionality
 function updateResults() {
@@ -120,6 +145,7 @@ function updateResults() {
                             <tr>
                                 <th>Input</th>
                                 <th>Kind</th>
+                                <th>Gender</th>
                                 ${hasAnyEmail ? '<th>Email</th>' : ''}
                                 <th>Conf.</th>
                                 <th>Display</th>
@@ -135,10 +161,12 @@ function updateResults() {
                 const entity = recipient.display || parseName(recipient.raw);
                 entities.push(entity);
                 const tooltipText = getEntityTooltip(entity);
+                const genderDisplay = getGenderDisplay(entity);
                 html += `
                     <tr class="entity-row" title="${escapeHtml(tooltipText)}">
                         <td class="test-input">${escapeHtml(recipient.raw)}</td>
                         <td><span class="entity-kind entity-kind-${entity.kind}" style="padding: 2px 8px; font-size: 11px;">${entity.kind}</span></td>
+                        <td class="gender-cell">${genderDisplay}</td>
                         ${hasAnyEmail ? `<td class="email-cell">${recipient.email ? escapeHtml(recipient.email) : '-'}</td>` : ''}
                         <td class="confidence-cell">${(entity.meta.confidence * 100).toFixed(0)}%</td>
                         <td class="format-cell">${escapeHtml(formatName(entity))}</td>
@@ -514,20 +542,80 @@ function populateTestResultsTable() {
     });
 }
 
+// Gender lookup demo functionality
+function updateGenderResults() {
+    const genderInput = document.getElementById('genderInput');
+    const genderResultsDiv = document.getElementById('genderResults');
+
+    if (!genderInput || !genderResultsDiv) return;
+
+    const name = genderInput.value.trim();
+
+    if (!name) {
+        genderResultsDiv.innerHTML = '<p style="color: #636c76; font-size: 14px;">Enter a first name to see gender probability...</p>';
+        return;
+    }
+
+    const result = genderDB.lookup(name);
+
+    if (!result.found) {
+        genderResultsDiv.innerHTML = `
+            <div class="gender-result">
+                <div class="gender-name">${escapeHtml(name)}</div>
+                <div class="gender-not-found">Name not found in database</div>
+            </div>
+        `;
+        return;
+    }
+
+    const malePct = (result.maleProbability * 100).toFixed(1);
+    const femalePct = ((1 - result.maleProbability) * 100).toFixed(1);
+    const guessed = genderDB.guessGender(name); // Uses default 80% threshold
+    const guessedDisplay = guessed === 'male' ? 'M' : guessed === 'female' ? 'F' : '?';
+    const guessedLabel = guessed === 'male' ? 'Male' : guessed === 'female' ? 'Female' : 'Unknown';
+
+    genderResultsDiv.innerHTML = `
+        <div class="gender-result">
+            <div class="gender-name">${escapeHtml(name)}</div>
+            <div class="gender-probabilities">
+                <div class="gender-prob gender-prob-male" style="width: ${malePct}%;">
+                    <span class="gender-prob-label">Male: ${malePct}%</span>
+                </div>
+                <div class="gender-prob gender-prob-female" style="width: ${femalePct}%;">
+                    <span class="gender-prob-label">Female: ${femalePct}%</span>
+                </div>
+            </div>
+            <div class="gender-guess">
+                <strong>guessGender()</strong> with 80% threshold:
+                <span class="gender-guess-value gender-guess-${guessed}">${guessedDisplay}</span>
+                <span class="gender-guess-label">(${guessedLabel})</span>
+            </div>
+        </div>
+    `;
+}
+
 // Set up event listeners
 document.addEventListener('DOMContentLoaded', async () => {
     const nameInput = document.getElementById('nameInput');
+    const genderInput = document.getElementById('genderInput');
 
     // Load examples data
     await loadExamples();
 
-    // Set up input listener
+    // Set up input listener for name parsing demo
     nameInput.addEventListener('input', () => {
         // Auto-expand textarea
         nameInput.style.height = 'auto';
         nameInput.style.height = nameInput.scrollHeight + 'px';
         updateResults();
     });
+
+    // Set up input listener for gender lookup demo
+    if (genderInput) {
+        genderInput.addEventListener('input', updateGenderResults);
+        // Initial update
+        updateGenderResults();
+    }
 
     // Initial update
     nameInput.style.height = nameInput.scrollHeight + 'px';
