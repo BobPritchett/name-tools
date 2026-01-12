@@ -78,6 +78,54 @@ Smith, John, Jr.
                 </div>
             </section>
 
+            <section class="demo-section">
+                <h2>Pronoun Lookup</h2>
+                <div class="demo-box">
+                    <div class="input-group">
+                        <label for="pronounInput">Enter a pronoun spec:</label>
+                        <input
+                            type="text"
+                            id="pronounInput"
+                            placeholder="e.g., he/him, she/her, they/them"
+                            value="they/them"
+                        />
+                    </div>
+
+                    <p class="demo-hint">
+                        Get a complete pronoun set from a shorthand spec.
+                        Try: <code>he/him</code> | <code>she/her</code> | <code>ze/zir</code> | <code>xe/xem</code> | <code>any</code>
+                    </p>
+
+                    <div id="pronounResults">
+                        <!-- Pronoun results will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <section class="demo-section">
+                <h2>Pronouns for Entity</h2>
+                <div class="demo-box">
+                    <div class="input-group">
+                        <label for="entityPronounInput">Enter a name to get suggested pronouns:</label>
+                        <input
+                            type="text"
+                            id="entityPronounInput"
+                            placeholder="e.g., John Smith, Acme Inc, The Smiths"
+                            value="John Smith"
+                        />
+                    </div>
+
+                    <p class="demo-hint">
+                        Uses entity classification + gender lookup to suggest appropriate pronouns.
+                        Try: <code>Mary Johnson</code> | <code>Acme Inc.</code> | <code>The Smith Family</code> | <code>Alex (they/them)</code>
+                    </p>
+
+                    <div id="entityPronounResults">
+                        <!-- Entity pronoun results will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
             <section class="test-results-section">
                 <h2>Test Results - Live Parsing Validation</h2>
                 <p class="test-summary">All test cases validated in real-time. Green = passing, Red = failing.</p>
@@ -171,6 +219,16 @@ console.log(formatName("Dr. John Franklin Jr."));
                         <li><code>PARTICLES</code> - Array of surname particles (van, von, de, etc.)</li>
                         <li><code>COMMON_SURNAMES</code>, <code>COMMON_FIRST_NAMES</code> - Name datasets</li>
                         <li><code>isParticle()</code>, <code>isCommonSurname()</code>, <code>isCommonFirstName()</code></li>
+                    </ul>
+
+                    <h3>Pronouns</h3>
+                    <ul>
+                        <li><code>getPronounSet(spec)</code> - Get complete pronoun set from "he/him", "she/her", etc.</li>
+                        <li><code>getPronouns(entity, options?)</code> - Get pronouns for any entity with optional gender lookup</li>
+                        <li><code>formatPronoun(set, role, options?)</code> - Format a single pronoun with capitalization</li>
+                        <li><code>fillPronounTemplate(template, set)</code> - Fill {{subject}}, {{object}}, etc. placeholders</li>
+                        <li><code>extractPronouns(name)</code> - Extract pronouns from "Alex (they/them)" format</li>
+                        <li><code>BUILT_IN_PRONOUNS</code> - Map of built-in pronoun sets (he, she, they, ze-hir, etc.)</li>
                     </ul>
                 </div>
             </section>

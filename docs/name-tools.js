@@ -3188,6 +3188,477 @@ function formatName(input, options) {
   return renderSingle(parsed, o).fullText;
 }
 
+// src/pronouns/data.ts
+var BUILT_IN_PRONOUNS = {
+  // Standard pronouns
+  he: {
+    id: "he",
+    label: "he/him",
+    subject: "he",
+    object: "him",
+    possessiveDeterminer: "his",
+    possessivePronoun: "his",
+    reflexive: "himself",
+    notes: "Masculine pronouns"
+  },
+  she: {
+    id: "she",
+    label: "she/her",
+    subject: "she",
+    object: "her",
+    possessiveDeterminer: "her",
+    possessivePronoun: "hers",
+    reflexive: "herself",
+    notes: "Feminine pronouns"
+  },
+  they: {
+    id: "they",
+    label: "they/them",
+    subject: "they",
+    object: "them",
+    possessiveDeterminer: "their",
+    possessivePronoun: "theirs",
+    reflexive: "themselves",
+    notes: "Singular they/them pronouns"
+  },
+  it: {
+    id: "it",
+    label: "it/its",
+    subject: "it",
+    object: "it",
+    possessiveDeterminer: "its",
+    possessivePronoun: "its",
+    reflexive: "itself",
+    notes: "Neutral/inanimate pronouns"
+  },
+  // Neopronouns
+  "ze-hir": {
+    id: "ze-hir",
+    label: "ze/hir",
+    subject: "ze",
+    object: "hir",
+    possessiveDeterminer: "hir",
+    possessivePronoun: "hirs",
+    reflexive: "hirself",
+    notes: "Neopronouns ze/hir"
+  },
+  "ze-zir": {
+    id: "ze-zir",
+    label: "ze/zir",
+    subject: "ze",
+    object: "zir",
+    possessiveDeterminer: "zir",
+    possessivePronoun: "zirs",
+    reflexive: "zirself",
+    notes: "Neopronouns ze/zir"
+  },
+  "xe-xem": {
+    id: "xe-xem",
+    label: "xe/xem",
+    subject: "xe",
+    object: "xem",
+    possessiveDeterminer: "xyr",
+    possessivePronoun: "xyrs",
+    reflexive: "xemself",
+    notes: "Neopronouns xe/xem"
+  },
+  "fae-faer": {
+    id: "fae-faer",
+    label: "fae/faer",
+    subject: "fae",
+    object: "faer",
+    possessiveDeterminer: "faer",
+    possessivePronoun: "faers",
+    reflexive: "faerself",
+    notes: "Neopronouns fae/faer"
+  },
+  "ey-em": {
+    id: "ey-em",
+    label: "ey/em",
+    subject: "ey",
+    object: "em",
+    possessiveDeterminer: "eir",
+    possessivePronoun: "eirs",
+    reflexive: "emself",
+    notes: "Neopronouns ey/em (Spivak)"
+  },
+  // Special pseudo-sets
+  any: {
+    id: "any",
+    label: "any pronouns",
+    subject: "they",
+    object: "them",
+    possessiveDeterminer: "their",
+    possessivePronoun: "theirs",
+    reflexive: "themselves",
+    notes: "User accepts any pronouns; defaults to they/them for text generation"
+  },
+  "name-only": {
+    id: "name-only",
+    label: "use name only",
+    subject: "",
+    object: "",
+    possessiveDeterminer: "",
+    possessivePronoun: "",
+    reflexive: "",
+    notes: "User prefers name instead of pronouns; consumer must handle empty strings"
+  }
+};
+var SPEC_ALIASES = {
+  // he/him family
+  "he/him": "he",
+  "he/his": "he",
+  "he/him/his": "he",
+  "he/him/his/his": "he",
+  "he/him/his/his/himself": "he",
+  // she/her family
+  "she/her": "she",
+  "she/hers": "she",
+  "she/her/hers": "she",
+  "she/her/her/hers": "she",
+  "she/her/her/hers/herself": "she",
+  // they/them family
+  "they/them": "they",
+  "they/their": "they",
+  "they/theirs": "they",
+  "they/them/their": "they",
+  "they/them/their/theirs": "they",
+  "they/them/their/theirs/themselves": "they",
+  "they/them/their/theirs/themself": "they",
+  // it/its family
+  "it/its": "it",
+  "it/it/its": "it",
+  "it/it/its/its/itself": "it",
+  // Neopronouns - common short forms
+  "ze/hir": "ze-hir",
+  "ze/hir/hirs": "ze-hir",
+  "ze/zir": "ze-zir",
+  "ze/zir/zirs": "ze-zir",
+  "xe/xem": "xe-xem",
+  "xe/xem/xyr": "xe-xem",
+  "fae/faer": "fae-faer",
+  "fae/faer/faers": "fae-faer",
+  "ey/em": "ey-em",
+  "ey/em/eir": "ey-em",
+  // Special sets
+  any: "any",
+  "any pronouns": "any",
+  "all pronouns": "any",
+  "no pronouns": "name-only",
+  "name-only": "name-only",
+  "use name": "name-only",
+  "use name only": "name-only",
+  "name only": "name-only"
+};
+
+// src/pronouns/parser.ts
+function normalizeSpec(spec) {
+  return spec.trim().toLowerCase().replace(/\s+/g, " ");
+}
+function deriveReflexive(subject) {
+  const s = subject.toLowerCase();
+  if (s === "he")
+    return "himself";
+  if (s === "she")
+    return "herself";
+  if (s === "it")
+    return "itself";
+  if (s === "they")
+    return "themselves";
+  return subject + "self";
+}
+function parsePronounSpec(spec) {
+  const norm = normalizeSpec(spec);
+  const aliasId = SPEC_ALIASES[norm];
+  if (aliasId && BUILT_IN_PRONOUNS[aliasId]) {
+    return { ...BUILT_IN_PRONOUNS[aliasId] };
+  }
+  if (BUILT_IN_PRONOUNS[norm]) {
+    return { ...BUILT_IN_PRONOUNS[norm] };
+  }
+  const rawTokens = spec.split("/").map((t) => t.trim()).filter(Boolean);
+  if (rawTokens.length < 1) {
+    throw new Error(`Invalid pronoun spec: "${spec}". Expected at least one token.`);
+  }
+  const [subject, second, third, fourth, fifth] = rawTokens;
+  let object = "";
+  let possDet = "";
+  let possPron = "";
+  let reflexive = "";
+  if (rawTokens.length === 1) {
+    const maybeId = subject.toLowerCase();
+    if (BUILT_IN_PRONOUNS[maybeId]) {
+      return { ...BUILT_IN_PRONOUNS[maybeId] };
+    }
+    object = subject;
+    possDet = subject + "'s";
+    possPron = possDet;
+    reflexive = deriveReflexive(subject);
+  } else if (rawTokens.length === 2) {
+    const subjLower = subject.toLowerCase();
+    const secondLower = second.toLowerCase();
+    if (subjLower === "he" && (secondLower === "him" || secondLower === "his")) {
+      return { ...BUILT_IN_PRONOUNS["he"] };
+    }
+    if (subjLower === "she" && secondLower.startsWith("her")) {
+      return { ...BUILT_IN_PRONOUNS["she"] };
+    }
+    if (subjLower === "they" && (secondLower === "them" || secondLower.startsWith("their"))) {
+      return { ...BUILT_IN_PRONOUNS["they"] };
+    }
+    object = second;
+    possDet = second;
+    possPron = second;
+    reflexive = deriveReflexive(subject);
+  } else if (rawTokens.length === 3) {
+    object = second;
+    possDet = third;
+    possPron = third;
+    reflexive = deriveReflexive(subject);
+  } else if (rawTokens.length === 4) {
+    object = second;
+    possDet = third;
+    possPron = fourth;
+    reflexive = deriveReflexive(subject);
+  } else {
+    object = second;
+    possDet = third;
+    possPron = fourth;
+    reflexive = fifth || deriveReflexive(subject);
+  }
+  return {
+    id: norm.replace(/\s+/g, ""),
+    label: rawTokens.join("/"),
+    subject,
+    object,
+    possessiveDeterminer: possDet,
+    possessivePronoun: possPron,
+    reflexive,
+    notes: "Custom pronoun set"
+  };
+}
+function getPronounSet(input) {
+  if (!input) {
+    throw new Error("getPronounSet: input is required");
+  }
+  if (typeof input === "object") {
+    return { ...input };
+  }
+  return parsePronounSpec(input);
+}
+
+// src/pronouns/formatter.ts
+function applyCapitalization2(s, mode) {
+  if (!s)
+    return s;
+  switch (mode) {
+    case "upper":
+      return s.toUpperCase();
+    case "title":
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    case "lower":
+    default:
+      return s.toLowerCase();
+  }
+}
+function formatPronoun(set, role, options = {}) {
+  const { capitalization = "lower" } = options;
+  const value = set[role] || "";
+  if (!value)
+    return "";
+  return applyCapitalization2(value, capitalization);
+}
+var TEMPLATE_PLACEHOLDERS = {
+  "{{subject}}": "subject",
+  "{{object}}": "object",
+  "{{possDet}}": "possessiveDeterminer",
+  "{{possessiveDeterminer}}": "possessiveDeterminer",
+  "{{possPron}}": "possessivePronoun",
+  "{{possessivePronoun}}": "possessivePronoun",
+  "{{reflexive}}": "reflexive"
+};
+function fillPronounTemplate(template, set, options = {}) {
+  const { capitalization = "lower" } = options;
+  let result = template;
+  for (const [placeholder, role] of Object.entries(TEMPLATE_PLACEHOLDERS)) {
+    const value = set[role] || "";
+    const formatted = applyCapitalization2(value, capitalization);
+    result = result.split(placeholder).join(formatted);
+  }
+  return result;
+}
+function fillPronounTemplateSmart(template, set) {
+  let result = template;
+  for (const [placeholder, role] of Object.entries(TEMPLATE_PLACEHOLDERS)) {
+    const value = set[role] || "";
+    if (!value) {
+      result = result.split(placeholder).join("");
+      continue;
+    }
+    const marker = `\0PRONOUN_${role}\0`;
+    result = result.split(placeholder).join(marker);
+  }
+  const sentenceStartRe = /(^|[.!?]\s+)(\x00PRONOUN_\w+\x00)/g;
+  result = result.replace(sentenceStartRe, (_, prefix, marker) => {
+    const roleMatch = marker.match(/PRONOUN_(\w+)/);
+    if (!roleMatch)
+      return prefix + marker;
+    const role = roleMatch[1];
+    const value = set[role] || "";
+    return prefix + applyCapitalization2(value, "title");
+  });
+  const remainingRe = /\x00PRONOUN_(\w+)\x00/g;
+  result = result.replace(remainingRe, (_, role) => {
+    const value = set[role] || "";
+    return applyCapitalization2(value, "lower");
+  });
+  return result;
+}
+
+// src/pronouns/integration.ts
+function getDefaultPronouns(gender) {
+  switch (gender) {
+    case "male":
+      return { ...BUILT_IN_PRONOUNS["he"] };
+    case "female":
+      return { ...BUILT_IN_PRONOUNS["she"] };
+    case "unknown":
+    case null:
+    default:
+      return { ...BUILT_IN_PRONOUNS["they"] };
+  }
+}
+function getPronounsForEntity(entity) {
+  return { ...BUILT_IN_PRONOUNS["they"] };
+}
+function getPronounsForPerson(entity, options = {}) {
+  const {
+    genderDB,
+    explicitPronouns,
+    defaultOnUnknown,
+    genderThreshold = 0.8
+  } = options;
+  if (explicitPronouns) {
+    return getPronounSet(explicitPronouns);
+  }
+  if (genderDB && entity.given) {
+    const gender = genderDB.guessGender(entity.given, genderThreshold);
+    if (gender === "male") {
+      return { ...BUILT_IN_PRONOUNS["he"] };
+    }
+    if (gender === "female") {
+      return { ...BUILT_IN_PRONOUNS["she"] };
+    }
+  }
+  return defaultOnUnknown ? { ...defaultOnUnknown } : { ...BUILT_IN_PRONOUNS["they"] };
+}
+function getPronouns(entity, options = {}) {
+  if (entity.kind === "person") {
+    return getPronounsForPerson(entity, options);
+  }
+  return { ...BUILT_IN_PRONOUNS["they"] };
+}
+
+// src/pronouns/extractor.ts
+var PRONOUN_SUFFIX_RE = /\s*\(([^)]+)\)\s*$/;
+var LOOKS_LIKE_PRONOUNS_RE = /^[a-z]+\/[a-z]+/i;
+var NON_PRONOUN_WORDS = /* @__PURE__ */ new Set([
+  "billing",
+  "shipping",
+  "home",
+  "work",
+  "office",
+  "mobile",
+  "cell",
+  "primary",
+  "secondary",
+  "main",
+  "alt",
+  "alternative",
+  "personal",
+  "business",
+  "emergency",
+  "contact",
+  "other",
+  "preferred",
+  "cabin",
+  "vacation",
+  "rental",
+  "legal",
+  "maiden",
+  "former",
+  "deceased",
+  "retired",
+  "inactive",
+  "accounts",
+  "payable",
+  "receivable",
+  "department",
+  "dept",
+  "div",
+  "division"
+]);
+function looksLikePronouns(spec) {
+  const trimmed = spec.trim().toLowerCase();
+  if (!LOOKS_LIKE_PRONOUNS_RE.test(trimmed)) {
+    return false;
+  }
+  const firstWord = trimmed.split(/[\/\s]/)[0];
+  if (NON_PRONOUN_WORDS.has(firstWord)) {
+    return false;
+  }
+  const normalized = trimmed.replace(/\s+/g, "");
+  if (SPEC_ALIASES[normalized]) {
+    return true;
+  }
+  if (firstWord.length <= 5 && /^[a-z]+$/i.test(firstWord)) {
+    return true;
+  }
+  return false;
+}
+function extractPronouns(nameWithPronouns) {
+  if (!nameWithPronouns) {
+    return { name: "" };
+  }
+  const match = nameWithPronouns.match(PRONOUN_SUFFIX_RE);
+  if (!match) {
+    return { name: nameWithPronouns };
+  }
+  const rawSpec = match[1].trim();
+  const potentialName = nameWithPronouns.slice(0, match.index).trim();
+  if (!looksLikePronouns(rawSpec)) {
+    return { name: nameWithPronouns };
+  }
+  try {
+    const pronouns = parsePronounSpec(rawSpec);
+    return {
+      name: potentialName,
+      pronouns,
+      rawPronounSpec: rawSpec
+    };
+  } catch {
+    return { name: nameWithPronouns };
+  }
+}
+function hasPronouns(name) {
+  if (!name)
+    return false;
+  const match = name.match(PRONOUN_SUFFIX_RE);
+  if (!match)
+    return false;
+  return looksLikePronouns(match[1]);
+}
+function pronounsToGenderHint(rawSpec) {
+  const norm = rawSpec.trim().toLowerCase().replace(/\s+/g, "");
+  if (norm.startsWith("he/") || norm === "he" || norm.includes("/him")) {
+    return "male";
+  }
+  if (norm.startsWith("she/") || norm === "she" || norm.includes("/her")) {
+    return "female";
+  }
+  return "unknown";
+}
+
 // src/gender/GenderDB.ts
 var GenderDB = class {
   /**
@@ -3347,18 +3818,30 @@ function createGenderDB(options) {
   return db;
 }
 export {
+  BUILT_IN_PRONOUNS,
   COMMON_FIRST_NAMES,
   COMMON_SURNAMES,
   GenderDB,
   MULTI_WORD_PARTICLES,
   PARTICLES,
+  SPEC_ALIASES,
   classifyName,
   createGenderDB,
   entityToLegacy,
+  extractPronouns,
+  fillPronounTemplate,
+  fillPronounTemplateSmart,
   formatName,
+  formatPronoun,
+  getDefaultPronouns,
   getFirstName,
   getLastName,
   getNickname,
+  getPronounSet,
+  getPronouns,
+  getPronounsForEntity,
+  getPronounsForPerson,
+  hasPronouns,
   isCommonFirstName,
   isCommonSurname,
   isCompound,
@@ -3371,5 +3854,7 @@ export {
   isUnknown,
   parseName,
   parseNameList,
-  parsePersonName
+  parsePersonName,
+  parsePronounSpec,
+  pronounsToGenderHint
 };

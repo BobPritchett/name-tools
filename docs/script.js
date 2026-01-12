@@ -7,7 +7,11 @@ import {
     isOrganization,
     isFamily,
     isCompound,
-    createGenderDB
+    createGenderDB,
+    getPronounSet,
+    getPronouns,
+    extractPronouns,
+    BUILT_IN_PRONOUNS
 } from './name-tools.js';
 
 // Initialize gender database (singleton)
@@ -594,10 +598,114 @@ function updateGenderResults() {
     `;
 }
 
+// Pronoun lookup demo functionality
+function updatePronounResults() {
+    const pronounInput = document.getElementById('pronounInput');
+    const pronounResultsDiv = document.getElementById('pronounResults');
+
+    if (!pronounInput || !pronounResultsDiv) return;
+
+    const spec = pronounInput.value.trim();
+
+    if (!spec) {
+        pronounResultsDiv.innerHTML = '<p style="color: #636c76; font-size: 14px;">Enter a pronoun spec to see the full set...</p>';
+        return;
+    }
+
+    try {
+        const pronounSet = getPronounSet(spec);
+
+        pronounResultsDiv.innerHTML = `
+            <div class="pronoun-result">
+                <div class="pronoun-header">
+                    <span class="pronoun-id">${escapeHtml(pronounSet.id)}</span>
+                    <span class="pronoun-label">${escapeHtml(pronounSet.label)}</span>
+                </div>
+                <table class="details-kv">
+                    <tbody>
+                        <tr><th>Subject</th><td class="mono">${escapeHtml(pronounSet.subject || '(empty)')}</td><td class="example">{{subject}} went to the store</td></tr>
+                        <tr><th>Object</th><td class="mono">${escapeHtml(pronounSet.object || '(empty)')}</td><td class="example">I saw {{object}}</td></tr>
+                        <tr><th>Possessive Det.</th><td class="mono">${escapeHtml(pronounSet.possessiveDeterminer || '(empty)')}</td><td class="example">{{possDet}} book is here</td></tr>
+                        <tr><th>Possessive Pron.</th><td class="mono">${escapeHtml(pronounSet.possessivePronoun || '(empty)')}</td><td class="example">The book is {{possPron}}</td></tr>
+                        <tr><th>Reflexive</th><td class="mono">${escapeHtml(pronounSet.reflexive || '(empty)')}</td><td class="example">{{reflexive}} did it</td></tr>
+                    </tbody>
+                </table>
+                ${pronounSet.notes ? `<div class="pronoun-notes">${escapeHtml(pronounSet.notes)}</div>` : ''}
+            </div>
+        `;
+    } catch (error) {
+        pronounResultsDiv.innerHTML = `<p style="color: #cf222e; font-size: 14px;">Error: ${escapeHtml(error.message)}</p>`;
+    }
+}
+
+// Entity-to-pronouns demo functionality
+function updateEntityPronounResults() {
+    const entityPronounInput = document.getElementById('entityPronounInput');
+    const entityPronounResultsDiv = document.getElementById('entityPronounResults');
+
+    if (!entityPronounInput || !entityPronounResultsDiv) return;
+
+    const name = entityPronounInput.value.trim();
+
+    if (!name) {
+        entityPronounResultsDiv.innerHTML = '<p style="color: #636c76; font-size: 14px;">Enter a name to see suggested pronouns...</p>';
+        return;
+    }
+
+    try {
+        // First check for explicit pronouns in the name
+        const extracted = extractPronouns(name);
+        const entity = parseName(extracted.name);
+
+        // Get pronouns - use explicit if extracted, otherwise use gender lookup
+        let pronouns;
+        let source;
+
+        if (extracted.pronouns) {
+            pronouns = extracted.pronouns;
+            source = `Explicit: "${extracted.rawPronounSpec}"`;
+        } else {
+            pronouns = getPronouns(entity, { genderDB });
+            if (isPerson(entity) && entity.given) {
+                const gender = genderDB.guessGender(entity.given);
+                source = gender ? `Gender lookup: ${gender}` : 'Default (unknown gender)';
+            } else {
+                source = `Entity type: ${entity.kind}`;
+            }
+        }
+
+        entityPronounResultsDiv.innerHTML = `
+            <div class="entity-pronoun-result">
+                <div class="entity-info">
+                    <span class="entity-kind entity-kind-${entity.kind}">${entity.kind}</span>
+                    <span class="pronoun-source">${escapeHtml(source)}</span>
+                </div>
+                <div class="pronoun-header">
+                    <span class="pronoun-id">${escapeHtml(pronouns.id)}</span>
+                    <span class="pronoun-label">${escapeHtml(pronouns.label)}</span>
+                </div>
+                <table class="details-kv">
+                    <tbody>
+                        <tr><th>Subject</th><td class="mono">${escapeHtml(pronouns.subject || '(empty)')}</td></tr>
+                        <tr><th>Object</th><td class="mono">${escapeHtml(pronouns.object || '(empty)')}</td></tr>
+                        <tr><th>Possessive Det.</th><td class="mono">${escapeHtml(pronouns.possessiveDeterminer || '(empty)')}</td></tr>
+                        <tr><th>Possessive Pron.</th><td class="mono">${escapeHtml(pronouns.possessivePronoun || '(empty)')}</td></tr>
+                        <tr><th>Reflexive</th><td class="mono">${escapeHtml(pronouns.reflexive || '(empty)')}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch (error) {
+        entityPronounResultsDiv.innerHTML = `<p style="color: #cf222e; font-size: 14px;">Error: ${escapeHtml(error.message)}</p>`;
+    }
+}
+
 // Set up event listeners
 document.addEventListener('DOMContentLoaded', async () => {
     const nameInput = document.getElementById('nameInput');
     const genderInput = document.getElementById('genderInput');
+    const pronounInput = document.getElementById('pronounInput');
+    const entityPronounInput = document.getElementById('entityPronounInput');
 
     // Load examples data
     await loadExamples();
@@ -615,6 +723,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         genderInput.addEventListener('input', updateGenderResults);
         // Initial update
         updateGenderResults();
+    }
+
+    // Set up input listener for pronoun lookup demo
+    if (pronounInput) {
+        pronounInput.addEventListener('input', updatePronounResults);
+        // Initial update
+        updatePronounResults();
+    }
+
+    // Set up input listener for entity-to-pronouns demo
+    if (entityPronounInput) {
+        entityPronounInput.addEventListener('input', updateEntityPronounResults);
+        // Initial update
+        updateEntityPronounResults();
     }
 
     // Initial update

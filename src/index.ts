@@ -86,3 +86,41 @@ export type {
   NameFormatOptions,
   NamePreset,
 } from './types';
+
+// =============================================================================
+// PRONOUNS
+// =============================================================================
+export {
+  // Parser
+  getPronounSet,
+  parsePronounSpec,
+
+  // Formatter
+  formatPronoun,
+  fillPronounTemplate,
+  fillPronounTemplateSmart,
+
+  // Integration
+  getDefaultPronouns,
+  getPronounsForEntity,
+  getPronounsForPerson,
+  getPronouns,
+
+  // Extractor
+  extractPronouns,
+  hasPronouns,
+  pronounsToGenderHint,
+
+  // Data
+  BUILT_IN_PRONOUNS,
+  SPEC_ALIASES,
+} from './pronouns';
+
+export type {
+  PronounSet,
+  PronounRole,
+  Capitalization,
+  FormatOptions,
+  PronounExtractionResult,
+  GetPronounsForPersonOptions,
+} from './pronouns';

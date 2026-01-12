@@ -1121,61 +1121,81 @@ This design:
 
 ---
 
-- Return `rejected`
-- Include `rejectedAs` and reasons
+## 17. Pronoun Support (Planned)
 
----
+### Design Goals
 
-## 13. Confidence & Reason Codes
+1. **Tree-shakeable** - Separate `src/pronouns/` module, not bundled unless imported
+2. **Entity-aware** - Default pronouns based on entity kind (organizations → they/them)
+3. **Gender-integrated** - Can use `guessGender()` output to suggest default pronouns for persons
+4. **Extensible** - Supports built-in sets, neopronouns, and custom pronoun specs
 
-Every result includes:
+### Core Concept: PronounSet
 
-- Confidence score
-- Machine-readable reason codes
+A normalized pronoun set contains all grammatical forms needed for document/template generation:
 
-Examples:
+```typescript
+interface PronounSet {
+  id: string;                    // "he", "she", "they", "ze-hir", etc.
+  label: string;                 // "he/him", "she/her", "they/them"
+  subject: string;               // he, she, they
+  object: string;                // him, her, them
+  possessiveDeterminer: string;  // his, her, their ("their book")
+  possessivePronoun: string;     // his, hers, theirs ("the book is theirs")
+  reflexive: string;             // himself, herself, themselves
+}
+```
 
-- `ORG_LEGAL_SUFFIX`
-- `PERSON_REVERSED_ORDER`
-- `PERSON_SUFFIX_DETECTED`
-- `COMPOUND_CONNECTOR`
-- `FAMILY_ENDS_WITH_FAMILY`
-- `AMBIGUOUS_THE_PLURAL`
-- `HAS_EMAIL_ADDRESS`
-- `LIST_SEPARATOR_DETECTED`
+### Integration with Entity Classification
 
----
+| Entity Kind | Default Pronouns | Rationale |
+|-------------|------------------|-----------|
+| `person` | Derived from gender or they/them | Use guessGender() on given name when available |
+| `organization` | they/them | Organizations are always plural reference |
+| `family` | they/them | Families are groups |
+| `household` | they/them | Households are groups |
+| `compound` | they/them | Multiple people |
+| `unknown` | they/them | Safe default |
 
-## 14. Rendering Implications (Non-Parsing)
+### Integration with Gender Module
 
-Typed entities enable:
+```typescript
+// Chain gender lookup to pronoun suggestion
+const genderDB = createGenderDB();
+const entity = parseName('John Smith');
 
-- Correct salutations
-- Proper plural pronouns
-- Avoidance of broken personalization
-- Legal vs informal naming distinctions
+if (entity.kind === 'person' && entity.given) {
+  const gender = genderDB.guessGender(entity.given);
+  const pronouns = getDefaultPronouns(gender);
+  // gender='male' → pronouns.id='he'
+}
+```
 
-Rendering is **out of scope** for this spec but enabled by it.
+### Future: Pronoun Extraction from Names
 
----
+Many people include pronouns in display names:
+- `"Alex Johnson (they/them)"`
+- `"Sam Smith (he/his)"`
 
-## 15. Non-Goals
+Planned extraction:
+1. Detect parenthetical suffix with `/` (pronoun pattern)
+2. Parse and validate against known pronoun specs
+3. Return cleaned name + extracted pronouns
+4. Use extracted pronouns as additional gender signal
 
-- No global given-name dictionaries
-- No band vs family disambiguation
-- No destructive normalization
-- No locale-wide linguistic inference
+### Rendering Use Cases
 
----
+- **Salutations**: "Dear Mr. Smith" vs "Dear Ms. Smith" vs "Dear Sam Smith"
+- **Legal documents**: "The Borrower acknowledges that {{subject}} has read..."
+- **Form letters**: Correct pronoun agreement throughout
+- **Avoiding misgendering**: Safe they/them default when uncertain
 
-## 16. Why This Works
+### Non-Goals
 
-This design:
+- No storage of pronouns on ParsedNameEntity (computed via helpers)
+- No automatic pronoun database (static built-in sets only)
+- No locale-specific pronoun systems (English-focused initially)
 
-- Matches actual CRM and email behavior
-- Handles Outlook/Gmail exports correctly
-- Prevents data corruption
-- Scales from single fields to bulk imports
-- Keeps APIs clean while embracing messy reality
+See [pronouns-implementation-plan.md](./pronouns-implementation-plan.md) for full implementation spec.
 
 ---
