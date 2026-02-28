@@ -74,7 +74,7 @@ const PLURAL_HONORIFICS: Record<string, string> = {
 /**
  * Single honorific pattern for member parsing
  */
-const SINGLE_HONORIFIC_RE = /^(mr|mrs|ms|miss|mx|dr|prof|sir|dame|rev|fr|rabbi|imam|pastor|judge|justice|capt|maj|col|gen|adm|sgt|lt)\.?\s+/i;
+const SINGLE_HONORIFIC_RE = /^(mr|mrs|ms|miss|mx|dr|prof|sir|dame|rev|fr|rabbi|imam|pastor|judge|justice|capt|maj|col|gen|adm|sgt|lt)(?:\.\s*|\s+|$)/i;
 
 /**
  * Known suffixes that should NOT be inherited across members

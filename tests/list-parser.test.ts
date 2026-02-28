@@ -151,10 +151,30 @@ describe('parseNameList', () => {
     });
 
     it('should classify organization names', () => {
-      // Use organization without comma-legal format to avoid splitting ambiguity
-      const result = parseNameList('Acme Corporation LLC');
+      // Test without comma
+      let result = parseNameList('Acme Corporation LLC');
       expect(result).toHaveLength(1);
       expect(result[0].display?.kind).toBe('organization');
+
+      // Test with comma-legal form
+      result = parseNameList('Acme, LLC');
+      expect(result).toHaveLength(1);
+      expect(result[0].display?.kind).toBe('organization');
+      expect((result[0].display as any).legalForm).toBe('LLC');
+
+      // Test with comma-legal form inside list
+      result = parseNameList('Microsoft, Inc.; Acme Corporation LLC');
+      expect(result).toHaveLength(2);
+      expect(result[0].display?.kind).toBe('organization');
+      expect(result[0].raw).toBe('Microsoft, Inc.');
+      expect(result[1].display?.kind).toBe('organization');
+
+    // Test with comma separator instead of semicolon
+    result = parseNameList('Microsoft, Inc., Acme Corporation LLC');
+    expect(result).toHaveLength(2);
+    expect(result[0].display?.kind).toBe('organization');
+    expect(result[0].raw).toBe('Microsoft, Inc.');
+    expect(result[1].display?.kind).toBe('organization');
     });
 
     it('should handle multiple organizations with semicolon separator', () => {

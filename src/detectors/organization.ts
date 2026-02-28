@@ -3,7 +3,7 @@
  */
 
 import type { OrganizationName, ReasonCode, Confidence, ParseMeta } from '../types';
-import { hasLegalSuffix, extractLegalSuffix, COMMA_LEGAL_RE } from '../data/legal-forms';
+import { hasLegalSuffix, extractLegalSuffix, COMMA_LEGAL_RE, matchLegalForm } from '../data/legal-forms';
 import {
   matchInstitutionPhrase,
   hasWeakOrgKeyword,

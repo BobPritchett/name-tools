@@ -404,9 +404,13 @@ function renderSingle(parsed: ParsedName, o: ResolvedOptions): RenderedPersonPar
     if (lastText) pieces.push(lastText);
 
     if (givenLikeText) {
-      const comma = ',';
-      const afterComma = boundarySpace('commaToGiven', o, t);
-      pieces.push(comma + afterComma + givenLikeText);
+      if (lastText) {
+        const comma = ',';
+        const afterComma = boundarySpace('commaToGiven', o, t);
+        pieces.push(comma + afterComma + givenLikeText);
+      } else {
+        pieces.push(givenLikeText);
+      }
     }
 
     let base = pieces.join('');

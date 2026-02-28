@@ -1312,7 +1312,7 @@ var PLURAL_HONORIFICS = {
   "revs.": "Rev.",
   "reverends": "Rev."
 };
-var SINGLE_HONORIFIC_RE = /^(mr|mrs|ms|miss|mx|dr|prof|sir|dame|rev|fr|rabbi|imam|pastor|judge|justice|capt|maj|col|gen|adm|sgt|lt)\.?\s+/i;
+var SINGLE_HONORIFIC_RE = /^(mr|mrs|ms|miss|mx|dr|prof|sir|dame|rev|fr|rabbi|imam|pastor|judge|justice|capt|maj|col|gen|adm|sgt|lt)(?:\.\s*|\s+|$)/i;
 var SUFFIX_SET = /* @__PURE__ */ new Set([
   "jr",
   "jr.",
@@ -1853,7 +1853,7 @@ var SUFFIX_ALLOW_LIST = /* @__PURE__ */ new Set([
   "m.b.a.",
   "cpa"
 ]);
-var HONORIFIC_RE = /^(mr|mrs|ms|miss|mx|dr|prof|sir|dame|rev|fr|rabbi|imam|pastor|judge|justice|capt|maj|col|gen|adm|sgt|lt)\.?\s*/i;
+var HONORIFIC_RE = /^(mr|mrs|ms|miss|mx|dr|prof|sir|dame|rev|fr|rabbi|imam|pastor|judge|justice|capt|maj|col|gen|adm|sgt|lt)(?:\.\s*|\s+|$)/i;
 function isKnownSuffix(token) {
   return SUFFIX_ALLOW_LIST.has(token.toLowerCase().replace(/\.$/, ""));
 }
@@ -2559,23 +2559,39 @@ function isReversedNameComma(before, after) {
   const afterTrimmed = after.trim();
   if (!beforeTrimmed)
     return false;
-  if (hasEmail(afterTrimmed.split(/[,;]/)[0])) {
+  const beforeTokens = beforeTrimmed.split(/[\s,]+/).filter(Boolean);
+  if (hasEmail(afterTrimmed.split(/[,;\r\n]/)[0])) {
     return false;
   }
-  const afterTokens = afterTrimmed.split(/[\s,;]+/).filter(Boolean);
+  const exactNextChunk = afterTrimmed.split(/[,;\r\n]/)[0].trim();
+  if (matchLegalForm(exactNextChunk)) {
+    if (beforeTokens.length > 0) {
+      const isExactlyLegalForm = matchLegalForm(exactNextChunk);
+      if (isExactlyLegalForm) {
+        const normalizedChunk = exactNextChunk.toUpperCase().replace(/\./g, "").replace(/\s+/g, " ").trim();
+        if (isExactlyLegalForm.patterns.includes(normalizedChunk)) {
+          return true;
+        }
+      }
+    }
+  }
+  const afterTokens = afterTrimmed.split(/[\s,;\r\n]+/).filter(Boolean);
   const firstAfter = afterTokens[0];
   if (!firstAfter)
     return false;
   if (SUFFIX_PATTERN.test(firstAfter)) {
     return true;
   }
-  const beforeTokens = beforeTrimmed.split(/[\s,]+/).filter(Boolean);
   if (beforeTokens.length <= 3) {
+    const lastBeforeToken = beforeTokens[beforeTokens.length - 1];
+    if (lastBeforeToken && matchLegalForm(lastBeforeToken)) {
+      return false;
+    }
     if (isNameLikeToken(firstAfter)) {
       const commaIdx = afterTrimmed.indexOf(",");
       if (commaIdx > 0 && commaIdx < 30) {
         const afterComma = afterTrimmed.slice(commaIdx + 1).trim();
-        const nextWord = afterComma.split(/[\s,;]+/)[0];
+        const nextWord = afterComma.split(/[\s,;\r\n]+/)[0];
         if (nextWord && SUFFIX_PATTERN.test(nextWord)) {
           return true;
         }
@@ -2908,9 +2924,13 @@ function renderSingle(parsed, o) {
     if (lastText)
       pieces.push(lastText);
     if (givenLikeText) {
-      const comma = ",";
-      const afterComma = boundarySpace("commaToGiven", o, t);
-      pieces.push(comma + afterComma + givenLikeText);
+      if (lastText) {
+        const comma = ",";
+        const afterComma = boundarySpace("commaToGiven", o, t);
+        pieces.push(comma + afterComma + givenLikeText);
+      } else {
+        pieces.push(givenLikeText);
+      }
     }
     let base2 = pieces.join("");
     if (suffixText) {

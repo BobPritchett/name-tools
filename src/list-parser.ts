@@ -6,6 +6,7 @@ import type { ParsedRecipient, ParseListOptions, ReasonCode } from './types';
 import { classifyName } from './classifier';
 import { extractEmail, hasEmail } from './email-extractor';
 import { isNameLikeToken } from './normalize';
+import { COMMA_LEGAL_RE, matchLegalForm } from './data/legal-forms';
 
 /**
  * Split a recipient list into individual recipients
@@ -74,7 +75,9 @@ function splitRecipients(input: string): string[] {
       // Comma is a separator UNLESS it looks like a reversed name
       if (char === ',') {
         // Look ahead to see if this is a reversed name pattern
+        // Or if it's a comma before a legal suffix (e.g., "Microsoft, Inc.")
         if (!isReversedNameComma(current, input.slice(i + 1))) {
+          // It's a separator!
           const trimmed = current.trim();
           if (trimmed) {
             results.push(trimmed);
@@ -118,13 +121,36 @@ function isReversedNameComma(before: string, after: string): boolean {
   // If before is empty, it's not a reversed name
   if (!beforeTrimmed) return false;
 
+  // Count tokens before comma (excluding commas from count)
+  const beforeTokens = beforeTrimmed.split(/[\s,]+/).filter(Boolean);
+
   // If there's an email in the after part, it's probably a new recipient
-  if (hasEmail(afterTrimmed.split(/[,;]/)[0])) {
+  if (hasEmail(afterTrimmed.split(/[,;\r\n]/)[0])) {
     return false;
   }
 
+  // Get the first word after the current comma (might be "Inc." in "Microsoft, Inc.")
+  const exactNextChunk = afterTrimmed.split(/[,;\r\n]/)[0].trim();
+  
+  // Note: matchLegalForm returns a truthy LegalFormEntry if it matches any pattern for a legal suffix
+  if (matchLegalForm(exactNextChunk)) {
+    // We only want to join it if `beforeTokens` isn't entirely empty
+    if (beforeTokens.length > 0) {
+      // Because `isReversedNameComma` returning TRUE means the comma is NOT a separator.
+      // Let's ensure the `exactNextChunk` strictly maps to a legal form.
+      const isExactlyLegalForm = matchLegalForm(exactNextChunk);
+      if (isExactlyLegalForm) {
+        const normalizedChunk = exactNextChunk.toUpperCase().replace(/\./g, '').replace(/\s+/g, ' ').trim();
+        // `isReversedNameComma` returns true if we should NOT split at this comma.
+        if (isExactlyLegalForm.patterns.includes(normalizedChunk)) {
+          return true;
+        }
+      }
+    }
+  }
+
   // Get the first word after the comma
-  const afterTokens = afterTrimmed.split(/[\s,;]+/).filter(Boolean);
+  const afterTokens = afterTrimmed.split(/[\s,;\r\n]+/).filter(Boolean);
   const firstAfter = afterTokens[0];
   if (!firstAfter) return false;
 
@@ -134,20 +160,29 @@ function isReversedNameComma(before: string, after: string): boolean {
     return true;
   }
 
-  // Count tokens before comma (excluding commas from count)
-  const beforeTokens = beforeTrimmed.split(/[\s,]+/).filter(Boolean);
-
   // If before has 1-3 tokens (could be "Smith" or "Smith, John" or "van der Berg, Jan")
   // and after starts with a name-like word, assume reversed
   if (beforeTokens.length <= 3) {
+    // Wait, what if the string before the comma explicitly looks like a company name that ended in a legal suffix?
+    // We shouldn't treat this comma as a reversed name comma. E.g. "Microsoft, Inc., Bob" -> Split here!
+    const lastBeforeToken = beforeTokens[beforeTokens.length - 1];
+    if (lastBeforeToken && matchLegalForm(lastBeforeToken)) {
+      return false; // Force split if the thing immediately before the comma is a legal suffix!
+    }
+
     // Check if after looks like a given name or suffix
     if (isNameLikeToken(firstAfter)) {
       // Could be reversed name - check for subsequent commas
       const commaIdx = afterTrimmed.indexOf(',');
+      
+      // Let's ensure the `before` string isn't explicitly an organization that we just matched.
+      // We already have a check for this on line 169 (lastBeforeToken), but let's make sure
+      // we aren't bypassing it if someone puts a newline there.
+      
       if (commaIdx > 0 && commaIdx < 30) {
         // There's another comma nearby - check if what follows is a suffix
         const afterComma = afterTrimmed.slice(commaIdx + 1).trim();
-        const nextWord = afterComma.split(/[\s,;]+/)[0];
+        const nextWord = afterComma.split(/[\s,;\r\n]+/)[0];
         if (nextWord && SUFFIX_PATTERN.test(nextWord)) {
           // Looks like "Smith, John, Jr." pattern
           return true;

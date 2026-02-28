@@ -78,6 +78,16 @@ describe('parseName (entity classification)', () => {
       }
     });
 
+    it('should not confuse names starting with honorific letters as honorifics', () => {
+      const result = parseName('Frederick Jones');
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.honorific).toBeUndefined();
+        expect(result.given).toBe('Frederick');
+        expect(result.family).toBe('Jones');
+      }
+    });
+
     it('should handle names with suffixes', () => {
       const result = parseName('John Smith Jr.');
       expect(result.kind).toBe('person');

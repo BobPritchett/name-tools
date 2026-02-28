@@ -72,6 +72,11 @@ describe('formatName (single)', () => {
     );
   });
 
+  it('renders alphabetical without comma for single-word names', () => {
+    expect(formatName('Longstaff', { preset: 'alphabetical' })).toBe('Longstaff');
+    expect(formatName('Michaela', { preset: 'alphabetical' })).toBe('Michaela');
+  });
+
   it('renders initialed (initials + family) using NNBSP between initials and NBSP before last', () => {
     expect(formatName('Bob William Pritchett', { preset: 'initialed' })).toBe(
       `B.${NNBSP}W.${NBSP}Pritchett`

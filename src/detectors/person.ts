@@ -24,7 +24,7 @@ const SUFFIX_ALLOW_LIST = new Set([
 /**
  * Common honorifics/prefixes
  */
-const HONORIFIC_RE = /^(mr|mrs|ms|miss|mx|dr|prof|sir|dame|rev|fr|rabbi|imam|pastor|judge|justice|capt|maj|col|gen|adm|sgt|lt)\.?\s*/i;
+const HONORIFIC_RE = /^(mr|mrs|ms|miss|mx|dr|prof|sir|dame|rev|fr|rabbi|imam|pastor|judge|justice|capt|maj|col|gen|adm|sgt|lt)(?:\.\s*|\s+|$)/i;
 
 /**
  * Check if a token is a known suffix
