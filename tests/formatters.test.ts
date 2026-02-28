@@ -11,6 +11,16 @@ describe('formatName (single)', () => {
     );
   });
 
+  it('renders display style preserving middle initials when first name is an initial', () => {
+    expect(formatName('W. A. Jones')).toBe(`W. A.${NBSP}Jones`);
+    expect(formatName('J. R. R. Tolkien')).toBe(`J. R.${NNBSP}R.${NBSP}Tolkien`);
+    expect(formatName('T. S. Eliot')).toBe(`T. S.${NBSP}Eliot`);
+  });
+
+  it('renders display style dropping middle initial when first name is full', () => {
+    expect(formatName('Michael R. Jones')).toBe(`Michael${NBSP}Jones`);
+  });
+
   it('renders suffix:auto canonically even if input omits punctuation/case', () => {
     expect(formatName('Bob Pritchett jr')).toBe(
       `Bob${NBSP}Pritchett,${NBSP}Jr.`

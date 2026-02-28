@@ -2854,7 +2854,13 @@ function renderGivenPlusMiddle(parsed, o, t) {
     const finalToken = all.length > 0 ? all[all.length - 1] : given;
     return { givenLikeText: initialsText, finalGivenToken: finalToken };
   }
-  const middleText = renderMiddle(parsed, o.middle, o, t);
+  let effectiveMiddleMode = o.middle;
+  if (o.preset === "display" && effectiveMiddleMode === "none") {
+    if (/^[A-Za-z]\.?$/.test(given.trim())) {
+      effectiveMiddleMode = "initial";
+    }
+  }
+  const middleText = renderMiddle(parsed, effectiveMiddleMode, o, t);
   if (!middleText)
     return { givenLikeText: given, finalGivenToken: given };
   const sep = boundarySpace("space", o, t);

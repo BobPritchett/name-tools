@@ -336,7 +336,16 @@ function renderGivenPlusMiddle(
     return { givenLikeText: initialsText, finalGivenToken: finalToken };
   }
 
-  const middleText = renderMiddle(parsed, o.middle, o, t);
+  let effectiveMiddleMode = o.middle;
+  // Special case for 'display' preset: If the first name is just an initial,
+  // include the middle initial(s) to preserve distinctiveness (e.g. "W. A. Jones").
+  if (o.preset === 'display' && effectiveMiddleMode === 'none') {
+    if (/^[A-Za-z]\.?$/.test(given.trim())) {
+      effectiveMiddleMode = 'initial';
+    }
+  }
+
+  const middleText = renderMiddle(parsed, effectiveMiddleMode, o, t);
   if (!middleText) return { givenLikeText: given, finalGivenToken: given };
 
   const sep = boundarySpace('space', o, t);
