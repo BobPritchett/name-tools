@@ -46,10 +46,11 @@ export function tokenize(text: string): string[] {
  * - Initials: "J", "J.", "M."
  */
 export function isNameLikeToken(token: string): boolean {
-  // Single letter initial (with optional period)
-  if (/^[A-Z]\.?$/.test(token)) return true;
-  // Starts with uppercase, followed by lowercase (with optional hyphen/apostrophe)
-  return /^[A-Z][a-z]+(?:['-][A-Z]?[a-z]+)*$/.test(token);
+  // Single letter initial (with optional period) or multiple initials (e.g. J.F. or J.F)
+  if (/^([A-Z]\.?)+$/.test(token)) return true;
+  // Name token starting with uppercase, allowing internal capitals (DeBartolo, MacDonald)
+  // and hyphens/apostrophes (O'Brien, Smith-Jones)
+  return /^[A-Z][a-zA-Z]*(?:['-][A-zA-Z]+)*$/.test(token);
 }
 
 /**

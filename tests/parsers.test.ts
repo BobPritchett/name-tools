@@ -108,6 +108,93 @@ describe('parseName (entity classification)', () => {
         expect(result.reversed).toBe(true);
       }
     });
+
+    it('should handle standard names with nickname and suffix', () => {
+      const result = parseName('John F. "Jack" Kennedy, Jr.');
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('John');
+        expect(result.middle).toBe('F.');
+        expect(result.family).toBe('Kennedy');
+        expect(result.suffix).toBe('Jr.');
+        expect(result.nickname).toBe('Jack');
+        expect(result.reversed).toBe(false);
+      }
+    });
+
+    it('should handle reversed names with nickname and suffix', () => {
+      const result = parseName('Kennedy, John F. "Jack", Jr.');
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('John');
+        expect(result.middle).toBe('F.');
+        expect(result.family).toBe('Kennedy');
+        expect(result.suffix).toBe('Jr.');
+        expect(result.nickname).toBe('Jack');
+        expect(result.reversed).toBe(true);
+      }
+    });
+
+    it('should handle reversed names with initials, nickname and suffix', () => {
+      const result = parseName('Kennedy, J. F. "Jack", Jr.');
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('J.');
+        expect(result.middle).toBe('F.');
+        expect(result.family).toBe('Kennedy');
+        expect(result.suffix).toBe('Jr.');
+        expect(result.nickname).toBe('Jack');
+        expect(result.reversed).toBe(true);
+      }
+    });
+
+    it('should handle reversed names with unspaced initials', () => {
+      const result = parseName('Kennedy, J.F. "Jack", Jr.');
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('J.F.');
+        expect(result.family).toBe('Kennedy');
+        expect(result.suffix).toBe('Jr.');
+        expect(result.nickname).toBe('Jack');
+        expect(result.reversed).toBe(true);
+      }
+    });
+
+    it('should handle reversed names with internal capitals', () => {
+      const result = parseName('DeBartolo, Edward J., Jr.');
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('Edward');
+        expect(result.middle).toBe('J.');
+        expect(result.family).toBe('DeBartolo');
+        expect(result.suffix).toBe('Jr.');
+        expect(result.reversed).toBe(true);
+      }
+    });
+
+    it('should handle standard names with internal capitals', () => {
+      const result = parseName('Edward J. DeBartolo, Jr.');
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('Edward');
+        expect(result.middle).toBe('J.');
+        expect(result.family).toBe('DeBartolo');
+        expect(result.suffix).toBe('Jr.');
+        expect(result.reversed).toBe(false);
+      }
+    });
+
+    it('should handle all-caps reversed names', () => {
+      const result = parseName('DEBARTOLO, EDWARD J., JR.');
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('EDWARD');
+        expect(result.middle).toBe('J.');
+        expect(result.family).toBe('DEBARTOLO');
+        expect(result.suffix).toBe('JR.');
+        expect(result.reversed).toBe(true);
+      }
+    });
   });
 
   describe('organization detection', () => {

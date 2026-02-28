@@ -1006,9 +1006,9 @@ function tokenize(text) {
   return text.split(/\s+/).filter(Boolean);
 }
 function isNameLikeToken(token) {
-  if (/^[A-Z]\.?$/.test(token))
+  if (/^([A-Z]\.?)+$/.test(token))
     return true;
-  return /^[A-Z][a-z]+(?:['-][A-Z]?[a-z]+)*$/.test(token);
+  return /^[A-Z][a-zA-Z]*(?:['-][A-zA-Z]+)*$/.test(token);
 }
 function extractParenContent(text) {
   const match = text.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
@@ -1858,7 +1858,20 @@ function isKnownSuffix(token) {
   return SUFFIX_ALLOW_LIST.has(token.toLowerCase().replace(/\.$/, ""));
 }
 function tryParseReversed(normalized) {
-  const parts = normalized.split(",").map((p) => p.trim()).filter(Boolean);
+  let text = normalized;
+  let nickname;
+  const quoteMatch = text.match(/[""']([^""']+)[""']/);
+  if (quoteMatch) {
+    nickname = quoteMatch[1].trim();
+    text = text.replace(quoteMatch[0], " ").replace(/\s+/g, " ").trim();
+  } else {
+    const parenMatch = text.match(/\s*\(([^)]+)\)\s*/);
+    if (parenMatch) {
+      nickname = parenMatch[1].trim();
+      text = text.replace(parenMatch[0], " ").trim();
+    }
+  }
+  const parts = text.split(",").map((p) => p.trim()).filter(Boolean);
   if (parts.length < 2 || parts.length > 4) {
     return null;
   }
@@ -1899,6 +1912,7 @@ function tryParseReversed(normalized) {
       middle,
       family,
       suffix,
+      nickname,
       reversed: true
     }
   };
@@ -2557,7 +2571,7 @@ function isReversedNameComma(before, after) {
   }
   const beforeTokens = beforeTrimmed.split(/[\s,]+/).filter(Boolean);
   if (beforeTokens.length <= 3) {
-    if (/^[A-Z][a-z]+\.?$/.test(firstAfter)) {
+    if (isNameLikeToken(firstAfter)) {
       const commaIdx = afterTrimmed.indexOf(",");
       if (commaIdx > 0 && commaIdx < 30) {
         const afterComma = afterTrimmed.slice(commaIdx + 1).trim();

@@ -5,6 +5,7 @@
 import type { ParsedRecipient, ParseListOptions, ReasonCode } from './types';
 import { classifyName } from './classifier';
 import { extractEmail, hasEmail } from './email-extractor';
+import { isNameLikeToken } from './normalize';
 
 /**
  * Split a recipient list into individual recipients
@@ -140,7 +141,7 @@ function isReversedNameComma(before: string, after: string): boolean {
   // and after starts with a name-like word, assume reversed
   if (beforeTokens.length <= 3) {
     // Check if after looks like a given name or suffix
-    if (/^[A-Z][a-z]+\.?$/.test(firstAfter)) {
+    if (isNameLikeToken(firstAfter)) {
       // Could be reversed name - check for subsequent commas
       const commaIdx = afterTrimmed.indexOf(',');
       if (commaIdx > 0 && commaIdx < 30) {

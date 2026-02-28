@@ -867,8 +867,13 @@ db.getMaleProbability("Chris"); // ~0.7 (leans male)
 // Guess gender with 80% confidence threshold (default)
 db.guessGender("John"); // 'male' (>80% male probability)
 db.guessGender("Mary"); // 'female' (<20% male probability)
-db.guessGender("Chris"); // 'unknown' (between 20-80%)
+db.guessGender("Chris"); // 'unknown' (found, but between 20-80%)
 db.guessGender("Alex", 0.6); // custom threshold: 'male' | 'female' | 'unknown'
+db.guessGender("Xyzzy"); // null (not found in database)
+
+// Check if a name exists in the database (useful for first-name validation)
+db.has("Chris"); // true
+db.has("Xyzzy"); // false
 ```
 
 ### Building for NPM and GitHub Pages

@@ -62,6 +62,20 @@ describe('parseNameList', () => {
       expect(result[0].raw).toBe('Smith, John, Jr.');
       expect(result[1].raw).toBe('Doe, Jane');
     });
+
+    it('should not split reversed names with initials and suffixes', () => {
+      const result = parseNameList('Kennedy, J. F. "Jack", Jr.');
+      expect(result).toHaveLength(1);
+      expect(result[0].raw).toBe('Kennedy, J. F. "Jack", Jr.');
+      expect(result[0].display?.kind).toBe('person');
+    });
+
+    it('should not split reversed names with unspaced initials and suffixes', () => {
+      const result = parseNameList('Kennedy, J.F. "Jack", Jr.');
+      expect(result).toHaveLength(1);
+      expect(result[0].raw).toBe('Kennedy, J.F. "Jack", Jr.');
+      expect(result[0].display?.kind).toBe('person');
+    });
   });
 
   describe('email extraction', () => {

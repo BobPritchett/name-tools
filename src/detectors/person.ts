@@ -44,8 +44,25 @@ export interface PersonDetectionResult {
  * Try to parse as reversed name format: "Family, Given [Middle] [, Suffix]"
  */
 function tryParseReversed(normalized: string): PersonDetectionResult | null {
+  let text = normalized;
+  let nickname: string | undefined;
+
+  // Extract nickname from quotes or parentheses
+  const quoteMatch = text.match(/[""']([^""']+)[""']/);
+  if (quoteMatch) {
+    nickname = quoteMatch[1].trim();
+    text = text.replace(quoteMatch[0], ' ').replace(/\s+/g, ' ').trim();
+  } else {
+    // Check for parenthetical nicknames
+    const parenMatch = text.match(/\s*\(([^)]+)\)\s*/);
+    if (parenMatch) {
+      nickname = parenMatch[1].trim();
+      text = text.replace(parenMatch[0], ' ').trim();
+    }
+  }
+
   // Split on commas
-  const parts = normalized.split(',').map(p => p.trim()).filter(Boolean);
+  const parts = text.split(',').map(p => p.trim()).filter(Boolean);
 
   // Must have 2-4 comma-separated parts
   if (parts.length < 2 || parts.length > 4) {
@@ -105,6 +122,7 @@ function tryParseReversed(normalized: string): PersonDetectionResult | null {
       middle,
       family,
       suffix,
+      nickname,
       reversed: true,
     },
   };
