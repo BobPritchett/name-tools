@@ -47,18 +47,19 @@ function tryParseReversed(normalized: string): PersonDetectionResult | null {
   let text = normalized;
   let nickname: string | undefined;
 
-  // Extract nickname from quotes or parentheses
+  // Extract nickname from quotes
   const quoteMatch = text.match(/[""']([^""']+)[""']/);
   if (quoteMatch) {
     nickname = quoteMatch[1].trim();
     text = text.replace(quoteMatch[0], ' ').replace(/\s+/g, ' ').trim();
-  } else {
-    // Check for parenthetical nicknames
-    const parenMatch = text.match(/\s*\(([^)]+)\)\s*/);
-    if (parenMatch) {
-      nickname = parenMatch[1].trim();
-      text = text.replace(parenMatch[0], ' ').trim();
-    }
+  }
+  
+  let fullGiven: string | undefined;
+  // Extract fullGiven from parentheses
+  const parenMatch = text.match(/\s*\(([^)]+)\)\s*/);
+  if (parenMatch) {
+    fullGiven = parenMatch[1].trim();
+    text = text.replace(parenMatch[0], ' ').trim();
   }
 
   // Split on commas
@@ -119,6 +120,7 @@ function tryParseReversed(normalized: string): PersonDetectionResult | null {
     entity: {
       kind: 'person',
       given,
+      fullGiven,
       middle,
       family,
       suffix,
@@ -149,20 +151,21 @@ function parseStandardFormat(normalized: string): PersonDetectionResult {
     confidence = 0.75;
   }
 
-  // Extract parenthetical content (could be nickname or annotation)
+  let fullGiven: string | undefined;
+
+  // Extract parenthetical content (could be full given name or annotation)
   const parenResult = extractParenContent(text);
   if (parenResult) {
-    // Could be nickname like "Robert (Bob) Smith"
-    nickname = parenResult.paren;
+    fullGiven = parenResult.paren;
     text = parenResult.main;
     reasons.push('HAS_PAREN_ANNOTATION');
-  } else {
-    // Also check for quotes: "Robert 'Bob' Smith"
-    const quoteMatch = text.match(/[""']([^""']+)[""']/);
-    if (quoteMatch) {
-      nickname = quoteMatch[1].trim();
-      text = text.replace(quoteMatch[0], ' ').replace(/\s+/g, ' ').trim();
-    }
+  }
+
+  // Check for quotes: "Robert 'Bob' Smith"
+  const quoteMatch = text.match(/[""']([^""']+)[""']/);
+  if (quoteMatch) {
+    nickname = quoteMatch[1].trim();
+    text = text.replace(quoteMatch[0], ' ').replace(/\s+/g, ' ').trim();
   }
 
   // Check for comma-separated suffix at end
@@ -226,6 +229,7 @@ function parseStandardFormat(normalized: string): PersonDetectionResult {
       kind: 'person',
       honorific,
       given,
+      fullGiven,
       middle,
       family,
       suffix,
@@ -270,6 +274,7 @@ export function buildPersonEntity(
     kind: 'person',
     honorific: result.entity?.honorific,
     given: result.entity?.given,
+    fullGiven: result.entity?.fullGiven,
     middle: result.entity?.middle,
     family: result.entity?.family,
     suffix: result.entity?.suffix,

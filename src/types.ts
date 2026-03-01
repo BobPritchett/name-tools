@@ -175,6 +175,8 @@ export interface PersonName extends BaseEntity {
   honorific?: string;
   /** Given/first name */
   given?: string;
+  /** Full given name if explicitly provided (e.g. from parenthetical: "Thomas A. (Thomas Alva) Edison") */
+  fullGiven?: string;
   /** Middle name(s) */
   middle?: string;
   /** Family/last name */
@@ -309,6 +311,7 @@ export interface NameToken {
 export interface ParsedName {
   prefix?: string;
   first?: string;
+  fullGiven?: string;
   middle?: string;
   last?: string;
   suffix?: string;
@@ -341,7 +344,9 @@ export type NamePreset =
   | 'informal'
   | 'formalFull'
   | 'formalShort'
+  | 'expandedFull'
   | 'alphabetical'
+  | 'library'
   | 'initialed'
   | 'firstOnly'
   | 'preferredFirst'
@@ -374,7 +379,7 @@ export type NameFormatOptions = {
   shareSuffix?: 'auto' | 'never' | 'whenSame'; // default: "auto"
 
   // Explicit overrides for core parts
-  prefer?: 'auto' | 'nickname' | 'first'; // default: "auto"
+  prefer?: 'auto' | 'nickname' | 'first' | 'fullGiven'; // default: "auto"
   middle?: 'full' | 'initial' | 'none'; // default varies by preset
   prefix?: 'include' | 'omit' | 'auto'; // default varies by preset
   suffix?: 'include' | 'omit' | 'auto'; // default varies by preset

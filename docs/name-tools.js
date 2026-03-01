@@ -1011,9 +1011,12 @@ function isNameLikeToken(token) {
   return /^[A-Z][a-zA-Z]*(?:['-][A-zA-Z]+)*$/.test(token);
 }
 function extractParenContent(text) {
-  const match = text.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  const match = text.match(/\s*\(([^)]+)\)\s*/);
   if (match) {
-    return { main: match[1].trim(), paren: match[2].trim() };
+    return {
+      main: text.replace(match[0], " ").replace(/\s+/g, " ").trim(),
+      paren: match[1].trim()
+    };
   }
   return null;
 }
@@ -1864,12 +1867,12 @@ function tryParseReversed(normalized) {
   if (quoteMatch) {
     nickname = quoteMatch[1].trim();
     text = text.replace(quoteMatch[0], " ").replace(/\s+/g, " ").trim();
-  } else {
-    const parenMatch = text.match(/\s*\(([^)]+)\)\s*/);
-    if (parenMatch) {
-      nickname = parenMatch[1].trim();
-      text = text.replace(parenMatch[0], " ").trim();
-    }
+  }
+  let fullGiven;
+  const parenMatch = text.match(/\s*\(([^)]+)\)\s*/);
+  if (parenMatch) {
+    fullGiven = parenMatch[1].trim();
+    text = text.replace(parenMatch[0], " ").trim();
   }
   const parts = text.split(",").map((p) => p.trim()).filter(Boolean);
   if (parts.length < 2 || parts.length > 4) {
@@ -1909,6 +1912,7 @@ function tryParseReversed(normalized) {
     entity: {
       kind: "person",
       given,
+      fullGiven,
       middle,
       family,
       suffix,
@@ -1931,17 +1935,17 @@ function parseStandardFormat(normalized) {
     reasons.push("PERSON_HAS_HONORIFIC");
     confidence = 0.75;
   }
+  let fullGiven;
   const parenResult = extractParenContent(text);
   if (parenResult) {
-    nickname = parenResult.paren;
+    fullGiven = parenResult.paren;
     text = parenResult.main;
     reasons.push("HAS_PAREN_ANNOTATION");
-  } else {
-    const quoteMatch = text.match(/[""']([^""']+)[""']/);
-    if (quoteMatch) {
-      nickname = quoteMatch[1].trim();
-      text = text.replace(quoteMatch[0], " ").replace(/\s+/g, " ").trim();
-    }
+  }
+  const quoteMatch = text.match(/[""']([^""']+)[""']/);
+  if (quoteMatch) {
+    nickname = quoteMatch[1].trim();
+    text = text.replace(quoteMatch[0], " ").replace(/\s+/g, " ").trim();
   }
   const commaIdx = text.lastIndexOf(",");
   if (commaIdx > 0) {
@@ -1993,6 +1997,7 @@ function parseStandardFormat(normalized) {
       kind: "person",
       honorific,
       given,
+      fullGiven,
       middle,
       family,
       suffix,
@@ -2020,6 +2025,7 @@ function buildPersonEntity(result, raw, normalized, locale = "en") {
     kind: "person",
     honorific: result.entity?.honorific,
     given: result.entity?.given,
+    fullGiven: result.entity?.fullGiven,
     middle: result.entity?.middle,
     family: result.entity?.family,
     suffix: result.entity?.suffix,
@@ -2159,12 +2165,18 @@ function parsePersonName(fullName) {
   return result;
 }
 function extractNickname(text, result) {
-  const nickMatch = text.match(/([\"\'\(\[\"\'])(.*?)([\"\'\)\]\"\'])/);
-  if (nickMatch) {
-    result.nickname = nickMatch[2].trim();
-    return text.replace(nickMatch[0], " ").replace(/\s+/g, " ").trim();
+  let workingText = text;
+  const quoteMatch = workingText.match(/["']([^"']+)["']/);
+  if (quoteMatch) {
+    result.nickname = quoteMatch[1].trim();
+    workingText = workingText.replace(quoteMatch[0], " ").replace(/\s+/g, " ").trim();
   }
-  return text;
+  const parenMatch = workingText.match(/[\(\[]([^)\]]+)[\)\]]/);
+  if (parenMatch) {
+    result.fullGiven = parenMatch[1].trim();
+    workingText = workingText.replace(parenMatch[0], " ").replace(/\s+/g, " ").trim();
+  }
+  return workingText;
 }
 function extractSuffixes(text, result) {
   let workingText = text;
@@ -2377,6 +2389,8 @@ function entityToLegacy(entity) {
     result.prefix = person.honorific;
   if (person.given)
     result.first = person.given;
+  if (person.fullGiven)
+    result.fullGiven = person.fullGiven;
   if (person.middle)
     result.middle = person.middle;
   if (person.family)
@@ -2679,7 +2693,9 @@ var PRESET_DEFAULTS = {
   preferredFirst: { prefix: "omit", prefer: "nickname", middle: "none", suffix: "omit", order: "given-family" },
   formalFull: { prefix: "include", prefer: "first", middle: "full", suffix: "include", order: "given-family" },
   formalShort: { prefix: "include", prefer: "first", middle: "none", suffix: "omit", order: "given-family" },
+  expandedFull: { prefix: "include", prefer: "fullGiven", middle: "none", suffix: "include", order: "given-family" },
   alphabetical: { prefix: "omit", prefer: "first", middle: "initial", suffix: "auto", order: "family-given" },
+  library: { prefix: "omit", prefer: "first", middle: "initial", suffix: "auto", order: "family-given" },
   initialed: { prefix: "omit", prefer: "first", middle: "initial", suffix: "omit", order: "given-family" }
 };
 function normalizeCollapseSpaces(value) {
@@ -2728,10 +2744,13 @@ function toInitial(word) {
 }
 function resolveGiven(parsed, prefer) {
   const first = parsed.first ? normalizeTrim(parsed.first) : void 0;
+  const fullGiven = parsed.fullGiven ? normalizeTrim(parsed.fullGiven) : void 0;
   const nickname = parsed.nickname ? normalizeTrim(parsed.nickname) : void 0;
   const preferredGiven = parsed.preferredGiven ? normalizeTrim(parsed.preferredGiven) : void 0;
   if (prefer === "nickname")
     return preferredGiven ?? nickname ?? first;
+  if (prefer === "fullGiven")
+    return fullGiven ?? first ?? nickname;
   if (prefer === "first")
     return first ?? nickname;
   return first ?? nickname;
@@ -2871,16 +2890,30 @@ function renderGivenPlusMiddle(parsed, o, t) {
     return { givenLikeText: initialsText, finalGivenToken: finalToken };
   }
   let effectiveMiddleMode = o.middle;
+  if (o.prefer === "fullGiven" && parsed.fullGiven && given === normalizeTrim(parsed.fullGiven)) {
+    effectiveMiddleMode = "none";
+  }
   if (o.preset === "display" && effectiveMiddleMode === "none") {
     if (/^[A-Za-z]\.?$/.test(given.trim())) {
       effectiveMiddleMode = "initial";
     }
   }
   const middleText = renderMiddle(parsed, effectiveMiddleMode, o, t);
-  if (!middleText)
-    return { givenLikeText: given, finalGivenToken: given };
-  const sep = boundarySpace("space", o, t);
-  return { givenLikeText: given + sep + middleText, finalGivenToken: middleText };
+  let givenLikeText = given;
+  let finalGivenToken = given;
+  if (middleText) {
+    const sep = boundarySpace("space", o, t);
+    givenLikeText = given + sep + middleText;
+    finalGivenToken = middleText;
+  }
+  if (o.preset === "library" && parsed.fullGiven) {
+    const fullGivenTrimmed = normalizeTrim(parsed.fullGiven);
+    if (fullGivenTrimmed) {
+      givenLikeText += `${t.SP}(${fullGivenTrimmed})`;
+      finalGivenToken = `(${fullGivenTrimmed})`;
+    }
+  }
+  return { givenLikeText, finalGivenToken };
 }
 function renderSingle(parsed, o) {
   const t = getSpaceTokens(o.output);
@@ -3060,6 +3093,8 @@ function personEntityToLegacy(entity) {
     result.prefix = entity.honorific;
   if (entity.given)
     result.first = entity.given;
+  if (entity.fullGiven)
+    result.fullGiven = entity.fullGiven;
   if (entity.middle)
     result.middle = entity.middle;
   if (entity.family)

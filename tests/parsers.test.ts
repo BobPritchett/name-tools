@@ -128,6 +128,20 @@ describe('parseName (entity classification)', () => {
         expect(result.family).toBe('Kennedy');
         expect(result.suffix).toBe('Jr.');
         expect(result.nickname).toBe('Jack');
+        expect(result.fullGiven).toBeUndefined();
+        expect(result.reversed).toBe(false);
+      }
+    });
+
+    it('should handle standard names with fullGiven and suffix', () => {
+      const result = parseName('Thomas A. (Thomas Alva) Edison');
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('Thomas');
+        expect(result.middle).toBe('A.');
+        expect(result.family).toBe('Edison');
+        expect(result.fullGiven).toBe('Thomas Alva');
+        expect(result.nickname).toBeUndefined();
         expect(result.reversed).toBe(false);
       }
     });

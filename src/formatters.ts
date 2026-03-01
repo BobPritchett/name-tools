@@ -80,7 +80,9 @@ const PRESET_DEFAULTS: Record<
   preferredFirst: { prefix: 'omit', prefer: 'nickname', middle: 'none', suffix: 'omit', order: 'given-family' },
   formalFull: { prefix: 'include', prefer: 'first', middle: 'full', suffix: 'include', order: 'given-family' },
   formalShort: { prefix: 'include', prefer: 'first', middle: 'none', suffix: 'omit', order: 'given-family' },
+  expandedFull: { prefix: 'include', prefer: 'fullGiven', middle: 'none', suffix: 'include', order: 'given-family' },
   alphabetical: { prefix: 'omit', prefer: 'first', middle: 'initial', suffix: 'auto', order: 'family-given' },
+  library: { prefix: 'omit', prefer: 'first', middle: 'initial', suffix: 'auto', order: 'family-given' },
   initialed: { prefix: 'omit', prefer: 'first', middle: 'initial', suffix: 'omit', order: 'given-family' },
 };
 
@@ -165,10 +167,12 @@ function extractIdentitySuffix(suffix: string): string | undefined {
 
 function resolveGiven(parsed: ParsedName, prefer: ResolvedOptions['prefer']): string | undefined {
   const first = parsed.first ? normalizeTrim(parsed.first) : undefined;
+  const fullGiven = parsed.fullGiven ? normalizeTrim(parsed.fullGiven) : undefined;
   const nickname = parsed.nickname ? normalizeTrim(parsed.nickname) : undefined;
   const preferredGiven = parsed.preferredGiven ? normalizeTrim(parsed.preferredGiven) : undefined;
 
   if (prefer === 'nickname') return preferredGiven ?? nickname ?? first;
+  if (prefer === 'fullGiven') return fullGiven ?? first ?? nickname;
   if (prefer === 'first') return first ?? nickname;
 
   // prefer === 'auto'
@@ -337,6 +341,14 @@ function renderGivenPlusMiddle(
   }
 
   let effectiveMiddleMode = o.middle;
+  
+  // If the preferred given name resolved to the fullGiven property, we usually want to skip the middle name
+  // to avoid things like "Thomas Alva A. Edison". But only do this if we actually *used* fullGiven.
+  // We check if we asked for fullGiven, fullGiven exists, and we actually used it.
+  if (o.prefer === 'fullGiven' && parsed.fullGiven && given === normalizeTrim(parsed.fullGiven)) {
+    effectiveMiddleMode = 'none';
+  }
+
   // Special case for 'display' preset: If the first name is just an initial,
   // include the middle initial(s) to preserve distinctiveness (e.g. "W. A. Jones").
   if (o.preset === 'display' && effectiveMiddleMode === 'none') {
@@ -346,11 +358,26 @@ function renderGivenPlusMiddle(
   }
 
   const middleText = renderMiddle(parsed, effectiveMiddleMode, o, t);
-  if (!middleText) return { givenLikeText: given, finalGivenToken: given };
+  let givenLikeText = given;
+  let finalGivenToken = given;
 
-  const sep = boundarySpace('space', o, t);
+  if (middleText) {
+    const sep = boundarySpace('space', o, t);
+    givenLikeText = given + sep + middleText;
+    finalGivenToken = middleText;
+  }
+
+  // Handle library preset appending fullGiven
+  if (o.preset === 'library' && parsed.fullGiven) {
+    const fullGivenTrimmed = normalizeTrim(parsed.fullGiven);
+    if (fullGivenTrimmed) {
+      givenLikeText += `${t.SP}(${fullGivenTrimmed})`;
+      finalGivenToken = `(${fullGivenTrimmed})`;
+    }
+  }
+
   // final given-like token is the last thing before last name (middleText if present, else given)
-  return { givenLikeText: given + sep + middleText, finalGivenToken: middleText };
+  return { givenLikeText, finalGivenToken };
 }
 
 function renderSingle(parsed: ParsedName, o: ResolvedOptions): RenderedPersonParts {
@@ -577,6 +604,7 @@ function personEntityToLegacy(entity: PersonNameEntity): ParsedName {
   const result: ParsedName = {};
   if (entity.honorific) result.prefix = entity.honorific;
   if (entity.given) result.first = entity.given;
+  if (entity.fullGiven) result.fullGiven = entity.fullGiven;
   if (entity.middle) result.middle = entity.middle;
   if (entity.family) result.last = entity.family;
   if (entity.suffix) result.suffix = entity.suffix;

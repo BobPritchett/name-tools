@@ -95,6 +95,7 @@ function updateResults() {
                                 <tr>
                                     <th>Prefix</th>
                                     <th>First</th>
+                                    <th>Full Given</th>
                                     <th>Nickname</th>
                                     <th>Middle</th>
                                     <th>Last</th>
@@ -105,6 +106,7 @@ function updateResults() {
                                 <tr>
                                     <td>${escapeHtml(parsed.prefix || '-')}</td>
                                     <td>${escapeHtml(parsed.first || '-')}</td>
+                                    <td>${escapeHtml(parsed.fullGiven || '-')}</td>
                                     <td>${escapeHtml(parsed.nickname || '-')}</td>
                                     <td>${escapeHtml(parsed.middle || '-')}</td>
                                     <td>${escapeHtml(parsed.last || '-')}</td>
@@ -131,7 +133,9 @@ function updateResults() {
                         <div class="formatted-item"><strong>Display:</strong> <span>${escapeHtml(formatName(entity))}</span></div>
                         <div class="formatted-item"><strong>Formal Full:</strong> <span>${escapeHtml(formatName(entity, { preset: 'formalFull' }))}</span></div>
                         <div class="formatted-item"><strong>Formal Short:</strong> <span>${escapeHtml(formatName(entity, { preset: 'formalShort' }))}</span></div>
+                        <div class="formatted-item"><strong>Expanded Full:</strong> <span>${escapeHtml(formatName(entity, { preset: 'expandedFull' }))}</span></div>
                         <div class="formatted-item"><strong>Alphabetical:</strong> <span>${escapeHtml(formatName(entity, { preset: 'alphabetical' }))}</span></div>
+                        <div class="formatted-item"><strong>Library:</strong> <span>${escapeHtml(formatName(entity, { preset: 'library' }))}</span></div>
                         <div class="formatted-item"><strong>Informal:</strong> <span>${escapeHtml(formatName(entity, { preset: 'informal' }))}</span></div>
                     </div>
                 </div>

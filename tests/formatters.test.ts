@@ -77,6 +77,18 @@ describe('formatName (single)', () => {
     expect(formatName('Michaela', { preset: 'alphabetical' })).toBe('Michaela');
   });
 
+  it('renders library format with fullGiven in parens', () => {
+    expect(formatName('Thomas A. (Thomas Alva) Edison', { preset: 'library' })).toBe(
+      `Edison,${NBSP}Thomas A. (Thomas Alva)`
+    );
+  });
+
+  it('renders expandedFull using fullGiven instead of first name and no middle name', () => {
+    expect(formatName('Mr. Thomas A. (Thomas Alva) Edison', { preset: 'expandedFull' })).toBe(
+      `Mr.${NBSP}Thomas Alva${NBSP}Edison`
+    );
+  });
+
   it('renders initialed (initials + family) using NNBSP between initials and NBSP before last', () => {
     expect(formatName('Bob William Pritchett', { preset: 'initialed' })).toBe(
       `B.${NNBSP}W.${NBSP}Pritchett`
@@ -84,7 +96,7 @@ describe('formatName (single)', () => {
   });
 
   it('renders preferredDisplay (nickname + family) when nickname exists', () => {
-    expect(formatName('William (Bill) Henry Gates III', { preset: 'preferredDisplay' })).toBe(
+    expect(formatName('William "Bill" Henry Gates III', { preset: 'preferredDisplay' })).toBe(
       `Bill${NBSP}Gates,${NBSP}III`
     );
   });

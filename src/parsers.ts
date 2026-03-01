@@ -73,15 +73,26 @@ export function parsePersonName(fullName: string): ParsedName {
 }
 
 /**
- * Extract nickname (quoted or parenthesized text)
+ * Extract nickname (quoted) and fullGiven (parenthesized)
  */
 function extractNickname(text: string, result: ParsedName): string {
-  const nickMatch = text.match(/([\"\'\(\[\"\'])(.*?)([\"\'\)\]\"\'])/);
-  if (nickMatch) {
-    result.nickname = nickMatch[2].trim();
-    return text.replace(nickMatch[0], ' ').replace(/\s+/g, ' ').trim();
+  let workingText = text;
+
+  // Extract quotes (nickname)
+  const quoteMatch = workingText.match(/["']([^"']+)["']/);
+  if (quoteMatch) {
+    result.nickname = quoteMatch[1].trim();
+    workingText = workingText.replace(quoteMatch[0], ' ').replace(/\s+/g, ' ').trim();
   }
-  return text;
+
+  // Extract parens/brackets (fullGiven)
+  const parenMatch = workingText.match(/[\(\[]([^)\]]+)[\)\]]/);
+  if (parenMatch) {
+    result.fullGiven = parenMatch[1].trim();
+    workingText = workingText.replace(parenMatch[0], ' ').replace(/\s+/g, ' ').trim();
+  }
+  
+  return workingText;
 }
 
 /**
@@ -392,6 +403,7 @@ export function entityToLegacy(entity: ParsedNameEntity): ParsedName | null {
 
   if (person.honorific) result.prefix = person.honorific;
   if (person.given) result.first = person.given;
+  if (person.fullGiven) result.fullGiven = person.fullGiven;
   if (person.middle) result.middle = person.middle;
   if (person.family) result.last = person.family;
   if (person.suffix) result.suffix = person.suffix;

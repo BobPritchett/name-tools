@@ -425,7 +425,7 @@ Format a name (or array of names) according to a preset or custom options.
 | `join`          | `'none' \| 'list' \| 'couple'`            | `'none'`        | Array rendering mode                     |
 | `conjunction`   | `'and' \| '&' \| string`                  | `'and'`         | Word between last two names              |
 | `oxfordComma`   | `boolean`                                 | `true`          | Use Oxford comma in lists                |
-| `prefer`        | `'auto' \| 'nickname' \| 'first'`         | `'auto'`        | Which given name to prefer               |
+| `prefer`        | `'auto' \| 'nickname' \| 'first' \| 'fullGiven'` | `'auto'` | Which given name to prefer               |
 | `middle`        | `'full' \| 'initial' \| 'none'`           | varies          | Middle name handling                     |
 | `prefix`        | `'include' \| 'omit' \| 'auto'`           | varies          | Honorific handling                       |
 | `suffix`        | `'include' \| 'omit' \| 'auto'`           | varies          | Suffix handling                          |
@@ -459,7 +459,9 @@ const input = "Dr. William Frederick Richardson Jr.";
 | `preferredFirst`    | nickname only            | prefer nickname, middle none, suffix omit                 | `formatName(input, { preset: "preferredFirst" })` → `William` _(falls back to first if no nickname)_                   |
 | `formalFull`        | full formal name         | prefix include, middle full, suffix include, given-family | `formatName(input, { preset: "formalFull" })` → `Dr. William Frederick Richardson, Jr.`                                |
 | `formalShort`       | title + family           | prefix include, middle none, suffix omit                  | `formatName(input, { preset: "formalShort" })` → `Dr. Richardson`                                                      |
+| `expandedFull`      | full formal name with full given | prefix include, prefer fullGiven, middle none, suffix include | `formatName('Thomas A. (Thomas Alva) Edison', { preset: "expandedFull" })` → `Thomas Alva Edison`   |
 | `alphabetical`      | sortable family-first    | family-given, middle initial, suffix auto                 | `formatName(input, { preset: "alphabetical" })` → `Richardson, William F., Jr.`                                        |
+| `library`           | alphabetical with full given | family-given, middle initial, suffix auto, append fullGiven | `formatName('Thomas A. (Thomas Alva) Edison', { preset: "library" })` → `Edison, Thomas A. (Thomas Alva)`      |
 | `initialed`         | initials + family        | middle initial, suffix omit                               | `formatName(input, { preset: "initialed" })` → `W. F. Richardson`                                                      |
 
 See `NameFormatOptions` for presets, typography, no-break behavior, and array rendering.

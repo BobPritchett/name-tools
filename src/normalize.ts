@@ -77,9 +77,12 @@ export function isAsciiOnly(text: string): boolean {
  * Extract text within parentheses
  */
 export function extractParenContent(text: string): { main: string; paren: string } | null {
-  const match = text.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  const match = text.match(/\s*\(([^)]+)\)\s*/);
   if (match) {
-    return { main: match[1].trim(), paren: match[2].trim() };
+    return { 
+      main: text.replace(match[0], ' ').replace(/\s+/g, ' ').trim(), 
+      paren: match[1].trim() 
+    };
   }
   return null;
 }
