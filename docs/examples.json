@@ -1,0 +1,557 @@
+{
+  "parseExamples": [
+    {
+      "input": "Guy de la Bédoyère",
+      "expected": {
+        "first": "Guy",
+        "last": "de la Bédoyère"
+      },
+      "description": "New example"
+    },
+    {
+      "input": "William (Bill) Henry Gates III",
+      "expected": {
+        "first": "William",
+        "last": "Gates",
+        "fullGiven": "Bill",
+        "suffix": "III",
+        "middle": "Henry"
+      },
+      "description": "New example"
+    },
+    {
+      "input": "Reverend Dr. David Jefferson, Sr., Esq.",
+      "expected": {
+        "first": "David",
+        "last": "Jefferson",
+        "suffix": "Sr., Esq.",
+        "prefix": "Reverend Dr."
+      },
+      "description": "New example"
+    },
+    {
+      "input": "Bob Richardson",
+      "expected": {
+        "first": "Bob",
+        "last": "Richardson"
+      },
+      "description": "Simple two-part name"
+    },
+    {
+      "input": "Dr. Bob Richardson",
+      "expected": {
+        "prefix": "Dr.",
+        "first": "Bob",
+        "last": "Richardson"
+      },
+      "description": "Name with prefix"
+    },
+    {
+      "input": "Bob Richardson Jr.",
+      "expected": {
+        "first": "Bob",
+        "last": "Richardson",
+        "suffix": "Jr."
+      },
+      "description": "Name with suffix"
+    },
+    {
+      "input": "Bob William Richardson",
+      "expected": {
+        "first": "Bob",
+        "middle": "William",
+        "last": "Richardson"
+      },
+      "description": "Name with middle name"
+    },
+    {
+      "input": "Dr. Bob William Richardson Jr.",
+      "expected": {
+        "prefix": "Dr.",
+        "first": "Bob",
+        "middle": "William",
+        "last": "Richardson",
+        "suffix": "Jr."
+      },
+      "description": "Full name with all components"
+    },
+    {
+      "input": "John Robert Michael Smith",
+      "expected": {
+        "first": "John",
+        "middle": "Robert Michael",
+        "last": "Smith"
+      },
+      "description": "Name with multiple middle names"
+    },
+    {
+      "input": "Mr. James Anderson",
+      "expected": {
+        "prefix": "Mr.",
+        "first": "James",
+        "last": "Anderson"
+      },
+      "description": "Name with Mr. prefix"
+    },
+    {
+      "input": "Mary Elizabeth Johnson PhD",
+      "expected": {
+        "first": "Mary",
+        "middle": "Elizabeth",
+        "last": "Johnson",
+        "suffix": "PhD"
+      },
+      "description": "Name with academic suffix"
+    },
+    {
+      "input": "Prof. Richard Lee Thompson III",
+      "expected": {
+        "prefix": "Prof.",
+        "first": "Richard",
+        "middle": "Lee",
+        "last": "Thompson",
+        "suffix": "III"
+      },
+      "description": "Name with generational suffix"
+    },
+    {
+      "input": "Vincent van Gogh",
+      "expected": {
+        "first": "Vincent",
+        "last": "van Gogh"
+      },
+      "description": "Dutch name with particle 'van'"
+    },
+    {
+      "input": "Wernher von Braun",
+      "expected": {
+        "first": "Wernher",
+        "last": "von Braun"
+      },
+      "description": "German name with particle 'von'"
+    },
+    {
+      "input": "Leonardo da Vinci",
+      "expected": {
+        "first": "Leonardo",
+        "last": "da Vinci"
+      },
+      "description": "Italian name with locative 'da'"
+    },
+    {
+      "input": "Charles de Gaulle",
+      "expected": {
+        "first": "Charles",
+        "last": "de Gaulle"
+      },
+      "description": "French name with particle 'de'"
+    },
+    {
+      "input": "Simone de Beauvoir",
+      "expected": {
+        "first": "Simone",
+        "last": "de Beauvoir"
+      },
+      "description": "French name with particle"
+    },
+    {
+      "input": "Gabriel García Márquez",
+      "expected": {
+        "first": "Gabriel",
+        "last": "García Márquez"
+      },
+      "description": "Spanish compound surname"
+    },
+    {
+      "input": "Jean de La Fontaine",
+      "expected": {
+        "first": "Jean",
+        "last": "de La Fontaine"
+      },
+      "description": "French name with multi-particle 'de La'"
+    },
+    {
+      "input": "Hilma af Klint",
+      "expected": {
+        "first": "Hilma",
+        "last": "af Klint"
+      },
+      "description": "Swedish name with particle 'af'"
+    },
+    {
+      "input": "José Maria de Eça de Queirós",
+      "expected": {
+        "first": "José",
+        "middle": "Maria",
+        "last": "de Eça de Queirós"
+      },
+      "description": "Portuguese compound name with particles"
+    },
+    {
+      "input": "Rembrandt Harmenszoon van Rijn",
+      "expected": {
+        "first": "Rembrandt",
+        "middle": "Harmenszoon",
+        "last": "van Rijn"
+      },
+      "description": "Dutch patronymic with particle"
+    },
+    {
+      "input": "Pablo Ruiz y Picasso",
+      "expected": {
+        "first": "Pablo",
+        "last": "Ruiz y Picasso"
+      },
+      "description": "Spanish name with conjunction 'y'"
+    },
+    {
+      "input": "Oscar de la Hoya",
+      "expected": {
+        "first": "Oscar",
+        "last": "de la Hoya"
+      },
+      "description": "Spanish name with multi-word particle"
+    },
+    {
+      "input": "Ludwig van der Waals",
+      "expected": {
+        "first": "Ludwig",
+        "last": "van der Waals"
+      },
+      "description": "Dutch name with compound particle"
+    },
+    {
+      "input": "Conan O'Brien",
+      "expected": {
+        "first": "Conan",
+        "last": "O'Brien"
+      },
+      "description": "Irish name with apostrophe"
+    },
+    {
+      "input": "Rembrandt van Rijn",
+      "expected": {
+        "first": "Rembrandt",
+        "last": "van Rijn"
+      },
+      "description": "Dutch painter"
+    },
+    {
+      "input": "Dick Van Dyke",
+      "expected": {
+        "first": "Dick",
+        "last": "Van Dyke"
+      },
+      "description": "American actor with Dutch name"
+    },
+    {
+      "input": "Martin Van Buren",
+      "expected": {
+        "first": "Martin",
+        "last": "Van Buren"
+      },
+      "description": "US President"
+    },
+    {
+      "input": "Pieter van der Goes",
+      "expected": {
+        "first": "Pieter",
+        "last": "van der Goes"
+      },
+      "description": "Dutch compound particle"
+    },
+    {
+      "input": "Kevin De Bruyne",
+      "expected": {
+        "first": "Kevin",
+        "last": "De Bruyne"
+      },
+      "description": "Belgian footballer"
+    },
+    {
+      "input": "Otto von Bismarck",
+      "expected": {
+        "first": "Otto",
+        "last": "von Bismarck"
+      },
+      "description": "German chancellor"
+    },
+    {
+      "input": "Manfred von Richthofen",
+      "expected": {
+        "first": "Manfred",
+        "last": "von Richthofen"
+      },
+      "description": "Red Baron"
+    },
+    {
+      "input": "Johann Wolfgang von Goethe",
+      "expected": {
+        "first": "Johann",
+        "middle": "Wolfgang",
+        "last": "von Goethe"
+      },
+      "description": "German writer"
+    },
+    {
+      "input": "Karl-Theodor zu Guttenberg",
+      "expected": {
+        "first": "Karl-Theodor",
+        "last": "zu Guttenberg"
+      },
+      "description": "German politician"
+    },
+    {
+      "input": "Marc-André ter Stegen",
+      "expected": {
+        "first": "Marc-André",
+        "last": "ter Stegen"
+      },
+      "description": "German goalkeeper"
+    },
+    {
+      "input": "Alexandre Dumas d'Artagnan",
+      "expected": {
+        "first": "Alexandre",
+        "last": "Dumas d'Artagnan"
+      },
+      "description": "French author/character"
+    },
+    {
+      "input": "Pierre Du Pont",
+      "expected": {
+        "first": "Pierre",
+        "last": "Du Pont"
+      },
+      "description": "DuPont founder"
+    },
+    {
+      "input": "Inès de La Fressange",
+      "expected": {
+        "first": "Inès",
+        "last": "de La Fressange"
+      },
+      "description": "French model"
+    },
+    {
+      "input": "Grazia Deledda",
+      "expected": {
+        "first": "Grazia",
+        "last": "Deledda"
+      },
+      "description": "Italian author"
+    },
+    {
+      "input": "Gabriele D'Annunzio",
+      "expected": {
+        "first": "Gabriele",
+        "last": "D'Annunzio"
+      },
+      "description": "Italian poet"
+    },
+    {
+      "input": "Ángel Di María",
+      "expected": {
+        "first": "Ángel",
+        "last": "Di María"
+      },
+      "description": "Argentine footballer"
+    },
+    {
+      "input": "Maureen O'Hara",
+      "expected": {
+        "first": "Maureen",
+        "last": "O'Hara"
+      },
+      "description": "Irish actress"
+    },
+    {
+      "input": "Paul McCartney",
+      "expected": {
+        "first": "Paul",
+        "last": "McCartney"
+      },
+      "description": "Beatle with Scottish name"
+    },
+    {
+      "input": "Malcolm McDowell",
+      "expected": {
+        "first": "Malcolm",
+        "last": "McDowell"
+      },
+      "description": "British actor"
+    },
+    {
+      "input": "Bernie Mac",
+      "expected": {
+        "first": "Bernie",
+        "last": "Mac"
+      },
+      "description": "American comedian"
+    },
+    {
+      "input": "Old Mac Donald",
+      "expected": {
+        "first": "Old",
+        "last": "Mac Donald"
+      },
+      "description": "Nursery rhyme character"
+    },
+    {
+      "input": "Rev. Dr. Martin Luther King, Jr.",
+      "expected": {
+        "prefix": "Rev. Dr.",
+        "first": "Martin",
+        "middle": "Luther",
+        "last": "King",
+        "suffix": "Jr."
+      },
+      "description": "Civil rights leader"
+    },
+    {
+      "input": "Mr. William \"Bill\" Jones, Esq.",
+      "expected": {
+        "prefix": "Mr.",
+        "first": "William",
+        "nickname": "Bill",
+        "last": "Jones",
+        "suffix": "Esq."
+      },
+      "description": "Name with nickname"
+    },
+    {
+      "input": "Harry Potter",
+      "expected": {
+        "first": "Harry",
+        "last": "Potter"
+      },
+      "description": "Simple British name"
+    },
+    {
+      "input": "The Right Honourable Winston Churchill",
+      "expected": {
+        "prefix": "The Right Honourable",
+        "first": "Winston",
+        "last": "Churchill"
+      },
+      "description": "Multi-word prefix"
+    },
+    {
+      "input": "Her Majesty Queen Elizabeth II",
+      "expected": {
+        "prefix": "Her Majesty",
+        "first": "Queen",
+        "last": "Elizabeth",
+        "suffix": "II"
+      },
+      "description": "Her Majesty prefix"
+    },
+    {
+      "input": "Air Chief Marshal Sir Arthur Harris",
+      "expected": {
+        "prefix": "Air Chief Marshal Sir",
+        "first": "Arthur",
+        "last": "Harris"
+      },
+      "description": "Compound military and nobility prefix"
+    },
+    {
+      "input": "The Rt Hon Visc Alanbrooke",
+      "expected": {
+        "prefix": "The Rt Hon Visc",
+        "first": "Alanbrooke"
+      },
+      "description": "The Rt Hon Visc prefix"
+    },
+    {
+      "input": "Beyonce",
+      "expected": {
+        "first": "Beyonce"
+      },
+      "description": "Mononym"
+    }
+  ],
+  "formatExamples": [
+    {
+      "input": "Bob Richardson",
+      "formats": {
+        "lastFirst": "Richardson, Bob",
+        "firstLast": "Bob Richardson",
+        "withMiddleInitial": "Bob Richardson",
+        "formal": "Mr/Ms Richardson",
+        "initials": "BP"
+      },
+      "description": "Simple name formatting"
+    },
+    {
+      "input": "Bob William Richardson",
+      "formats": {
+        "lastFirst": "Richardson, Bob William",
+        "firstLast": "Bob William Richardson",
+        "withMiddleInitial": "Bob W. Richardson",
+        "formal": "Mr/Ms Richardson",
+        "initials": "BWP"
+      },
+      "description": "Name with middle name formatting"
+    },
+    {
+      "input": "Dr. Bob William Richardson Jr.",
+      "formats": {
+        "lastFirst": "Richardson, Bob William, Jr.",
+        "firstLast": "Dr. Bob William Richardson Jr.",
+        "withMiddleInitial": "Dr. Bob W. Richardson Jr.",
+        "formal": "Dr. Richardson",
+        "initials": "BWP"
+      },
+      "description": "Full name formatting"
+    },
+    {
+      "input": "John Robert Michael Smith",
+      "formats": {
+        "lastFirst": "Smith, John Robert Michael",
+        "firstLast": "John Robert Michael Smith",
+        "withMiddleInitial": "John R. M. Smith",
+        "formal": "Mr/Ms Smith",
+        "initials": "JRMS"
+      },
+      "description": "Multiple middle names formatting"
+    },
+    {
+      "input": "Dr. Alice Johnson",
+      "formats": {
+        "lastFirst": "Johnson, Alice",
+        "firstLast": "Dr. Alice Johnson",
+        "withMiddleInitial": "Dr. Alice Johnson",
+        "formal": "Dr. Johnson",
+        "initials": "AJ"
+      },
+      "description": "Name with prefix formatting"
+    }
+  ],
+  "extractionExamples": [
+    {
+      "input": "Bob Richardson",
+      "firstName": "Bob",
+      "lastName": "Richardson",
+      "initials": "BP"
+    },
+    {
+      "input": "Dr. Bob William Richardson Jr.",
+      "firstName": "Bob",
+      "lastName": "Richardson",
+      "initials": "BWP"
+    },
+    {
+      "input": "Mary Elizabeth Johnson",
+      "firstName": "Mary",
+      "lastName": "Johnson",
+      "initials": "MEJ"
+    },
+    {
+      "input": "John Robert Michael Smith",
+      "firstName": "John",
+      "lastName": "Smith",
+      "initials": "JRMS"
+    }
+  ]
+}

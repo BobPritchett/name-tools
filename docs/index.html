@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>name-tools - Name Parsing & Formatting Library</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+        <header>
+            <h1>name-tools</h1>
+            <p class="subtitle">A utility library for parsing, formatting, and classifying names (person, organization, family, compound)</p>
+            <div class="badges">
+                <a href="https://www.npmjs.com/package/name-tools" class="badge">
+                    <img src="https://img.shields.io/npm/v/name-tools.svg" alt="npm version">
+                </a>
+                <a href="https://github.com/BobPritchett/name-tools" class="badge">
+                    <img src="https://img.shields.io/github/stars/BobPritchett/name-tools.svg" alt="GitHub stars">
+                </a>
+            </div>
+        </header>
+
+        <main>
+            <section class="demo-section">
+                <h2>Interactive Demo</h2>
+                <div class="demo-box">
+                    <div class="input-group">
+                        <label for="nameInput">Enter full name(s) (one per line):</label>
+                        <textarea
+                            id="nameInput"
+                            placeholder="e.g., Dr. John Robert Smith Jr."
+                            rows="6"
+                        >Dr. William Frederick Richardson Jr.
+Acme Corporation, Inc.
+The Smith Family
+Bob & Mary Johnson
+Drs. John and Jane Doe
+Smith, John, Jr.
+"Doe, Jane" <jane.doe@example.com>; john.doe@example.com (John Doe)</textarea>
+                    </div>
+
+                    <p class="demo-hint">
+                        Enter any name to see it classified (person, organization, family, compound) with confidence scores.
+                        Try: <code>Acme Corp, Inc.</code> | <code>Bob & Mary Smith</code> | <code>The Smith Family</code> | <code>Smith, John, Jr.</code>
+                    </p>
+
+                    <div id="results">
+                        <!-- Results will be populated by JavaScript -->
+                    </div>
+
+                    <div id="demoActions" class="demo-actions" style="display: none;">
+                        <button id="copyJsonBtn" class="btn">Copy to JSON</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="demo-section">
+                <h2>Gender Probability Lookup</h2>
+                <div class="demo-box">
+                    <div class="input-group">
+                        <label for="genderInput">Enter a first name:</label>
+                        <input
+                            type="text"
+                            id="genderInput"
+                            placeholder="e.g., Alex, John, Mary"
+                            value="Alex"
+                        />
+                    </div>
+
+                    <p class="demo-hint">
+                        Look up gender probability based on US Social Security Administration data.
+                        Try: <code>Chris</code> | <code>Taylor</code> | <code>Jordan</code> | <code>Michael</code> | <code>Jennifer</code>
+                    </p>
+
+                    <div id="genderResults">
+                        <!-- Gender results will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <section class="demo-section">
+                <h2>Pronoun Lookup</h2>
+                <div class="demo-box">
+                    <div class="input-group">
+                        <label for="pronounInput">Enter a pronoun spec:</label>
+                        <input
+                            type="text"
+                            id="pronounInput"
+                            placeholder="e.g., he/him, she/her, they/them"
+                            value="they/them"
+                        />
+                    </div>
+
+                    <p class="demo-hint">
+                        Get a complete pronoun set from a shorthand spec.
+                        Try: <code>he/him</code> | <code>she/her</code> | <code>ze/zir</code> | <code>xe/xem</code> | <code>any</code>
+                    </p>
+
+                    <div id="pronounResults">
+                        <!-- Pronoun results will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <section class="demo-section">
+                <h2>Pronouns for Entity</h2>
+                <div class="demo-box">
+                    <div class="input-group">
+                        <label for="entityPronounInput">Enter a name to get suggested pronouns:</label>
+                        <input
+                            type="text"
+                            id="entityPronounInput"
+                            placeholder="e.g., John Smith, Acme Inc, The Smiths"
+                            value="John Smith"
+                        />
+                    </div>
+
+                    <p class="demo-hint">
+                        Uses entity classification + gender lookup to suggest appropriate pronouns.
+                        Try: <code>Mary Johnson</code> | <code>Acme Inc.</code> | <code>The Smith Family</code> | <code>Alex (they/them)</code>
+                    </p>
+
+                    <div id="entityPronounResults">
+                        <!-- Entity pronoun results will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <section class="test-results-section">
+                <h2>Test Results - Live Parsing Validation</h2>
+                <p class="test-summary">All test cases validated in real-time. Green = passing, Red = failing.</p>
+                <div class="table-container">
+                    <table id="testResultsTable">
+                        <thead>
+                            <tr>
+                                <th>Original String</th>
+                                <th>Prefix</th>
+                                <th>First</th>
+                                <th>Nickname</th>
+                                <th>Middle</th>
+                                <th>Last</th>
+                                <th>Suffix</th>
+                            </tr>
+                        </thead>
+                        <tbody id="testResultsBody">
+                            <!-- Test results will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="info-section">
+                <h2>Installation</h2>
+                <pre><code>pnpm add name-tools</code></pre>
+            </section>
+
+            <section class="info-section">
+                <h2>Quick Start</h2>
+                <pre><code>import { parseName, formatName } from 'name-tools';
+
+// Parse and classify a name - returns a typed entity
+const person = parseName("Dr. John Franklin Jr.");
+console.log(person.kind);    // 'person'
+console.log(person.given);   // 'John'
+console.log(person.family);  // 'Franklin'
+
+// Detect organizations automatically
+const org = parseName("Acme Corporation, Inc.");
+console.log(org.kind);       // 'organization'
+
+// Detect compound names (couples)
+const couple = parseName("Bob & Mary Smith");
+console.log(couple.kind);    // 'compound'
+
+// Format names with presets
+console.log(formatName("Dr. John Franklin Jr."));
+// "John Franklin, Jr."</code></pre>
+            </section>
+
+            <section class="info-section">
+                <h2>Features</h2>
+                <ul class="features-list">
+                    <li><strong>Entity Classification:</strong> Automatically detect person, organization, family, or compound names</li>
+                    <li><strong>Parse Names:</strong> Extract components (prefix, first, middle, last, suffix, nickname)</li>
+                    <li><strong>Format Names:</strong> Multiple formatting presets (display, formal, alphabetical, initialed)</li>
+                    <li><strong>Reversed Names:</strong> Support for "Smith, John, Jr." format</li>
+                    <li><strong>Recipient Lists:</strong> Parse email To/CC lines with parseNameList()</li>
+                    <li><strong>TypeScript Support:</strong> Full type definitions with discriminated unions</li>
+                    <li><strong>Zero Dependencies:</strong> Lightweight and fast</li>
+                </ul>
+            </section>
+
+            <section class="info-section">
+                <h2>API Reference</h2>
+                <div class="api-list">
+                    <h3>Classification & Parsing</h3>
+                    <ul>
+                        <li><code>parseName(input, options?)</code> - Classify and parse into entity type (person, org, family, compound)</li>
+                        <li><code>parseNameList(input)</code> - Parse email recipient lists (To/CC lines)</li>
+                        <li><code>getFirstName(fullName)</code> - Extract first name</li>
+                        <li><code>getLastName(fullName)</code> - Extract last name</li>
+                    </ul>
+
+                    <h3>Type Guards</h3>
+                    <ul>
+                        <li><code>isPerson(entity)</code> - Check if entity is a person</li>
+                        <li><code>isOrganization(entity)</code> - Check if entity is an organization</li>
+                        <li><code>isFamily(entity)</code> - Check if entity is a family/household</li>
+                        <li><code>isCompound(entity)</code> - Check if entity is a compound name</li>
+                    </ul>
+
+                    <h3>Formatting Functions</h3>
+                    <ul>
+                        <li><code>formatName(input, options?)</code> - Single rendering entry point (presets + options)</li>
+                    </ul>
+
+                    <h3>Data & Utilities</h3>
+                    <ul>
+                        <li><code>PARTICLES</code> - Array of surname particles (van, von, de, etc.)</li>
+                        <li><code>COMMON_SURNAMES</code>, <code>COMMON_FIRST_NAMES</code> - Name datasets</li>
+                        <li><code>isParticle()</code>, <code>isCommonSurname()</code>, <code>isCommonFirstName()</code></li>
+                    </ul>
+
+                    <h3>Pronouns</h3>
+                    <ul>
+                        <li><code>getPronounSet(spec)</code> - Get complete pronoun set from "he/him", "she/her", etc.</li>
+                        <li><code>getPronouns(entity, options?)</code> - Get pronouns for any entity with optional gender lookup</li>
+                        <li><code>formatPronoun(set, role, options?)</code> - Format a single pronoun with capitalization</li>
+                        <li><code>fillPronounTemplate(template, set)</code> - Fill {{subject}}, {{object}}, etc. placeholders</li>
+                        <li><code>extractPronouns(name)</code> - Extract pronouns from "Alex (they/them)" format</li>
+                        <li><code>BUILT_IN_PRONOUNS</code> - Map of built-in pronoun sets (he, she, they, ze-hir, etc.)</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Built by <a href="https://github.com/BobPritchett">Bob Pritchett</a> |
+               <a href="https://github.com/BobPritchett/name-tools">GitHub</a> |
+               <a href="https://github.com/BobPritchett/name-tools/blob/main/LICENSE">MIT License</a>
+            </p>
+        </footer>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>

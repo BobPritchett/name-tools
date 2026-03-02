@@ -1,0 +1,39 @@
+{
+  "name": "name-tools",
+  "version": "1.0.0",
+  "description": "A utility library for parsing, formatting, and manipulating person names",
+  "packageManager": "pnpm@8.0.0",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts && tsup src/docs-entry.ts --format esm --outDir docs --no-dts && node -e \"const fs=require('fs'); if(fs.existsSync('docs/name-tools.js'))fs.unlinkSync('docs/name-tools.js'); fs.renameSync('docs/docs-entry.mjs', 'docs/name-tools.js'); fs.copyFileSync('src/data/examples.json', 'docs/examples.json')\"",
+    "build:gender": "node scripts/build-gender-data.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm run build",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch --onSuccess \"node -e \\\"require('fs').copyFileSync('dist/index.mjs', 'docs/name-tools.js'); require('fs').copyFileSync('src/data/examples.json', 'docs/examples.json')\\\"\""
+  },
+  "keywords": [
+    "name",
+    "parser",
+    "formatter",
+    "person",
+    "names",
+    "utilities"
+  ],
+  "author": "Bob Pritchett",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BobPritchett/name-tools.git"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  }
+}

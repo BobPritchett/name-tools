@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm run build:*)",
+      "Bash(pnpm test:*)",
+      "Bash(cat:*)",
+      "Bash(pnpm run build:all:*)",
+      "Bash(pnpm test:run:*)",
+      "Bash(cd:*)",
+      "Bash(wc:*)",
+      "Bash(node -e:*)",
+      "Bash(pnpm build:*)",
+      "Bash(mkdir:*)",
+      "Bash(node scripts/build-gender-data.js:*)"
+    ]
+  }
+}
