@@ -217,7 +217,7 @@ function updateResults() {
         };
 
     } catch (error) {
-        resultsDiv.innerHTML = `<p style="color: #cf222e; font-size: 14px;">Error: ${error.message}</p>`;
+        resultsDiv.innerHTML = `<p style="color: #cf222e; font-size: 14px;">Error: ${escapeHtml(error.message)}</p>`;
         demoActions.style.display = 'none';
     }
 }

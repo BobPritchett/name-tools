@@ -100,6 +100,41 @@ function getSpaceTokens(output: ResolvedOptions['output']): SpaceToken {
     : { SP: ' ', NBSP: '\u00A0', NNBSP: '\u202F' };
 }
 
+/**
+ * Escape HTML-unsafe characters in name parts when output is 'html'.
+ * This prevents XSS when consumers insert formatName output via innerHTML.
+ */
+function escapeForHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Escape a name part if output mode is html, pass through otherwise */
+function sanitizePart(value: string | undefined, output: ResolvedOptions['output']): string | undefined {
+  if (!value) return value;
+  return output === 'html' ? escapeForHtml(value) : value;
+}
+
+/** Escape all string fields of a ParsedName for HTML output */
+function sanitizeParsedName(parsed: ParsedName): ParsedName {
+  const e = escapeForHtml;
+  return {
+    ...parsed,
+    prefix: parsed.prefix ? e(parsed.prefix) : undefined,
+    first: parsed.first ? e(parsed.first) : undefined,
+    fullGiven: parsed.fullGiven ? e(parsed.fullGiven) : undefined,
+    middle: parsed.middle ? e(parsed.middle) : undefined,
+    last: parsed.last ? e(parsed.last) : undefined,
+    suffix: parsed.suffix ? e(parsed.suffix) : undefined,
+    nickname: parsed.nickname ? e(parsed.nickname) : undefined,
+    preferredGiven: parsed.preferredGiven ? e(parsed.preferredGiven) : undefined,
+  };
+}
+
 function resolveOptions(options?: NameFormatOptions): ResolvedOptions {
   const preset = options?.preset ?? DEFAULTS.preset;
   const base = PRESET_DEFAULTS[preset];
@@ -383,11 +418,14 @@ function renderGivenPlusMiddle(
 function renderSingle(parsed: ParsedName, o: ResolvedOptions): RenderedPersonParts {
   const t = getSpaceTokens(o.output);
 
-  const prefixText = resolvePrefix(parsed, o.prefix, o);
-  const lastText = resolveLast(parsed);
-  const suffixText = resolveSuffix(parsed, o.suffix, o);
+  // Sanitize parsed name parts for HTML output before rendering
+  const safeParsed = o.output === 'html' ? sanitizeParsedName(parsed) : parsed;
 
-  const { givenLikeText } = renderGivenPlusMiddle(parsed, o, t);
+  const prefixText = resolvePrefix(safeParsed, o.prefix, o);
+  const lastText = resolveLast(safeParsed);
+  const suffixText = resolveSuffix(safeParsed, o.suffix, o);
+
+  const { givenLikeText } = renderGivenPlusMiddle(safeParsed, o, t);
 
   // Preset formalShort: prefix + last (omit given/middle)
   if (o.preset === 'formalShort') {
@@ -410,7 +448,7 @@ function renderSingle(parsed: ParsedName, o: ResolvedOptions): RenderedPersonPar
 
   // Preset firstOnly / preferredFirst
   if (o.preset === 'firstOnly' || o.preset === 'preferredFirst') {
-    const onlyGiven = resolveGiven(parsed, o.prefer);
+    const onlyGiven = resolveGiven(safeParsed, o.prefer);
     const normalizedOnlyGiven = onlyGiven ? normalizeTrim(onlyGiven) : undefined;
     const effectivePrefix = prefixText;
     if (!normalizedOnlyGiven) {
@@ -625,9 +663,10 @@ function formatOrganization(org: OrganizationName, o: ResolvedOptions): string {
   const t = getSpaceTokens(o.output);
 
   // Get the full name from meta.raw or construct from parts
-  const fullName = org.meta.raw.trim();
-  const baseName = org.baseName;
-  const legalSuffix = org.legalSuffixRaw;
+  const s = (v: string | undefined) => sanitizePart(v, o.output);
+  const fullName = s(org.meta.raw.trim()) || '';
+  const baseName = s(org.baseName) || '';
+  const legalSuffix = s(org.legalSuffixRaw);
 
   switch (o.preset) {
     case 'informal':
@@ -667,9 +706,9 @@ function formatOrganization(org: OrganizationName, o: ResolvedOptions): string {
  */
 function formatFamily(family: FamilyName, o: ResolvedOptions): string {
   const t = getSpaceTokens(o.output);
-  const familyName = family.familyName;
-  const article = family.article;
-  const familyWord = family.familyWord;
+  const familyName = sanitizePart(family.familyName, o.output) || '';
+  const article = sanitizePart(family.article, o.output);
+  const familyWord = sanitizePart(family.familyWord, o.output);
   const style = family.style;
 
   switch (o.preset) {
@@ -726,9 +765,9 @@ function formatCompound(compound: CompoundName, o: ResolvedOptions): string {
   const connector = compound.connector === '&' ? '&' :
                     compound.connector === '+' ? '+' :
                     compound.connector === 'et' ? 'et' : 'and';
-  const sharedFamily = compound.sharedFamily;
+  const sharedFamily = sanitizePart(compound.sharedFamily, o.output);
 
-  // Format each member
+  // Format each member (renderSingle already sanitizes person parts)
   const formattedMembers = compound.members.map(member => {
     if (member.kind === 'person') {
       const parsed = personEntityToLegacy(member);
@@ -740,11 +779,11 @@ function formatCompound(compound: CompoundName, o: ResolvedOptions): string {
       return renderSingle(parsed, o).fullText;
     }
     // Unknown member
-    return (member as UnknownName).text || '';
+    return sanitizePart((member as UnknownName).text, o.output) || '';
   }).filter(Boolean);
 
   if (formattedMembers.length === 0) {
-    return compound.meta.raw;
+    return sanitizePart(compound.meta.raw, o.output) || '';
   }
 
   // Join members
@@ -766,15 +805,15 @@ function formatCompound(compound: CompoundName, o: ResolvedOptions): string {
 /**
  * Format an unknown entity
  */
-function formatUnknown(unknown: UnknownName, _o: ResolvedOptions): string {
-  return unknown.text || unknown.meta.raw || '';
+function formatUnknown(unknown: UnknownName, o: ResolvedOptions): string {
+  return sanitizePart(unknown.text || unknown.meta.raw, o.output) || '';
 }
 
 /**
  * Format a rejected entity (return raw input)
  */
-function formatRejected(rejected: RejectedName, _o: ResolvedOptions): string {
-  return rejected.meta.raw || '';
+function formatRejected(rejected: RejectedName, o: ResolvedOptions): string {
+  return sanitizePart(rejected.meta.raw, o.output) || '';
 }
 
 /**

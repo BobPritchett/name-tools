@@ -2670,6 +2670,27 @@ function normalizeTrim(value) {
 function getSpaceTokens(output) {
   return output === "html" ? { SP: " ", NBSP: "&nbsp;", NNBSP: "&#8239;" } : { SP: " ", NBSP: "\xA0", NNBSP: "\u202F" };
 }
+function escapeForHtml(value) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function sanitizePart(value, output) {
+  if (!value) return value;
+  return output === "html" ? escapeForHtml(value) : value;
+}
+function sanitizeParsedName(parsed) {
+  const e = escapeForHtml;
+  return {
+    ...parsed,
+    prefix: parsed.prefix ? e(parsed.prefix) : void 0,
+    first: parsed.first ? e(parsed.first) : void 0,
+    fullGiven: parsed.fullGiven ? e(parsed.fullGiven) : void 0,
+    middle: parsed.middle ? e(parsed.middle) : void 0,
+    last: parsed.last ? e(parsed.last) : void 0,
+    suffix: parsed.suffix ? e(parsed.suffix) : void 0,
+    nickname: parsed.nickname ? e(parsed.nickname) : void 0,
+    preferredGiven: parsed.preferredGiven ? e(parsed.preferredGiven) : void 0
+  };
+}
 function resolveOptions(options) {
   const preset = options?.preset ?? DEFAULTS.preset;
   const base = PRESET_DEFAULTS[preset];
@@ -2855,10 +2876,11 @@ function renderGivenPlusMiddle(parsed, o, t) {
 }
 function renderSingle(parsed, o) {
   const t = getSpaceTokens(o.output);
-  const prefixText = resolvePrefix(parsed, o.prefix, o);
-  const lastText = resolveLast(parsed);
-  const suffixText = resolveSuffix(parsed, o.suffix, o);
-  const { givenLikeText } = renderGivenPlusMiddle(parsed, o, t);
+  const safeParsed = o.output === "html" ? sanitizeParsedName(parsed) : parsed;
+  const prefixText = resolvePrefix(safeParsed, o.prefix, o);
+  const lastText = resolveLast(safeParsed);
+  const suffixText = resolveSuffix(safeParsed, o.suffix, o);
+  const { givenLikeText } = renderGivenPlusMiddle(safeParsed, o, t);
   if (o.preset === "formalShort") {
     const pieces = [];
     if (prefixText) pieces.push(prefixText);
@@ -2873,7 +2895,7 @@ function renderSingle(parsed, o) {
     return { prefixText, givenText: void 0, lastText, suffixText, fullText: base2 };
   }
   if (o.preset === "firstOnly" || o.preset === "preferredFirst") {
-    const onlyGiven = resolveGiven(parsed, o.prefer);
+    const onlyGiven = resolveGiven(safeParsed, o.prefer);
     const normalizedOnlyGiven = onlyGiven ? normalizeTrim(onlyGiven) : void 0;
     const effectivePrefix = prefixText;
     if (!normalizedOnlyGiven) {
@@ -3029,9 +3051,10 @@ function personEntityToLegacy(entity) {
 }
 function formatOrganization(org, o) {
   const t = getSpaceTokens(o.output);
-  const fullName = org.meta.raw.trim();
-  const baseName = org.baseName;
-  const legalSuffix = org.legalSuffixRaw;
+  const s = (v) => sanitizePart(v, o.output);
+  const fullName = s(org.meta.raw.trim()) || "";
+  const baseName = s(org.baseName) || "";
+  const legalSuffix = s(org.legalSuffixRaw);
   switch (o.preset) {
     case "informal":
     case "firstOnly":
@@ -3056,9 +3079,9 @@ function formatOrganization(org, o) {
 }
 function formatFamily(family, o) {
   const t = getSpaceTokens(o.output);
-  const familyName = family.familyName;
-  const article = family.article;
-  const familyWord = family.familyWord;
+  const familyName = sanitizePart(family.familyName, o.output) || "";
+  const article = sanitizePart(family.article, o.output);
+  const familyWord = sanitizePart(family.familyWord, o.output);
   const style = family.style;
   switch (o.preset) {
     case "informal":
@@ -3099,7 +3122,7 @@ function formatFamily(family, o) {
 function formatCompound(compound, o) {
   const t = getSpaceTokens(o.output);
   const connector = compound.connector === "&" ? "&" : compound.connector === "+" ? "+" : compound.connector === "et" ? "et" : "and";
-  const sharedFamily = compound.sharedFamily;
+  const sharedFamily = sanitizePart(compound.sharedFamily, o.output);
   const formattedMembers = compound.members.map((member) => {
     if (member.kind === "person") {
       const parsed = personEntityToLegacy(member);
@@ -3109,10 +3132,10 @@ function formatCompound(compound, o) {
       }
       return renderSingle(parsed, o).fullText;
     }
-    return member.text || "";
+    return sanitizePart(member.text, o.output) || "";
   }).filter(Boolean);
   if (formattedMembers.length === 0) {
-    return compound.meta.raw;
+    return sanitizePart(compound.meta.raw, o.output) || "";
   }
   const joined = formattedMembers.join(` ${connector} `);
   if (sharedFamily) {
@@ -3123,11 +3146,11 @@ function formatCompound(compound, o) {
   }
   return joined;
 }
-function formatUnknown(unknown, _o) {
-  return unknown.text || unknown.meta.raw || "";
+function formatUnknown(unknown, o) {
+  return sanitizePart(unknown.text || unknown.meta.raw, o.output) || "";
 }
-function formatRejected(rejected, _o) {
-  return rejected.meta.raw || "";
+function formatRejected(rejected, o) {
+  return sanitizePart(rejected.meta.raw, o.output) || "";
 }
 function formatEntity(entity, o) {
   switch (entity.kind) {

@@ -182,6 +182,19 @@ describe('formatName (arrays)', () => {
   });
 });
 
+describe('formatName HTML escaping', () => {
+  it('should escape HTML-unsafe characters in output:"html" mode', () => {
+    const result = formatName('<script>alert("xss")</script> Smith', { output: 'html' });
+    expect(result).not.toContain('<script>');
+    expect(result).toContain('&lt;script&gt;');
+  });
+
+  it('should not escape in default text mode', () => {
+    const result = formatName('<b>John</b> Smith');
+    expect(result).toContain('<b>John</b>');
+  });
+});
+
 describe('formatName (organization)', () => {
   it('alphabetical should not produce double comma for comma-legal orgs', () => {
     const result = formatName('Acme Corporation, Inc.', { preset: 'alphabetical', typography: 'plain' });
