@@ -123,7 +123,7 @@ export function extractLegalSuffix(text: string): { baseName: string; suffix: st
   const commaMatch = text.match(COMMA_LEGAL_RE);
   if (commaMatch) {
     const suffix = commaMatch[1];
-    const baseName = text.slice(0, commaMatch.index).trim();
+    const baseName = text.slice(0, commaMatch.index!).trim();
     const entry = matchLegalForm(suffix);
     return {
       baseName,

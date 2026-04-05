@@ -181,3 +181,17 @@ describe('formatName (arrays)', () => {
     );
   });
 });
+
+describe('formatName (organization)', () => {
+  it('alphabetical should not produce double comma for comma-legal orgs', () => {
+    const result = formatName('Acme Corporation, Inc.', { preset: 'alphabetical', typography: 'plain' });
+    expect(result).toBe('Acme Corporation, Inc.');
+    expect(result).not.toContain(', ,');
+    expect(result).not.toContain(',,');
+  });
+
+  it('alphabetical should not produce double comma for Microsoft, Inc.', () => {
+    const result = formatName('Microsoft, Inc.', { preset: 'alphabetical', typography: 'plain' });
+    expect(result).toBe('Microsoft, Inc.');
+  });
+});

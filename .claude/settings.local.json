@@ -11,7 +11,14 @@
       "Bash(node -e:*)",
       "Bash(pnpm build:*)",
       "Bash(mkdir:*)",
-      "Bash(node scripts/build-gender-data.js:*)"
+      "Bash(node scripts/build-gender-data.js:*)",
+      "WebFetch(domain:bobpritchett.github.io)",
+      "Bash(gh api:*)",
+      "Bash(where gh:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(grep -o \"classList\\\\\\\\.add\\('[^']*'\\)\" /c/Code/name-tools/docs/script.js)",
+      "Bash(grep -n \"\\\\.index\\\\b[^!]\" /c/Code/name-tools/src/detectors/*.ts /c/Code/name-tools/src/data/*.ts)",
+      "Bash(npx vitest:*)"
     ]
   }
 }

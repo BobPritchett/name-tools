@@ -132,21 +132,11 @@ function isReversedNameComma(before: string, after: string): boolean {
   // Get the first word after the current comma (might be "Inc." in "Microsoft, Inc.")
   const exactNextChunk = afterTrimmed.split(/[,;\r\n]/)[0].trim();
   
-  // Note: matchLegalForm returns a truthy LegalFormEntry if it matches any pattern for a legal suffix
-  if (matchLegalForm(exactNextChunk)) {
-    // We only want to join it if `beforeTokens` isn't entirely empty
-    if (beforeTokens.length > 0) {
-      // Because `isReversedNameComma` returning TRUE means the comma is NOT a separator.
-      // Let's ensure the `exactNextChunk` strictly maps to a legal form.
-      const isExactlyLegalForm = matchLegalForm(exactNextChunk);
-      if (isExactlyLegalForm) {
-        const normalizedChunk = exactNextChunk.toUpperCase().replace(/\./g, '').replace(/\s+/g, ' ').trim();
-        // `isReversedNameComma` returns true if we should NOT split at this comma.
-        if (isExactlyLegalForm.patterns.includes(normalizedChunk)) {
-          return true;
-        }
-      }
-    }
+  // Note: matchLegalForm returns a truthy LegalFormEntry if it matches any pattern for a legal suffix.
+  // If the text after the comma is a legal form (e.g. "Inc." in "Microsoft, Inc."),
+  // treat the comma as a joiner (not a separator) so the org name stays intact.
+  if (beforeTokens.length > 0 && matchLegalForm(exactNextChunk)) {
+    return true;
   }
 
   // Get the first word after the comma

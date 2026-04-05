@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parseName, parsePersonName, getFirstName, getLastName } from '../src/parsers';
+import { parseName, parsePersonName, getFirstName, getLastName, getNickname, entityToLegacy } from '../src/parsers';
+import { isPerson, isOrganization, isFamily, isCompound, isUnknown, isRejected } from '../src/classifier';
 import examples from '../src/data/examples.json';
 
 // =============================================================================
@@ -600,5 +601,113 @@ describe('getLastName', () => {
     it(`should extract last name from "${input}"`, () => {
       expect(getLastName(input)).toBe(lastName);
     });
+  });
+});
+
+// =============================================================================
+// getNickname tests
+// =============================================================================
+
+describe('getNickname', () => {
+  it('should extract nickname in double quotes', () => {
+    expect(getNickname('William "Bill" Smith')).toBe('Bill');
+  });
+
+  it('should not treat parenthesized text as nickname (it is fullGiven)', () => {
+    // Parentheses are parsed as fullGiven, not nickname
+    expect(getNickname('Robert (Robert James) Jones')).toBeUndefined();
+  });
+
+  it('should return undefined when no nickname', () => {
+    expect(getNickname('John Smith')).toBeUndefined();
+  });
+
+  it('should return undefined for empty string', () => {
+    expect(() => getNickname('')).toThrow();
+  });
+});
+
+// =============================================================================
+// entityToLegacy tests
+// =============================================================================
+
+describe('entityToLegacy', () => {
+  it('should convert a person entity to legacy format', () => {
+    const entity = parseName('Dr. John William Smith Jr.');
+    const legacy = entityToLegacy(entity);
+    expect(legacy).not.toBeNull();
+    expect(legacy!.prefix).toBe('Dr.');
+    expect(legacy!.first).toBe('John');
+    expect(legacy!.middle).toBe('William');
+    expect(legacy!.last).toBe('Smith');
+    expect(legacy!.suffix).toBe('Jr.');
+  });
+
+  it('should return null for organization entities', () => {
+    const entity = parseName('Acme Corp, Inc.');
+    expect(entityToLegacy(entity)).toBeNull();
+  });
+
+  it('should return null for family entities', () => {
+    const entity = parseName('The Smith Family');
+    expect(entityToLegacy(entity)).toBeNull();
+  });
+
+  it('should return null for compound entities', () => {
+    const entity = parseName('Bob & Mary Smith');
+    expect(entityToLegacy(entity)).toBeNull();
+  });
+
+  it('should handle person with nickname', () => {
+    const entity = parseName('William "Bill" Smith');
+    const legacy = entityToLegacy(entity);
+    expect(legacy).not.toBeNull();
+    expect(legacy!.nickname).toBe('Bill');
+  });
+
+  it('should handle simple name without optional fields', () => {
+    const entity = parseName('John Smith');
+    const legacy = entityToLegacy(entity);
+    expect(legacy).not.toBeNull();
+    expect(legacy!.first).toBe('John');
+    expect(legacy!.last).toBe('Smith');
+    expect(legacy!.prefix).toBeUndefined();
+    expect(legacy!.suffix).toBeUndefined();
+  });
+});
+
+// =============================================================================
+// Type guard tests
+// =============================================================================
+
+describe('type guards', () => {
+  it('isPerson should identify person entities', () => {
+    expect(isPerson(parseName('John Smith'))).toBe(true);
+    expect(isPerson(parseName('Acme LLC'))).toBe(false);
+  });
+
+  it('isOrganization should identify organization entities', () => {
+    expect(isOrganization(parseName('Acme Corp, Inc.'))).toBe(true);
+    expect(isOrganization(parseName('John Smith'))).toBe(false);
+  });
+
+  it('isFamily should identify family entities', () => {
+    expect(isFamily(parseName('The Smith Family'))).toBe(true);
+    expect(isFamily(parseName('John Smith'))).toBe(false);
+  });
+
+  it('isCompound should identify compound entities', () => {
+    expect(isCompound(parseName('Bob & Mary Smith'))).toBe(true);
+    expect(isCompound(parseName('John Smith'))).toBe(false);
+  });
+
+  it('isUnknown should identify unknown entities', () => {
+    expect(isUnknown(parseName(''))).toBe(true);
+    expect(isUnknown(parseName('John Smith'))).toBe(false);
+  });
+
+  it('isRejected should identify rejected entities', () => {
+    expect(isRejected(parseName('Acme LLC', { strictKind: 'person' }))).toBe(true);
+    expect(isRejected(parseName('John Smith'))).toBe(false);
   });
 });

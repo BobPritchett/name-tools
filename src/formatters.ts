@@ -1,4 +1,4 @@
-import { parsePersonName } from './parsers';
+import { parsePersonName, parseName } from './parsers';
 import type {
   NameFormatOptions,
   NamePreset,
@@ -336,7 +336,7 @@ function renderGivenPlusMiddle(
     const middleInitials = parsed.middle ? toWords(normalizeTrim(parsed.middle)).map(toInitial).filter(Boolean) as string[] : [];
     const all = [firstInitial, ...middleInitials].filter(Boolean) as string[];
     const initialsText = joinInitials(all, o, t);
-    const finalToken = all.length > 0 ? all[all.length - 1] : given;
+    const finalToken = all[all.length - 1];
     return { givenLikeText: initialsText, finalGivenToken: finalToken };
   }
 
@@ -530,9 +530,15 @@ function shouldShare(mode: ResolvedOptions['shareLastName' | 'sharePrefix' | 'sh
 
 function joinCouple(a: RenderedPersonParts, b: RenderedPersonParts, o: ResolvedOptions): string {
   const t = getSpaceTokens(o.output);
-  const sameLast = normalizeCompareKey(a.lastText) != null && normalizeCompareKey(a.lastText) === normalizeCompareKey(b.lastText);
-  const samePrefix = normalizeCompareKey(a.prefixText) != null && normalizeCompareKey(a.prefixText) === normalizeCompareKey(b.prefixText);
-  const sameSuffix = normalizeCompareKey(a.suffixText) != null && normalizeCompareKey(a.suffixText) === normalizeCompareKey(b.suffixText);
+  const aLastKey = normalizeCompareKey(a.lastText);
+  const bLastKey = normalizeCompareKey(b.lastText);
+  const aPrefixKey = normalizeCompareKey(a.prefixText);
+  const bPrefixKey = normalizeCompareKey(b.prefixText);
+  const aSuffixKey = normalizeCompareKey(a.suffixText);
+  const bSuffixKey = normalizeCompareKey(b.suffixText);
+  const sameLast = aLastKey != null && aLastKey === bLastKey;
+  const samePrefix = aPrefixKey != null && aPrefixKey === bPrefixKey;
+  const sameSuffix = aSuffixKey != null && aSuffixKey === bSuffixKey;
 
   // Only apply couple compression patterns for given-family order.
   if (o.order !== 'given-family') {
@@ -636,8 +642,10 @@ function formatOrganization(org: OrganizationName, o: ResolvedOptions): string {
 
     case 'alphabetical':
       // For sorting: base name, then legal suffix
+      // legalSuffixRaw may already include a leading comma (e.g. ", Inc."), so use it as-is
       if (legalSuffix) {
-        return `${baseName},${boundarySpace('commaSpace', o, t)}${legalSuffix}`;
+        const trimmed = legalSuffix.replace(/^[,\s]+/, '');
+        return `${baseName},${boundarySpace('commaSpace', o, t)}${trimmed}`;
       }
       return baseName;
 
@@ -829,6 +837,12 @@ export function formatName(
       if (isParsedNameEntity(item)) {
         return formatEntity(item, o);
       }
+      if (typeof item === 'string') {
+        const entity = parseName(item);
+        if (entity.kind !== 'person' && entity.kind !== 'unknown') {
+          return formatEntity(entity, o);
+        }
+      }
       return renderSingle(ensureParsedLegacy(item), o).fullText;
     };
 
@@ -850,7 +864,15 @@ export function formatName(
     return formatEntity(input, o);
   }
 
-  // Legacy ParsedName or string
+  // String input: classify first to detect orgs, families, compounds
+  if (typeof input === 'string') {
+    const entity = parseName(input);
+    if (entity.kind !== 'person' && entity.kind !== 'unknown') {
+      return formatEntity(entity, o);
+    }
+  }
+
+  // Legacy ParsedName or person string
   const parsed = ensureParsedLegacy(input);
   return renderSingle(parsed, o).fullText;
 }

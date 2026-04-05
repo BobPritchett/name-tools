@@ -79,7 +79,7 @@ export function detectFamily(normalized: string): FamilyDetectionResult {
     style = 'familyWord';
 
     // Extract the surname (everything before "Family"/"Household")
-    familyName = withoutThe.slice(0, familyWordMatch.index).trim();
+    familyName = withoutThe.slice(0, familyWordMatch.index!).trim();
 
     // Check if it looks like there are given names (reduce confidence)
     if (hasGivenNameTokens(withoutThe)) {

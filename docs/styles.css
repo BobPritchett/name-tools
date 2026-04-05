@@ -678,6 +678,16 @@ footer a:hover {
     margin-bottom: 8px;
 }
 
+.error-row {
+    background-color: #fff5f5;
+}
+
+.error-cell {
+    color: #c53030;
+    font-style: italic;
+    padding: 8px 12px;
+}
+
 @media (max-width: 768px) {
     main {
         padding: 20px;
