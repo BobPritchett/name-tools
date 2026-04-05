@@ -3804,7 +3804,8 @@ function decodeGenderData() {
     }
     return bytes.buffer;
   } else {
-    return Buffer.from(GENDER_DATA_BASE64, "base64").buffer;
+    const buf = Buffer.from(GENDER_DATA_BASE64, "base64");
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
   }
 }
 
