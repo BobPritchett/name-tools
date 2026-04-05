@@ -733,7 +733,7 @@ function formatCompound(compound: CompoundName, o: ResolvedOptions): string {
     if (member.kind === 'person') {
       const parsed = personEntityToLegacy(member);
       // For compound with shared family, omit family from individual rendering
-      if (sharedFamily && o.preset !== 'alphabetical') {
+      if (sharedFamily) {
         const withoutFamily = { ...parsed, last: undefined };
         return renderSingle(withoutFamily, o).fullText;
       }
@@ -750,8 +750,13 @@ function formatCompound(compound: CompoundName, o: ResolvedOptions): string {
   // Join members
   const joined = formattedMembers.join(` ${connector} `);
 
-  // Append shared family if present and not alphabetical
-  if (sharedFamily && o.preset !== 'alphabetical') {
+  // Prepend or append shared family depending on order
+  if (sharedFamily) {
+    if (o.order === 'family-given') {
+      // Alphabetical / family-given: "Johnson, Bob & Mary"
+      return `${sharedFamily},${boundarySpace('commaSpace', o, t)}${joined}`;
+    }
+    // Given-family: "Bob & Mary Johnson"
     return `${joined}${boundarySpace('givenToLast', o, t)}${sharedFamily}`;
   }
 

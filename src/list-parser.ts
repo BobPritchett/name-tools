@@ -7,6 +7,7 @@ import { classifyName } from './classifier';
 import { extractEmail, hasEmail } from './email-extractor';
 import { isNameLikeToken } from './normalize';
 import { COMMA_LEGAL_RE, matchLegalForm } from './data/legal-forms';
+import { isCommonFirstName } from './data/surnames';
 
 /**
  * Split a recipient list into individual recipients
@@ -151,35 +152,48 @@ function isReversedNameComma(before: string, after: string): boolean {
   }
 
   // If before has 1-3 tokens (could be "Smith" or "Smith, John" or "van der Berg, Jan")
-  // and after starts with a name-like word, assume reversed
+  // and after starts with a name-like word, it might be a reversed name.
   if (beforeTokens.length <= 3) {
-    // Wait, what if the string before the comma explicitly looks like a company name that ended in a legal suffix?
-    // We shouldn't treat this comma as a reversed name comma. E.g. "Microsoft, Inc., Bob" -> Split here!
+    // If the thing immediately before the comma is a legal suffix, force split.
+    // E.g. "Microsoft, Inc., Bob" -> Split here!
     const lastBeforeToken = beforeTokens[beforeTokens.length - 1];
     if (lastBeforeToken && matchLegalForm(lastBeforeToken)) {
-      return false; // Force split if the thing immediately before the comma is a legal suffix!
+      return false;
     }
 
     // Check if after looks like a given name or suffix
     if (isNameLikeToken(firstAfter)) {
-      // Could be reversed name - check for subsequent commas
+      // Heuristic: if before has 2+ tokens and the first token looks like a given name
+      // (e.g. "John Smith, Mary Jones"), this is probably a list separator, not a reversed name.
+      // Reversed names have the family name first (typically 1 token like "Smith, John").
+      if (beforeTokens.length >= 2 && afterTokens.length >= 2) {
+        const firstBeforeToken = beforeTokens[0];
+        // If both sides start with a common first name, it's a forward-order list
+        if (isCommonFirstName(firstBeforeToken) && isCommonFirstName(firstAfter)) {
+          return false;
+        }
+        // If both sides look like "Capitalized Capitalized" (Given Family), treat as list
+        if (isNameLikeToken(firstBeforeToken) && isNameLikeToken(beforeTokens[1]) &&
+            isNameLikeToken(firstAfter) && isNameLikeToken(afterTokens[1])) {
+          // But only if the first token of before doesn't look like a lone family name
+          // Check: if the second after-token is also name-like, it's likely "Given Family, Given Family"
+          // Exception: single-token before like "Smith" is more likely reversed
+          if (isCommonFirstName(firstBeforeToken) || isCommonFirstName(firstAfter)) {
+            return false;
+          }
+        }
+      }
+
+      // Check for subsequent commas (e.g. "Smith, John, Jr." pattern)
       const commaIdx = afterTrimmed.indexOf(',');
-      
-      // Let's ensure the `before` string isn't explicitly an organization that we just matched.
-      // We already have a check for this on line 169 (lastBeforeToken), but let's make sure
-      // we aren't bypassing it if someone puts a newline there.
-      
       if (commaIdx > 0 && commaIdx < 30) {
-        // There's another comma nearby - check if what follows is a suffix
         const afterComma = afterTrimmed.slice(commaIdx + 1).trim();
         const nextWord = afterComma.split(/[\s,;\r\n]+/)[0];
         if (nextWord && SUFFIX_PATTERN.test(nextWord)) {
-          // Looks like "Smith, John, Jr." pattern
           return true;
         }
-        // Check if between commas looks like a name
         const betweenCommas = afterTrimmed.slice(0, commaIdx).trim();
-        const namePattern = /^[A-Z][a-z]+(\s+[A-Z]\.?)?$/; // "John" or "John Q."
+        const namePattern = /^[A-Z][a-z]+(\s+[A-Z]\.?)?$/;
         if (namePattern.test(betweenCommas)) {
           return true;
         }

@@ -711,3 +711,41 @@ describe('type guards', () => {
     expect(isRejected(parseName('John Smith'))).toBe(false);
   });
 });
+
+// =============================================================================
+// Particle extraction tests
+// =============================================================================
+
+describe('particles on PersonName entity', () => {
+  it('should extract "van" particle from "Ludwig van Beethoven"', () => {
+    const result = parseName('Ludwig van Beethoven');
+    expect(result.kind).toBe('person');
+    if (result.kind === 'person') {
+      expect(result.particles).toEqual(['van']);
+    }
+  });
+
+  it('should extract "de" particle from "Charles de Gaulle"', () => {
+    const result = parseName('Charles de Gaulle');
+    expect(result.kind).toBe('person');
+    if (result.kind === 'person') {
+      expect(result.particles).toEqual(['de']);
+    }
+  });
+
+  it('should extract "von" particle from "Maria von Trapp"', () => {
+    const result = parseName('Maria von Trapp');
+    expect(result.kind).toBe('person');
+    if (result.kind === 'person') {
+      expect(result.particles).toEqual(['von']);
+    }
+  });
+
+  it('should have no particles for "John Smith"', () => {
+    const result = parseName('John Smith');
+    expect(result.kind).toBe('person');
+    if (result.kind === 'person') {
+      expect(result.particles).toBeUndefined();
+    }
+  });
+});

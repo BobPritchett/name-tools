@@ -4,6 +4,7 @@
 
 import type { PersonName, ReasonCode, Confidence, ParseMeta } from '../types';
 import { tokenize, isNameLikeToken, extractParenContent, stripParenAnnotation } from '../normalize';
+import { isParticle, isMultiWordParticle } from '../data/particles';
 
 /**
  * Known suffixes for reversed name parsing
@@ -109,6 +110,7 @@ function tryParseReversed(normalized: string): PersonDetectionResult | null {
   // Family might include particles (van, de, etc.)
   const familyTokens = tokenize(familyPart);
   const family = familyPart;
+  const particles = extractParticles(familyTokens);
 
   // Higher confidence if suffix detected
   const confidence: Confidence = suffix ? 1 : 0.75;
@@ -125,9 +127,32 @@ function tryParseReversed(normalized: string): PersonDetectionResult | null {
       family,
       suffix,
       nickname,
+      particles: particles.length > 0 ? particles : undefined,
       reversed: true,
     },
   };
+}
+
+/**
+ * Extract particle strings from family name tokens
+ */
+function extractParticles(familyTokens: string[]): string[] {
+  const particles: string[] = [];
+  // Check for multi-word particles first
+  const multiWord = isMultiWordParticle(familyTokens);
+  if (multiWord) {
+    particles.push(multiWord);
+    return particles;
+  }
+  // Check individual tokens
+  for (const token of familyTokens) {
+    if (isParticle(token)) {
+      particles.push(token);
+    } else {
+      break; // Particles must be at the start of the family name
+    }
+  }
+  return particles;
 }
 
 /**
@@ -221,6 +246,26 @@ function parseStandardFormat(normalized: string): PersonDetectionResult {
     confidence = Math.max(confidence, 0.75) as Confidence;
   }
 
+  // Extract particles from middle name tokens (e.g. "Ludwig van Beethoven" has "van" in middle)
+  const particles: string[] = [];
+  if (middle) {
+    const middleTokens = middle.split(/\s+/);
+    for (const t of middleTokens) {
+      if (isParticle(t)) {
+        particles.push(t);
+      }
+    }
+  }
+  // Also check family name for particles (e.g. reversed parse put them there)
+  if (family) {
+    const famParticles = extractParticles(family.split(/\s+/));
+    for (const p of famParticles) {
+      if (!particles.includes(p)) {
+        particles.push(p);
+      }
+    }
+  }
+
   return {
     isPerson: true,
     confidence,
@@ -234,6 +279,7 @@ function parseStandardFormat(normalized: string): PersonDetectionResult {
       family,
       suffix,
       nickname,
+      particles: particles.length > 0 ? particles : undefined,
       reversed: false,
     },
   };
@@ -279,6 +325,7 @@ export function buildPersonEntity(
     family: result.entity?.family,
     suffix: result.entity?.suffix,
     nickname: result.entity?.nickname,
+    particles: result.entity?.particles,
     reversed: result.entity?.reversed,
     meta,
   };

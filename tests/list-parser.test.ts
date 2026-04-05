@@ -251,4 +251,34 @@ Bob Jones <bob@example.com>`;
       expect(result).toHaveLength(3);
     });
   });
+
+  describe('comma-separated forward names', () => {
+    it('should split "John Smith, Mary Jones" into 2 recipients', () => {
+      const result = parseNameList('John Smith, Mary Jones');
+      expect(result).toHaveLength(2);
+      expect(result[0].raw).toBe('John Smith');
+      expect(result[1].raw).toBe('Mary Jones');
+    });
+
+    it('should split three comma-separated forward names', () => {
+      const result = parseNameList('John Smith, Mary Jones, Bob Brown');
+      expect(result).toHaveLength(3);
+    });
+
+    it('should still keep reversed names intact', () => {
+      const result = parseNameList('Smith, John');
+      expect(result).toHaveLength(1);
+      expect(result[0].raw).toBe('Smith, John');
+    });
+
+    it('should keep reversed names with suffixes intact', () => {
+      const result = parseNameList('Smith, John, Jr.');
+      expect(result).toHaveLength(1);
+    });
+
+    it('should not split org names with legal suffixes', () => {
+      const result = parseNameList('Microsoft, Inc.');
+      expect(result).toHaveLength(1);
+    });
+  });
 });

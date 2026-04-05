@@ -18,7 +18,13 @@
       "WebFetch(domain:github.com)",
       "Bash(grep -o \"classList\\\\\\\\.add\\('[^']*'\\)\" /c/Code/name-tools/docs/script.js)",
       "Bash(grep -n \"\\\\.index\\\\b[^!]\" /c/Code/name-tools/src/detectors/*.ts /c/Code/name-tools/src/data/*.ts)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(npm view:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm exec:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

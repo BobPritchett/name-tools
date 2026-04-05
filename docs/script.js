@@ -48,9 +48,12 @@ function updateResults() {
     const demoActions = document.getElementById('demoActions');
     const inputContent = nameInput.value.trim();
 
+    const formatOptionsDiv = document.getElementById('formatOptions');
+
     if (!inputContent) {
         resultsDiv.innerHTML = '<p style="color: #636c76; font-size: 14px;">Enter a name to see results...</p>';
         demoActions.style.display = 'none';
+        if (formatOptionsDiv) formatOptionsDiv.style.display = 'none';
         return;
     }
 
@@ -60,7 +63,13 @@ function updateResults() {
     if (recipients.length === 0) {
         resultsDiv.innerHTML = '<p style="color: #636c76; font-size: 14px;">Enter a name to see results...</p>';
         demoActions.style.display = 'none';
+        if (formatOptionsDiv) formatOptionsDiv.style.display = 'none';
         return;
+    }
+
+    // Show format options when multiple recipients
+    if (formatOptionsDiv) {
+        formatOptionsDiv.style.display = recipients.length > 1 ? 'flex' : 'none';
     }
 
     try {
@@ -86,7 +95,7 @@ function updateResults() {
 
             // Only show parsed components table for person entities
             if (isPerson(entity)) {
-                const parsed = parsePersonName(recipient.raw);
+                const parsed = parsePersonName(entity.meta?.raw || recipient.raw);
                 html += `
                     <div class="result-group">
                         <h3>Parsed Components</h3>
@@ -190,27 +199,11 @@ function updateResults() {
                 </div>
             `;
 
-            // Show list/couple formatting
-            if (recipients.length === 2) {
-                html += `
-                    <div class="result-group">
-                        <h3>Combined Formats</h3>
-                        <div class="formatted-outputs">
-                            <div class="formatted-item"><strong>List:</strong> <span>${escapeHtml(formatName(entities, { join: 'list' }))}</span></div>
-                            <div class="formatted-item"><strong>Couple:</strong> <span>${escapeHtml(formatName(entities, { join: 'couple' }))}</span></div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                html += `
-                    <div class="result-group">
-                        <h3>Combined Formats</h3>
-                        <div class="formatted-outputs">
-                            <div class="formatted-item"><strong>List:</strong> <span>${escapeHtml(formatName(entities, { join: 'list' }))}</span></div>
-                        </div>
-                    </div>
-                `;
-            }
+            // Show combined formatting with options
+            html += renderCombinedFormats(entities);
+
+            // Show round-trip verification
+            html += renderRoundTrip(entities);
         }
 
         resultsDiv.innerHTML = html;
@@ -227,6 +220,100 @@ function updateResults() {
         resultsDiv.innerHTML = `<p style="color: #cf222e; font-size: 14px;">Error: ${error.message}</p>`;
         demoActions.style.display = 'none';
     }
+}
+
+function getFormatOptions() {
+    const preset = document.getElementById('optPreset')?.value || 'display';
+    const join = document.getElementById('optJoin')?.value || 'list';
+    const conjunction = document.getElementById('optConjunction')?.value || 'and';
+    const oxfordComma = document.getElementById('optOxford')?.checked ?? true;
+    return { preset, join, conjunction, oxfordComma };
+}
+
+function renderCombinedFormats(entities) {
+    const opts = getFormatOptions();
+    let formatted;
+    try {
+        formatted = formatName(entities, opts);
+    } catch (e) {
+        formatted = `(error: ${e.message})`;
+    }
+
+    // Also show couple format if exactly 2 entities
+    let coupleHtml = '';
+    if (entities.length === 2) {
+        const coupleOpts = { ...opts, join: 'couple' };
+        try {
+            const coupleFormatted = formatName(entities, coupleOpts);
+            coupleHtml = `<div class="formatted-item"><strong>Couple:</strong> <span>${escapeHtml(coupleFormatted)}</span></div>`;
+        } catch (e) {
+            coupleHtml = `<div class="formatted-item"><strong>Couple:</strong> <span style="color:#cf222e">(error: ${escapeHtml(e.message)})</span></div>`;
+        }
+    }
+
+    return `
+        <div class="result-group">
+            <h3>Combined Formats</h3>
+            <div class="formatted-outputs">
+                <div class="formatted-item"><strong>List (${escapeHtml(opts.preset)}):</strong> <span>${escapeHtml(formatted)}</span></div>
+                ${coupleHtml}
+            </div>
+        </div>
+    `;
+}
+
+function renderRoundTrip(entities) {
+    let rows = '';
+    entities.forEach((entity) => {
+        const original = entity.meta?.raw || '';
+        const formatted = formatName(entity);
+        const reparsed = parseName(formatted);
+        const origKind = entity.kind;
+        const reKind = reparsed.kind;
+        const kindMatch = origKind === reKind;
+
+        let fieldComparison = '';
+        if (isPerson(entity) && isPerson(reparsed)) {
+            const fields = ['given', 'family', 'middle', 'suffix', 'honorific'];
+            fieldComparison = fields.map(f => {
+                const orig = entity[f] || '';
+                const re = reparsed[f] || '';
+                const match = orig === re;
+                return `<td class="${match ? 'round-trip-match' : 'round-trip-mismatch'}">${escapeHtml(re || '-')}</td>`;
+            }).join('');
+        } else {
+            fieldComparison = `<td colspan="5">${escapeHtml(reparsed.meta?.raw || formatted)}</td>`;
+        }
+
+        rows += `
+            <tr>
+                <td>${escapeHtml(formatted)}</td>
+                <td class="${kindMatch ? 'round-trip-match' : 'round-trip-mismatch'}">${reKind}</td>
+                ${fieldComparison}
+            </tr>
+        `;
+    });
+
+    return `
+        <div class="result-group round-trip-section">
+            <h3>Round-trip Verification</h3>
+            <p style="color: #636c76; font-size: 13px; margin-bottom: 8px;">Format → re-parse to verify fidelity. <span class="round-trip-match">Green</span> = match, <span class="round-trip-mismatch">Red</span> = mismatch.</p>
+            <table class="parsed-table">
+                <thead>
+                    <tr>
+                        <th>Formatted</th>
+                        <th>Kind</th>
+                        <th>Given</th>
+                        <th>Family</th>
+                        <th>Middle</th>
+                        <th>Suffix</th>
+                        <th>Honorific</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    `;
 }
 
 function escapeHtml(value) {
@@ -721,6 +808,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         nameInput.style.height = nameInput.scrollHeight + 'px';
         updateResults();
     });
+
+    // Set up format option listeners
+    ['optPreset', 'optJoin', 'optConjunction'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', updateResults);
+    });
+    const oxfordEl = document.getElementById('optOxford');
+    if (oxfordEl) oxfordEl.addEventListener('change', updateResults);
 
     // Set up input listener for gender lookup demo
     if (genderInput) {

@@ -1,16 +1,38 @@
 {
   "name": "name-tools",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A utility library for parsing, formatting, and manipulating person names",
   "packageManager": "pnpm@8.0.0",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./gender/all": {
+      "types": "./dist/gender/all.d.ts",
+      "import": "./dist/gender/all.mjs",
+      "require": "./dist/gender/all.js"
+    },
+    "./gender/coverage99": {
+      "types": "./dist/gender/coverage99.d.ts",
+      "import": "./dist/gender/coverage99.mjs",
+      "require": "./dist/gender/coverage99.js"
+    },
+    "./gender/coverage95": {
+      "types": "./dist/gender/coverage95.d.ts",
+      "import": "./dist/gender/coverage95.mjs",
+      "require": "./dist/gender/coverage95.js"
+    }
+  },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts && tsup src/docs-entry.ts --format esm --outDir docs --no-dts && node -e \"const fs=require('fs'); if(fs.existsSync('docs/name-tools.js'))fs.unlinkSync('docs/name-tools.js'); fs.renameSync('docs/docs-entry.mjs', 'docs/name-tools.js'); fs.copyFileSync('src/data/examples.json', 'docs/examples.json')\"",
+    "build": "tsup src/index.ts --format cjs,esm --dts && tsup src/gender/all.ts src/gender/coverage99.ts src/gender/coverage95.ts --format cjs,esm --dts --outDir dist/gender && tsup src/docs-entry.ts --format esm --outDir docs --no-dts && node -e \"const fs=require('fs'); if(fs.existsSync('docs/name-tools.js'))fs.unlinkSync('docs/name-tools.js'); fs.renameSync('docs/docs-entry.mjs', 'docs/name-tools.js'); fs.copyFileSync('src/data/examples.json', 'docs/examples.json')\"",
     "build:gender": "node scripts/build-gender-data.js",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -32,6 +54,7 @@
     "url": "https://github.com/BobPritchett/name-tools.git"
   },
   "devDependencies": {
+    "@types/node": "^25.5.2",
     "tsup": "^8.0.0",
     "typescript": "^5.3.0",
     "vitest": "^1.0.0"

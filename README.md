@@ -113,7 +113,6 @@ Each entity type has specific fields. All types include a `meta` property with p
 | `baseName`      | `string`         | Base name without legal suffix        |
 | `legalForm`     | `LegalForm?`     | Detected legal form (Inc, LLC, etc.)  |
 | `legalSuffixRaw`| `string?`        | Raw legal suffix as written           |
-| `qualifiers`    | `string[]?`      | Additional qualifiers ("of", etc.)    |
 | `aka`           | `string[]?`      | Alternate names (d/b/a)               |
 | `meta`          | `ParseMeta`      | Parsing metadata                      |
 
@@ -589,9 +588,9 @@ function processEntry(input) {
     case "person":
       return `Hello, ${entity.given}!`;
     case "organization":
-      return `Business: ${entity.name}`;
+      return `Business: ${entity.baseName}`;
     case "family":
-      return `The ${entity.surname} household`;
+      return `The ${entity.familyName} household`;
     case "compound":
       return `${entity.members.length} people`;
     default:

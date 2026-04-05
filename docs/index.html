@@ -44,6 +44,43 @@ Smith, John, Jr.
                         Try: <code>Acme Corp, Inc.</code> | <code>Bob & Mary Smith</code> | <code>The Smith Family</code> | <code>Smith, John, Jr.</code>
                     </p>
 
+                    <div class="format-options" id="formatOptions" style="display: none;">
+                        <label>
+                            <span>Preset:</span>
+                            <select id="optPreset">
+                                <option value="display" selected>display</option>
+                                <option value="informal">informal</option>
+                                <option value="formalFull">formalFull</option>
+                                <option value="formalShort">formalShort</option>
+                                <option value="expandedFull">expandedFull</option>
+                                <option value="alphabetical">alphabetical</option>
+                                <option value="library">library</option>
+                                <option value="initialed">initialed</option>
+                                <option value="firstOnly">firstOnly</option>
+                                <option value="preferredFirst">preferredFirst</option>
+                                <option value="preferredDisplay">preferredDisplay</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Join:</span>
+                            <select id="optJoin">
+                                <option value="list" selected>list</option>
+                                <option value="couple">couple</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Conjunction:</span>
+                            <select id="optConjunction">
+                                <option value="and" selected>and</option>
+                                <option value="&">&amp;</option>
+                            </select>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="optOxford" checked />
+                            <span>Oxford comma</span>
+                        </label>
+                    </div>
+
                     <div id="results">
                         <!-- Results will be populated by JavaScript -->
                     </div>

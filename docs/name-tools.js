@@ -1853,6 +1853,7 @@ function tryParseReversed(normalized) {
   const middle = givenTokens.length > 1 ? givenTokens.slice(1).join(" ") : void 0;
   const familyTokens = tokenize(familyPart);
   const family = familyPart;
+  const particles = extractParticles(familyTokens);
   const confidence = suffix ? 1 : 0.75;
   return {
     isPerson: true,
@@ -1866,9 +1867,26 @@ function tryParseReversed(normalized) {
       family,
       suffix,
       nickname,
+      particles: particles.length > 0 ? particles : void 0,
       reversed: true
     }
   };
+}
+function extractParticles(familyTokens) {
+  const particles = [];
+  const multiWord = isMultiWordParticle(familyTokens);
+  if (multiWord) {
+    particles.push(multiWord);
+    return particles;
+  }
+  for (const token of familyTokens) {
+    if (isParticle(token)) {
+      particles.push(token);
+    } else {
+      break;
+    }
+  }
+  return particles;
 }
 function parseStandardFormat(normalized) {
   const reasons = [];
@@ -1938,6 +1956,23 @@ function parseStandardFormat(normalized) {
     }
     confidence = Math.max(confidence, 0.75);
   }
+  const particles = [];
+  if (middle) {
+    const middleTokens = middle.split(/\s+/);
+    for (const t of middleTokens) {
+      if (isParticle(t)) {
+        particles.push(t);
+      }
+    }
+  }
+  if (family) {
+    const famParticles = extractParticles(family.split(/\s+/));
+    for (const p of famParticles) {
+      if (!particles.includes(p)) {
+        particles.push(p);
+      }
+    }
+  }
   return {
     isPerson: true,
     confidence,
@@ -1951,6 +1986,7 @@ function parseStandardFormat(normalized) {
       family,
       suffix,
       nickname,
+      particles: particles.length > 0 ? particles : void 0,
       reversed: false
     }
   };
@@ -1979,6 +2015,7 @@ function buildPersonEntity(result, raw, normalized, locale = "en") {
     family: result.entity?.family,
     suffix: result.entity?.suffix,
     nickname: result.entity?.nickname,
+    particles: result.entity?.particles,
     reversed: result.entity?.reversed,
     meta
   };
@@ -2517,6 +2554,17 @@ function isReversedNameComma(before, after) {
       return false;
     }
     if (isNameLikeToken(firstAfter)) {
+      if (beforeTokens.length >= 2 && afterTokens.length >= 2) {
+        const firstBeforeToken = beforeTokens[0];
+        if (isCommonFirstName(firstBeforeToken) && isCommonFirstName(firstAfter)) {
+          return false;
+        }
+        if (isNameLikeToken(firstBeforeToken) && isNameLikeToken(beforeTokens[1]) && isNameLikeToken(firstAfter) && isNameLikeToken(afterTokens[1])) {
+          if (isCommonFirstName(firstBeforeToken) || isCommonFirstName(firstAfter)) {
+            return false;
+          }
+        }
+      }
       const commaIdx = afterTrimmed.indexOf(",");
       if (commaIdx > 0 && commaIdx < 30) {
         const afterComma = afterTrimmed.slice(commaIdx + 1).trim();
@@ -3055,7 +3103,7 @@ function formatCompound(compound, o) {
   const formattedMembers = compound.members.map((member) => {
     if (member.kind === "person") {
       const parsed = personEntityToLegacy(member);
-      if (sharedFamily && o.preset !== "alphabetical") {
+      if (sharedFamily) {
         const withoutFamily = { ...parsed, last: void 0 };
         return renderSingle(withoutFamily, o).fullText;
       }
@@ -3067,7 +3115,10 @@ function formatCompound(compound, o) {
     return compound.meta.raw;
   }
   const joined = formattedMembers.join(` ${connector} `);
-  if (sharedFamily && o.preset !== "alphabetical") {
+  if (sharedFamily) {
+    if (o.order === "family-given") {
+      return `${sharedFamily},${boundarySpace("commaSpace", o, t)}${joined}`;
+    }
     return `${joined}${boundarySpace("givenToLast", o, t)}${sharedFamily}`;
   }
   return joined;
