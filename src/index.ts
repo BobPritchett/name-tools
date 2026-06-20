@@ -50,7 +50,13 @@ export type {
   // Entity kinds
   NameKind,
   Confidence,
+  ConfidenceDetail,
   ReasonCode,
+  WarningCode,
+  ParseWarning,
+  GivenNameEvidence,
+  GivenNameEvidenceProvider,
+  GivenNameEvidenceMatch,
   ParseMeta,
   BaseEntity,
   LegalForm,
@@ -60,6 +66,7 @@ export type {
   // Entity types
   ParsedNameEntity,
   PersonName,
+  PersonNameAlternative,
   OrganizationName,
   FamilyName,
   CompoundName,

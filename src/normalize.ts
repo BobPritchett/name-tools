@@ -50,7 +50,7 @@ export function isNameLikeToken(token: string): boolean {
   if (/^([A-Z]\.?)+$/.test(token)) return true;
   // Name token starting with uppercase, allowing internal capitals (DeBartolo, MacDonald)
   // and hyphens/apostrophes (O'Brien, Smith-Jones)
-  return /^[A-Z][a-zA-Z]*(?:['-][A-zA-Z]+)*$/.test(token);
+  return /^\p{Lu}[\p{L}\p{M}]*(?:['-][\p{L}\p{M}]+)*$/u.test(token);
 }
 
 /**

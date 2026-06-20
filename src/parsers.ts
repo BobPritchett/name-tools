@@ -418,9 +418,15 @@ export function entityToLegacy(entity: ParsedNameEntity): ParsedName | null {
   if (person.given) result.first = person.given;
   if (person.fullGiven) result.fullGiven = person.fullGiven;
   if (person.middle) result.middle = person.middle;
+  if (person.additionalGiven) result.additionalGiven = person.additionalGiven;
   if (person.family) result.last = person.family;
+  if (person.familyParts) result.familyParts = person.familyParts;
   if (person.suffix) result.suffix = person.suffix;
   if (person.nickname) result.nickname = person.nickname;
+  if (person.tokens) result.tokens = person.tokens;
+  if (person.meta.warningCodes?.includes('AMBIGUOUS_MIDDLE_OR_FAMILY')) {
+    result.ambiguousMiddleOrFamily = true;
+  }
 
   return finalizeParsedName(result);
 }

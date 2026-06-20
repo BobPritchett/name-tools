@@ -18,7 +18,13 @@ import { GenderDB } from './GenderDB';
 import { decodeGenderData } from './data/all';
 
 // Re-export types for convenience
-export { GenderDB, type GenderResult, type GenderNotFound, type GenderLookupResult } from './GenderDB';
+export {
+  GenderDB,
+  createGivenNameEvidenceProvider,
+  type GenderResult,
+  type GenderNotFound,
+  type GenderLookupResult,
+} from './GenderDB';
 
 /** Singleton instance for shared use */
 let instance: GenderDB | null = null;

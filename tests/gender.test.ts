@@ -3,6 +3,7 @@ import { GenderDB } from '../src/gender/GenderDB';
 import { decodeGenderData as decodeAll } from '../src/gender/data/all';
 import { decodeGenderData as decode99 } from '../src/gender/data/coverage99';
 import { decodeGenderData as decode95 } from '../src/gender/data/coverage95';
+import { createGenderDB as createCoverage95GenderDB, createGivenNameEvidenceProvider } from '../src/gender/coverage95';
 
 describe('GenderDB', () => {
   describe('with full dataset', () => {
@@ -174,6 +175,21 @@ describe('GenderDB', () => {
           const result = db.lookup(name);
           expect(result.found, `Expected to find ${name}`).toBe(true);
         }
+      });
+    });
+
+    describe('createGivenNameEvidenceProvider()', () => {
+      it('should adapt gender lookup into parser evidence', () => {
+        const provider = createGivenNameEvidenceProvider(createCoverage95GenderDB());
+
+        expect(provider('John', { raw: 'John Smith', tokens: ['John', 'Smith'], index: 0 })).toMatchObject({
+          found: true,
+          source: 'gender-db',
+        });
+        expect(provider('Garcia', { raw: 'Gabriel Garcia Lopez', tokens: ['Gabriel', 'Garcia', 'Lopez'], index: 1 })).toMatchObject({
+          found: false,
+          source: 'gender-db',
+        });
       });
     });
   });

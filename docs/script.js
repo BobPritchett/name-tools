@@ -9,6 +9,7 @@ import {
     isFamily,
     isCompound,
     createGenderDB,
+    createGivenNameEvidenceProvider,
     getPronounSet,
     getPronouns,
     extractPronouns,
@@ -17,6 +18,7 @@ import {
 
 // Initialize gender database (singleton)
 const genderDB = createGenderDB();
+const givenNameEvidence = createGivenNameEvidenceProvider(genderDB);
 
 // Global variable to hold examples data
 let examplesData = null;
@@ -42,6 +44,19 @@ function formatProbability(prob) {
     return (prob * 100).toFixed(1) + '%';
 }
 
+function getParseOptions() {
+    const useEvidence = document.getElementById('optGivenEvidence')?.checked ?? false;
+    return useEvidence ? { givenNameEvidence } : {};
+}
+
+function getRecipientEntity(recipient, parseOptions) {
+    const displayRaw = recipient.display?.meta?.raw;
+    if (displayRaw) {
+        return parseName(displayRaw, parseOptions);
+    }
+    return parseName(recipient.raw, parseOptions);
+}
+
 // Demo functionality
 function updateResults() {
     const nameInput = document.getElementById('nameInput');
@@ -58,8 +73,10 @@ function updateResults() {
         return;
     }
 
+    const parseOptions = getParseOptions();
+
     // Use parseNameList to handle newlines, semicolons, and emails
-    const recipients = parseNameList(inputContent);
+    const recipients = parseNameList(inputContent, parseOptions);
 
     if (recipients.length === 0) {
         resultsDiv.innerHTML = '<p style="color: #636c76; font-size: 14px;">Enter a name to see results...</p>';
@@ -79,7 +96,7 @@ function updateResults() {
         // Single input - show detailed entity classification
         if (recipients.length === 1) {
             const recipient = recipients[0];
-            const entity = recipient.display || parseName(recipient.raw);
+            const entity = getRecipientEntity(recipient, parseOptions);
 
             // Entity Classification section
             html += `
@@ -87,8 +104,9 @@ function updateResults() {
                     <h3>Entity Classification</h3>
                     <div class="entity-result">
                         <span class="entity-kind entity-kind-${entity.kind}">${entity.kind}</span>
-                        <span class="entity-confidence">Confidence: ${(entity.meta.confidence * 100).toFixed(0)}%</span>
+                        ${renderConfidenceInline(entity)}
                     </div>
+                    ${renderReviewSummary(entity)}
                     ${recipient.email ? `<div class="email-info"><strong>Email:</strong> <code>${escapeHtml(recipient.email)}</code></div>` : ''}
                     ${renderEntityDetails(entity)}
                 </div>
@@ -137,7 +155,8 @@ function updateResults() {
                                 <th>Kind</th>
                                 <th>Gender</th>
                                 ${hasAnyEmail ? '<th>Email</th>' : ''}
-                                <th>Conf.</th>
+                                <th>Confidence</th>
+                                <th>Review Signals</th>
                                 <th>Display</th>
                                 <th>Formal Full</th>
                                 <th>Alphabetical</th>
@@ -149,7 +168,7 @@ function updateResults() {
             const entities = [];
             const componentRows = [];
             recipients.forEach((recipient) => {
-                const entity = recipient.display || parseName(recipient.raw);
+                const entity = getRecipientEntity(recipient, parseOptions);
                 entities.push(entity);
                 componentRows.push({
                     input: recipient.raw,
@@ -163,7 +182,8 @@ function updateResults() {
                         <td><span class="entity-kind entity-kind-${entity.kind}" style="padding: 2px 8px; font-size: 11px;">${entity.kind}</span></td>
                         <td class="gender-cell">${genderDisplay}</td>
                         ${hasAnyEmail ? `<td class="email-cell">${recipient.email ? escapeHtml(recipient.email) : '-'}</td>` : ''}
-                        <td class="confidence-cell">${(entity.meta.confidence * 100).toFixed(0)}%</td>
+                        <td class="confidence-cell">${renderConfidenceStack(entity)}</td>
+                        <td class="review-cell">${renderReviewSignalCell(entity)}</td>
                         <td class="format-cell">${escapeHtml(formatName(entity))}</td>
                         <td class="format-cell">${escapeHtml(formatName(entity, { preset: 'formalFull' }))}</td>
                         <td class="format-cell">${escapeHtml(formatName(entity, { preset: 'alphabetical' }))}</td>
@@ -221,7 +241,7 @@ function renderParsedComponentsSection(rows, includeInput) {
 
     return `
         <div class="result-group">
-            <h3>Parsed Components</h3>
+            <h3>Selected Components</h3>
             <table class="parsed-table">
                 <thead>
                     <tr>
@@ -291,7 +311,7 @@ function renderRoundTrip(entities) {
     entities.forEach((entity) => {
         const original = entity.meta?.raw || '';
         const formatted = formatName(entity);
-        const reparsed = parseName(formatted);
+        const reparsed = parseName(formatted, getParseOptions());
         const origKind = entity.kind;
         const reKind = reparsed.kind;
         const kindMatch = origKind === reKind;
@@ -448,7 +468,160 @@ function renderEntityDetails(entity) {
         html += `<div class="entity-reasons"><strong>Reasons:</strong> ${entity.meta.reasons.map(r => `<code>${escapeHtml(r)}</code>`).join(', ')}</div>`;
     }
 
+    html += renderParseMetadata(entity);
+
     html += '</div>';
+    return html;
+}
+
+function formatPct(value) {
+    return typeof value === 'number' ? `${(value * 100).toFixed(0)}%` : '-';
+}
+
+function renderConfidenceInline(entity) {
+    const detail = entity.meta?.confidenceDetail;
+    return `
+        <div class="confidence-inline">
+            <span><strong>Kind:</strong> ${formatPct(entity.meta?.confidence)}</span>
+            ${detail ? `<span><strong>Parse:</strong> ${formatPct(detail.parse)}</span><span><strong>Format:</strong> ${formatPct(detail.format)}</span>` : ''}
+        </div>
+    `;
+}
+
+function renderConfidenceStack(entity) {
+    const detail = entity.meta?.confidenceDetail;
+    if (!detail) {
+        return `<div class="confidence-stack"><div><span>Kind</span><strong>${formatPct(entity.meta?.confidence)}</strong></div></div>`;
+    }
+
+    return `
+        <div class="confidence-stack">
+            <div><span>Kind</span><strong>${formatPct(entity.meta?.confidence)}</strong></div>
+            <div><span>Parse</span><strong>${formatPct(detail.parse)}</strong></div>
+            <div><span>Format</span><strong>${formatPct(detail.format)}</strong></div>
+        </div>
+    `;
+}
+
+function getSelectedInterpretation(entity) {
+    if (!isPerson(entity) || !entity.alternatives || entity.alternatives.length === 0) {
+        return '';
+    }
+    if (entity.familyParts && entity.familyParts.length > 1 && !entity.middle) {
+        return 'selected: compound family';
+    }
+    if (entity.additionalGiven || entity.middle) {
+        return 'selected: additional given + family';
+    }
+    return 'selected: ambiguous';
+}
+
+function renderWarningBadges(meta) {
+    const codes = meta?.warningCodes || [];
+    if (codes.length === 0) return '';
+    return `<div class="warning-badges">${codes.map(code => `<code class="warning-code">${escapeHtml(code)}</code>`).join('')}</div>`;
+}
+
+function renderEvidenceChips(entity) {
+    if (!isPerson(entity) || !entity.givenNameEvidence || entity.givenNameEvidence.length === 0) {
+        return '';
+    }
+    return `
+        <div class="evidence-chips">
+            ${entity.givenNameEvidence.map(e => `<code class="${e.found ? 'evidence-found' : 'evidence-missing'}">${escapeHtml(e.token)} ${e.found ? 'found' : 'not found'}</code>`).join('')}
+        </div>
+    `;
+}
+
+function renderReviewSignalCell(entity) {
+    const warnings = renderWarningBadges(entity.meta);
+    const selected = getSelectedInterpretation(entity);
+    const evidence = renderEvidenceChips(entity);
+    if (!warnings && !selected && !evidence) {
+        return '<span class="review-muted">-</span>';
+    }
+
+    return `
+        <div class="review-signals">
+            ${selected ? `<div class="selection-chip">${escapeHtml(selected)}</div>` : ''}
+            ${warnings}
+            ${evidence}
+        </div>
+    `;
+}
+
+function renderReviewSummary(entity) {
+    const selected = getSelectedInterpretation(entity);
+    const warnings = entity.meta?.warningDetails || [];
+    const evidence = renderEvidenceChips(entity);
+
+    if (!selected && warnings.length === 0 && !evidence) {
+        return '';
+    }
+
+    return `
+        <div class="review-summary">
+            ${selected ? `<div><strong>Interpretation:</strong> ${escapeHtml(selected.replace('selected: ', ''))}</div>` : ''}
+            ${warnings.length > 0 ? `
+                <div>
+                    <strong>Review warnings:</strong>
+                    <ul class="warning-list">
+                        ${warnings.map(w => `<li><code>${escapeHtml(w.code)}</code> ${escapeHtml(w.message)}</li>`).join('')}
+                    </ul>
+                </div>
+            ` : ''}
+            ${evidence ? `<div><strong>Given-name evidence:</strong>${evidence}</div>` : ''}
+        </div>
+    `;
+}
+
+function renderParseMetadata(entity) {
+    const meta = entity.meta || {};
+    let html = '';
+
+    if (meta.warningCodes && meta.warningCodes.length > 0) {
+        html += `<div class="entity-reasons"><strong>Warning Codes:</strong> ${meta.warningCodes.map(w => `<code>${escapeHtml(w)}</code>`).join(', ')}</div>`;
+    }
+
+    if (meta.warningDetails && meta.warningDetails.length > 0) {
+        html += `
+            <div class="entity-reasons">
+                <strong>Warning Details:</strong>
+                <ul class="warning-list compact">
+                    ${meta.warningDetails.map(w => `<li><code>${escapeHtml(w.code)}</code> ${escapeHtml(w.message)}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    if (meta.confidenceDetail) {
+        const detail = meta.confidenceDetail;
+        html += `<div class="entity-reasons"><strong>Confidence Detail:</strong> <code>kind ${(detail.kind * 100).toFixed(0)}%</code>, <code>parse ${(detail.parse * 100).toFixed(0)}%</code>, <code>format ${(detail.format * 100).toFixed(0)}%</code></div>`;
+    }
+
+    if (!isPerson(entity)) {
+        return html;
+    }
+
+    if (entity.additionalGiven || entity.familyParts) {
+        html += `
+            <table class="details-kv" style="margin-top: 8px;">
+                <tbody>
+                    ${entity.additionalGiven ? `<tr><th>Additional Given</th><td>${escapeHtml(entity.additionalGiven)}</td></tr>` : ''}
+                    ${entity.familyParts ? `<tr><th>Family Parts</th><td>${escapeHtml(entity.familyParts.join(' | '))}</td></tr>` : ''}
+                </tbody>
+            </table>
+        `;
+    }
+
+    if (entity.alternatives && entity.alternatives.length > 0) {
+        html += `<div class="entity-reasons"><strong>Alternatives:</strong> ${entity.alternatives.map(a => `<code>${escapeHtml(a.interpretation)}: ${escapeHtml(a.family || '-')}</code>`).join(', ')}</div>`;
+    }
+
+    if (entity.givenNameEvidence && entity.givenNameEvidence.length > 0) {
+        html += `<div class="entity-reasons"><strong>Given-name Evidence:</strong> ${entity.givenNameEvidence.map(e => `<code>${escapeHtml(e.token)}=${e.found ? 'found' : 'not found'}</code>`).join(', ')}</div>`;
+    }
+
     return html;
 }
 
@@ -770,7 +943,7 @@ function updateEntityPronounResults() {
     try {
         // First check for explicit pronouns in the name
         const extracted = extractPronouns(name);
-        const entity = parseName(extracted.name);
+        const entity = parseName(extracted.name, getParseOptions());
 
         // Get pronouns - use explicit if extracted, otherwise use gender lookup
         let pronouns;
@@ -840,6 +1013,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     const oxfordEl = document.getElementById('optOxford');
     if (oxfordEl) oxfordEl.addEventListener('change', updateResults);
+    const evidenceEl = document.getElementById('optGivenEvidence');
+    if (evidenceEl) evidenceEl.addEventListener('change', updateResults);
 
     // Set up input listener for gender lookup demo
     if (genderInput) {

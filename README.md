@@ -13,7 +13,7 @@ A lightweight, zero-dependency utility library for parsing, formatting, and mani
 - Parse full names into components (prefix, first, middle, last, suffix, nickname)
 - **Single** formatting entry point with presets + options (`formatName`)
 - **Gender guessing** from first names using US Social Security Administration birth data (140+ years of statistics)
-- Smart no-break spacing for nicer UI rendering (NBSP/NNBSP, optional HTML entities output)
+- Optional smart no-break spacing for UI rendering (NBSP/NNBSP, optional HTML entities output)
 - Render lists/couples from arrays of names
 - Extract specific parts (first name, last name, nickname)
 - **Reversed name support** (e.g., "Smith, John, Jr.")
@@ -161,8 +161,11 @@ Each entity type has specific fields. All types include a `meta` property with p
 | `raw`        | `string`       | Exact input string                       |
 | `normalized` | `string`       | Normalized string used for parsing       |
 | `confidence` | `0` \| `0.25` \| `0.5` \| `0.75` \| `1` | Overall confidence in classification |
+| `confidenceDetail` | `{ kind: number; parse: number; format: number }?` | More precise confidence dimensions |
 | `reasons`    | `ReasonCode[]` | Reason codes explaining the classification |
 | `warnings`   | `string[]?`    | Human-readable warnings                  |
+| `warningCodes` | `WarningCode[]?` | Stable machine-readable warning codes |
+| `warningDetails` | `ParseWarning[]?` | Structured warning details for review UIs |
 | `locale`     | `string?`      | Locale hint (default: "en")              |
 
 ---
@@ -184,6 +187,7 @@ Parse and classify a name string into a typed entity.
 | `input`            | `string` | The name string to parse                     |
 | `options.locale`   | `string` | Locale hint (default: `'en'`)                |
 | `options.strictKind` | `'person'` | If set, reject non-person entities        |
+| `options.givenNameEvidence` | `GivenNameEvidenceProvider` | Optional first-name evidence hook |
 
 **Returns:** `ParsedNameEntity` - One of `PersonName`, `OrganizationName`, `FamilyName`, `CompoundName`, `UnknownName`, or `RejectedName`
 
@@ -196,6 +200,9 @@ const person = parseName("Mr. John Robert Smith Jr.");
 const org = parseName("Smith Family Trust");
 // { kind: 'organization', baseName: 'Smith Family Trust', legalForm: 'Trust', meta: {...} }
 
+const institution = parseName("Bell Telephone Laboratories");
+// { kind: 'organization', baseName: 'Bell Telephone Laboratories', organizationTermRaw: 'Laboratories', meta: {...} }
+
 // Compound name (couple)
 const couple = parseName("John and Mary Smith");
 // { kind: 'compound', connector: 'and', members: [...], sharedFamily: 'Smith', meta: {...} }
@@ -204,6 +211,36 @@ const couple = parseName("John and Mary Smith");
 const reversed = parseName("Smith, John, Jr.");
 // { kind: 'person', given: 'John', family: 'Smith', suffix: 'Jr.', reversed: true, meta: {...} }
 ```
+
+##### Optional Given-Name Evidence
+
+For ambiguous global names, raw text cannot always distinguish an additional given name from the first part of a compound family name. `parseName()` can accept an optional evidence provider:
+
+```ts
+type GivenNameEvidenceProvider = (
+  token: string,
+  context: { raw: string; tokens: string[]; index: number }
+) => { found: boolean; score?: number; source?: string } | undefined;
+```
+
+`undefined` means the provider has no opinion. `{ found: false }` means it checked and did not find the token. This is evidence, not truth: absence from a US first-name database is only a weak review signal for global names.
+
+The parser calls this provider only for tokens whose role is actually ambiguous, such as `Garcia` in `Gabriel Garcia Lopez`. It does not ask for evidence about the given name or the final token that is already being treated as the family-name anchor.
+
+The existing gender databases can be used as tree-shakeable first-name evidence:
+
+```ts
+import { createGenderDB, createGivenNameEvidenceProvider } from "name-tools/gender/coverage95";
+
+const db = createGenderDB();
+const evidence = createGivenNameEvidenceProvider(db);
+
+const parsed = parseName("Gabriel Garcia Lopez", {
+  givenNameEvidence: evidence,
+});
+```
+
+When evidence is used, inspect `meta.warningCodes`, `meta.confidenceDetail`, `alternatives`, and `givenNameEvidence` before deciding whether human review or an override is needed.
 
 ---
 
@@ -419,8 +456,8 @@ Format a name (or array of names) according to a preset or custom options.
 | --------------- | ----------------------------------------- | --------------- | ---------------------------------------- |
 | `preset`        | `NamePreset`                              | `'display'`     | Preset format (see Preset Matrix below)  |
 | `output`        | `'text' \| 'html'`                        | `'text'`        | Output format                            |
-| `typography`    | `'plain' \| 'ui' \| 'fine'`               | `'ui'`          | Typography level for spacing/punctuation |
-| `noBreak`       | `'none' \| 'smart' \| 'all'`              | `'smart'`       | Non-breaking space behavior              |
+| `typography`    | `'plain' \| 'ui' \| 'fine'`               | `'plain'`       | Typography level for spacing/punctuation |
+| `noBreak`       | `'none' \| 'smart' \| 'all'`              | `'none'`        | Non-breaking space behavior              |
 | `join`          | `'none' \| 'list' \| 'couple'`            | `'none'`        | Array rendering mode                     |
 | `conjunction`   | `'and' \| '&' \| string`                  | `'and'`         | Word between last two names              |
 | `oxfordComma`   | `boolean`                                 | `true`          | Use Oxford comma in lists                |
@@ -429,6 +466,7 @@ Format a name (or array of names) according to a preset or custom options.
 | `prefix`        | `'include' \| 'omit' \| 'auto'`           | varies          | Honorific handling                       |
 | `suffix`        | `'include' \| 'omit' \| 'auto'`           | varies          | Suffix handling                          |
 | `order`         | `'given-family' \| 'family-given' \| 'auto'` | `'given-family'` | Name order                            |
+| `particleFiling` | `'include' \| 'ignoreLeading'`          | `'include'`     | Particle filing policy for index/sort forms |
 
 ```javascript
 formatName("Dr. John Franklin Jr.");
@@ -452,6 +490,7 @@ const input = "Dr. William Frederick Richardson Jr.";
 | preset              | intent                   | defaults (high level)                                     | output example                                                                                                         |
 | ------------------- | ------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `display` (default) | best UI display name     | prefix omit, middle none, suffix auto, given-family       | `formatName(input)` → `William Richardson, Jr.`                                                                        |
+| `indexName`         | generated index heading   | family-given, full ambiguous tokens, suffix auto          | `formatName("Vincent van Gogh", { preset: "indexName" })` → `van Gogh, Vincent`                                        |
 | `preferredDisplay`  | nickname + family for UI | prefer nickname, middle none, suffix auto                 | `formatName(input, { preset: "preferredDisplay" })` → `William Richardson, Jr.` _(falls back to first if no nickname)_ |
 | `informal`          | given + family           | prefix omit, middle none, suffix omit                     | `formatName(input, { preset: "informal" })` → `William Richardson`                                                     |
 | `firstOnly`         | given only               | prefix omit, middle none, suffix omit                     | `formatName(input, { preset: "firstOnly" })` → `William`                                                               |
@@ -463,7 +502,22 @@ const input = "Dr. William Frederick Richardson Jr.";
 | `library`           | alphabetical with full given | family-given, middle initial, suffix auto, append fullGiven | `formatName('Thomas A. (Thomas Alva) Edison', { preset: "library" })` → `Edison, Thomas A. (Thomas Alva)`      |
 | `initialed`         | initials + family        | middle initial, suffix omit                               | `formatName(input, { preset: "initialed" })` → `W. F. Richardson`                                                      |
 
-See `NameFormatOptions` for presets, typography, no-break behavior, and array rendering.
+By default, output strings use normal spaces. To request non-breaking spaces for UI display, pass explicit typography options such as `{ typography: "ui", noBreak: "smart" }`.
+
+`particleFiling` controls only generated index/sort forms. Particles are always preserved in display and formal names.
+
+```javascript
+formatName("Vincent van Gogh", { preset: "indexName" });
+// "van Gogh, Vincent"
+
+formatName("Vincent van Gogh", {
+  preset: "indexName",
+  particleFiling: "ignoreLeading",
+});
+// "Gogh, Vincent van"
+```
+
+The `library` preset remains a compatibility preset for alphabetical output with full-given annotations. For deliberate catalog-style filing, use `indexName` with `particleFiling: "ignoreLeading"`.
 
 ### Data Sets & Utilities
 
@@ -473,8 +527,10 @@ See `NameFormatOptions` for presets, typography, no-break behavior, and array re
 | ----------------------- | ------------------- | ------------------------------------------------ |
 | `PARTICLES`             | `readonly string[]` | Surname particles: "von", "van", "de", "la", etc. |
 | `MULTI_WORD_PARTICLES`  | `readonly string[]` | Multi-word particles: "de la", "van der", etc.   |
-| `COMMON_SURNAMES`       | `readonly string[]` | ~1000 most common US surnames                    |
-| `COMMON_FIRST_NAMES`    | `readonly string[]` | ~1000 most common US first names                 |
+| `COMMON_SURNAMES`       | `readonly string[]` | Compatibility utility list of common surnames    |
+| `COMMON_FIRST_NAMES`    | `readonly string[]` | Compatibility utility list of common first names |
+
+The safer parser metadata path does not rely on bundled surname databases to resolve ambiguous global names. Prefer `givenNameEvidence` plus `meta.warningCodes`, `meta.confidenceDetail`, and `alternatives` for review workflows.
 
 #### Utility Functions
 

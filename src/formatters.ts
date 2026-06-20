@@ -1,4 +1,4 @@
-import { parsePersonName, parseName } from './parsers';
+import { entityToLegacy, parsePersonName, parseName } from './parsers';
 import type {
   NameFormatOptions,
   NamePreset,
@@ -38,6 +38,7 @@ type ResolvedOptions = Required<
     | 'capitalization'
     | 'punctuation'
     | 'apostrophes'
+    | 'particleFiling'
   >
 >;
 
@@ -55,18 +56,19 @@ type RenderedPersonParts = {
   fullText: string;
 };
 
-const DEFAULTS: Required<Pick<NameFormatOptions, 'preset' | 'output' | 'typography' | 'noBreak' | 'join' | 'conjunction' | 'oxfordComma' | 'shareLastName' | 'sharePrefix' | 'shareSuffix'>> =
+const DEFAULTS: Required<Pick<NameFormatOptions, 'preset' | 'output' | 'typography' | 'noBreak' | 'join' | 'conjunction' | 'oxfordComma' | 'shareLastName' | 'sharePrefix' | 'shareSuffix' | 'particleFiling'>> =
   {
     preset: 'display',
     output: 'text',
-    typography: 'ui',
-    noBreak: 'smart',
+    typography: 'plain',
+    noBreak: 'none',
     join: 'none',
     conjunction: 'and',
     oxfordComma: true,
     shareLastName: 'whenSame',
     sharePrefix: 'auto',
     shareSuffix: 'auto',
+    particleFiling: 'include',
   };
 
 const PRESET_DEFAULTS: Record<
@@ -74,6 +76,7 @@ const PRESET_DEFAULTS: Record<
   Required<Pick<NameFormatOptions, 'prefix' | 'prefer' | 'middle' | 'suffix' | 'order'>>
 > = {
   display: { prefix: 'omit', prefer: 'auto', middle: 'none', suffix: 'auto', order: 'given-family' },
+  indexName: { prefix: 'omit', prefer: 'first', middle: 'full', suffix: 'auto', order: 'family-given' },
   preferredDisplay: { prefix: 'omit', prefer: 'nickname', middle: 'none', suffix: 'auto', order: 'given-family' },
   informal: { prefix: 'omit', prefer: 'first', middle: 'none', suffix: 'omit', order: 'given-family' },
   firstOnly: { prefix: 'omit', prefer: 'first', middle: 'none', suffix: 'omit', order: 'given-family' },
@@ -160,6 +163,7 @@ function resolveOptions(options?: NameFormatOptions): ResolvedOptions {
     capitalization: options?.capitalization ?? 'canonical',
     punctuation: options?.punctuation ?? 'canonical',
     apostrophes: options?.apostrophes ?? 'canonical',
+    particleFiling: options?.particleFiling ?? DEFAULTS.particleFiling,
   };
 }
 
@@ -349,7 +353,11 @@ function renderMiddle(parsed: ParsedName, middleMode: ResolvedOptions['middle'],
   const middle = normalizeTrim(parsed.middle);
   if (!middle) return undefined;
 
-  if (middleMode === 'none') return undefined;
+  if (parsed.ambiguousMiddleOrFamily) return middle;
+
+  if (middleMode === 'none') {
+    return undefined;
+  }
   if (middleMode === 'full') return middle;
 
   // initial
@@ -422,10 +430,10 @@ function renderSingle(parsed: ParsedName, o: ResolvedOptions): RenderedPersonPar
   const safeParsed = o.output === 'html' ? sanitizeParsedName(parsed) : parsed;
 
   const prefixText = resolvePrefix(safeParsed, o.prefix, o);
-  const lastText = resolveLast(safeParsed);
+  let lastText = resolveLast(safeParsed);
   const suffixText = resolveSuffix(safeParsed, o.suffix, o);
 
-  const { givenLikeText } = renderGivenPlusMiddle(safeParsed, o, t);
+  let { givenLikeText } = renderGivenPlusMiddle(safeParsed, o, t);
 
   // Preset formalShort: prefix + last (omit given/middle)
   if (o.preset === 'formalShort') {
@@ -464,6 +472,13 @@ function renderSingle(parsed: ParsedName, o: ResolvedOptions): RenderedPersonPar
 
   // Build based on order
   if (o.order === 'family-given') {
+    if (o.particleFiling === 'ignoreLeading' && safeParsed.familyParticle && safeParsed.familyParts && safeParsed.familyParts.length > 0) {
+      lastText = safeParsed.familyParts.join(' ');
+      givenLikeText = givenLikeText
+        ? `${givenLikeText}${boundarySpace('space', o, t)}${safeParsed.familyParticle}`
+        : safeParsed.familyParticle;
+    }
+
     // "Last, Given Middle, Suffix" (suffix optional)
     const pieces: string[] = [];
     if (lastText) pieces.push(lastText);
@@ -645,15 +660,7 @@ function isParsedNameEntity(input: unknown): input is ParsedNameEntity {
  * Convert a PersonNameEntity to legacy ParsedName format
  */
 function personEntityToLegacy(entity: PersonNameEntity): ParsedName {
-  const result: ParsedName = {};
-  if (entity.honorific) result.prefix = entity.honorific;
-  if (entity.given) result.first = entity.given;
-  if (entity.fullGiven) result.fullGiven = entity.fullGiven;
-  if (entity.middle) result.middle = entity.middle;
-  if (entity.family) result.last = entity.family;
-  if (entity.suffix) result.suffix = entity.suffix;
-  if (entity.nickname) result.nickname = entity.nickname;
-  return result;
+  return entityToLegacy(entity) || {};
 }
 
 /**

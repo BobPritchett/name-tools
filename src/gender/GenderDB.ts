@@ -1,3 +1,5 @@
+import type { GivenNameEvidenceProvider } from '../types';
+
 /**
  * GenderDB - Efficient gender probability lookup using a binary trie structure.
  *
@@ -198,4 +200,39 @@ export class GenderDB {
   has(name: string): boolean {
     return this.lookup(name).found;
   }
+}
+
+function stripDiacritics(value: string): string {
+  return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/**
+ * Adapt a GenderDB into a parser first-name evidence provider.
+ *
+ * The provider reports whether a token appears in the selected US SSA first-name
+ * dataset. This is useful evidence for parsing, but it is not validation and it
+ * is not global name truth.
+ */
+export function createGivenNameEvidenceProvider(
+  db: Pick<GenderDB, 'lookup'>
+): GivenNameEvidenceProvider {
+  return (token) => {
+    const trimmed = token.trim();
+    if (!trimmed) return undefined;
+
+    const direct = db.lookup(trimmed);
+    if (direct.found) {
+      return { found: true, score: 1, source: 'gender-db' };
+    }
+
+    const ascii = stripDiacritics(trimmed);
+    if (ascii && ascii !== trimmed) {
+      const normalized = db.lookup(ascii);
+      if (normalized.found) {
+        return { found: true, score: 1, source: 'gender-db:diacritics-stripped' };
+      }
+    }
+
+    return { found: false, score: 0, source: 'gender-db' };
+  };
 }

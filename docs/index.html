@@ -52,6 +52,7 @@ Johann van der Berg
 Charles de Gaulle
 Muñoz, Carlos
 García Márquez, Gabriel
+Gabriel Garcia Lopez
 Gabriel García Márquez</textarea>
                 </div>
 
@@ -60,6 +61,19 @@ Gabriel García Márquez</textarea>
                     Try: <code>Acme Corp, Inc.</code> | <code>Bob & Mary Smith</code> | <code>The Smith Family</code> |
                     <code>Smith, John, Jr.</code>
                 </p>
+
+                <div class="format-options evidence-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="optGivenEvidence" />
+                        <span>Use US first-name evidence</span>
+                    </label>
+                    <div class="evidence-help">
+                        Uses the US SSA first-name data already loaded for gender guessing as weak evidence for ambiguous middle-vs-family tokens.
+                        It checks only the uncertain interior token, such as <code>Garcia</code> in <code>Gabriel Garcia Lopez</code>, not the given name or the final token we already treat as family.
+                        If that interior token is not found as a first name, the selected parse may move it into a compound family name.
+                        This is not locale-aware truth; warnings remain so consumers can review or override.
+                    </div>
+                </div>
 
                 <div class="format-options" id="formatOptions" style="display: none;">
                     <label>

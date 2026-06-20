@@ -243,8 +243,11 @@ export function parseNameList(
           addressRaw: emailResult.addressRaw,
           meta: {
             confidence: entity.meta.confidence,
+            confidenceDetail: entity.meta.confidenceDetail,
             reasons: [...reasons, ...entity.meta.reasons],
             warnings: entity.meta.warnings,
+            warningCodes: entity.meta.warningCodes,
+            warningDetails: entity.meta.warningDetails,
           },
         });
       } else {
@@ -267,8 +270,11 @@ export function parseNameList(
         display: entity,
         meta: {
           confidence: entity.meta.confidence,
+          confidenceDetail: entity.meta.confidenceDetail,
           reasons: entity.meta.reasons,
           warnings: entity.meta.warnings,
+          warningCodes: entity.meta.warningCodes,
+          warningDetails: entity.meta.warningDetails,
         },
       });
     }

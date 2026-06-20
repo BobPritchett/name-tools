@@ -5,70 +5,70 @@ const NBSP = '\u00A0';
 const NNBSP = '\u202F';
 
 describe('formatName (single)', () => {
-  it('renders display (default) with smart glue and suffix:auto (identity-like)', () => {
+  it('renders display (default) with plain spaces and suffix:auto (identity-like)', () => {
     expect(formatName('Dr. Bob William Pritchett Jr.')).toBe(
-      `Bob${NBSP}Pritchett,${NBSP}Jr.`
+      'Bob Pritchett, Jr.'
     );
   });
 
   it('renders display style preserving middle initials when first name is an initial', () => {
-    expect(formatName('W. A. Jones')).toBe(`W. A.${NBSP}Jones`);
-    expect(formatName('J. R. R. Tolkien')).toBe(`J. R.${NNBSP}R.${NBSP}Tolkien`);
-    expect(formatName('T. S. Eliot')).toBe(`T. S.${NBSP}Eliot`);
+    expect(formatName('W. A. Jones')).toBe('W. A. Jones');
+    expect(formatName('J. R. R. Tolkien')).toBe('J. R. R. Tolkien');
+    expect(formatName('T. S. Eliot')).toBe('T. S. Eliot');
   });
 
   it('renders display style dropping middle initial when first name is full', () => {
-    expect(formatName('Michael R. Jones')).toBe(`Michael${NBSP}Jones`);
+    expect(formatName('Michael R. Jones')).toBe('Michael Jones');
   });
 
   it('renders suffix:auto canonically even if input omits punctuation/case', () => {
     expect(formatName('Bob Pritchett jr')).toBe(
-      `Bob${NBSP}Pritchett,${NBSP}Jr.`
+      'Bob Pritchett, Jr.'
     );
   });
 
   it('renders suffix:auto including unknown post-nominals after trailing comma', () => {
     expect(formatName('John Smith, PMP')).toBe(
-      `John${NBSP}Smith,${NBSP}PMP`
+      'John Smith, PMP'
     );
   });
 
   it('renders suffix:auto including recognized credentials (e.g., Esq.)', () => {
     expect(formatName('John Smith Jr., Esq.')).toBe(
-      `John${NBSP}Smith,${NBSP}Jr.,${NBSP}Esq.`
+      'John Smith, Jr., Esq.'
     );
   });
 
   it('canonicalizes common US degree suffixes (PhD, MSW)', () => {
     expect(formatName('John Smith, phd')).toBe(
-      `John${NBSP}Smith,${NBSP}Ph.D.`
+      'John Smith, Ph.D.'
     );
     expect(formatName('John Smith, msw')).toBe(
-      `John${NBSP}Smith,${NBSP}M.S.W.`
+      'John Smith, M.S.W.'
     );
   });
 
   it('renders informal (given + last, no suffix)', () => {
     expect(formatName('Dr. Bob William Pritchett Jr.', { preset: 'informal' })).toBe(
-      `Bob${NBSP}Pritchett`
+      'Bob Pritchett'
     );
   });
 
-  it('renders formalFull (prefix + given + middle + last + suffix) with smart glue', () => {
+  it('renders formalFull (prefix + given + middle + last + suffix) with plain spaces', () => {
     expect(formatName('Dr. Bob William Pritchett Jr.', { preset: 'formalFull' })).toBe(
-      `Dr.${NBSP}Bob William${NBSP}Pritchett,${NBSP}Jr.`
+      'Dr. Bob William Pritchett, Jr.'
     );
   });
 
-  it('renders formalShort (prefix + last) with smart glue', () => {
+  it('renders formalShort (prefix + last) with plain spaces', () => {
     expect(formatName('Dr. Bob William Pritchett Jr.', { preset: 'formalShort' })).toBe(
-      `Dr.${NBSP}Pritchett`
+      'Dr. Pritchett'
     );
   });
 
   it('renders alphabetical (family, given + middle initial, suffix:auto)', () => {
     expect(formatName('Dr. Bob William Pritchett Jr.', { preset: 'alphabetical' })).toBe(
-      `Pritchett,${NBSP}Bob W.,${NBSP}Jr.`
+      'Pritchett, Bob W., Jr.'
     );
   });
 
@@ -79,87 +79,107 @@ describe('formatName (single)', () => {
 
   it('renders library format with fullGiven in parens', () => {
     expect(formatName('Thomas A. (Thomas Alva) Edison', { preset: 'library' })).toBe(
-      `Edison,${NBSP}Thomas A. (Thomas Alva)`
+      'Edison, Thomas A. (Thomas Alva)'
     );
   });
 
   it('renders expandedFull using fullGiven instead of first name and no middle name', () => {
     expect(formatName('Mr. Thomas A. (Thomas Alva) Edison', { preset: 'expandedFull' })).toBe(
-      `Mr.${NBSP}Thomas Alva${NBSP}Edison`
+      'Mr. Thomas Alva Edison'
     );
   });
 
-  it('renders initialed (initials + family) using NNBSP between initials and NBSP before last', () => {
+  it('renders initialed (initials + family) with plain spaces by default', () => {
     expect(formatName('Bob William Pritchett', { preset: 'initialed' })).toBe(
-      `B.${NNBSP}W.${NBSP}Pritchett`
+      'B. W. Pritchett'
     );
   });
 
   it('renders preferredDisplay (nickname + family) when nickname exists', () => {
     expect(formatName('William "Bill" Henry Gates III', { preset: 'preferredDisplay' })).toBe(
-      `Bill${NBSP}Gates,${NBSP}III`
+      'Bill Gates, III'
     );
   });
 
-  it('supports output:"html" by emitting HTML entities for NBSP/NNBSP', () => {
-    expect(formatName('Bob William Pritchett', { preset: 'initialed', output: 'html' })).toBe(
+  it('supports explicit UI typography by emitting HTML entities for NBSP/NNBSP', () => {
+    expect(formatName('Bob William Pritchett', { preset: 'initialed', output: 'html', typography: 'ui', noBreak: 'smart' })).toBe(
       `B.&#8239;W.&nbsp;Pritchett`
+    );
+  });
+
+  it('supports explicit UI typography in text output', () => {
+    expect(formatName('Bob William Pritchett', { preset: 'initialed', typography: 'ui', noBreak: 'smart' })).toBe(
+      `B.${NNBSP}W.${NBSP}Pritchett`
     );
   });
 
   it('can canonicalize prefix casing/punctuation (short form)', () => {
     expect(formatName('rev john smith', { preset: 'formalFull' })).toBe(
-      `Rev.${NBSP}john${NBSP}smith`
+      'Rev. john smith'
     );
   });
 
   it('can render canonical long prefix form', () => {
     expect(formatName('rev john smith', { preset: 'formalFull', prefixForm: 'long' })).toBe(
-      `Reverend${NBSP}john${NBSP}smith`
+      'Reverend john smith'
     );
   });
 
   it('can strip periods from canonical forms', () => {
     expect(formatName('rev john smith', { preset: 'formalFull', punctuation: 'strip' })).toBe(
-      `Rev${NBSP}john${NBSP}smith`
+      'Rev john smith'
     );
   });
 
   it('can canonicalize apostrophes in known prefixes', () => {
     expect(formatName("her majesty's counsel john smith", { preset: 'formalFull', prefix: 'include' })).toBe(
-      `Her Majesty’s Counsel${NBSP}john${NBSP}smith`
+      'Her Majesty’s Counsel john smith'
     );
   });
 
   it('matches diacritics-insensitively for EU honorifics', () => {
     expect(formatName('senor juan perez', { preset: 'formalFull', prefix: 'include' })).toBe(
-      `Sr.${NBSP}juan${NBSP}perez`
+      'Sr. juan perez'
     );
+  });
+
+  it('renders indexName with particle filing included by default', () => {
+    expect(formatName('Vincent van Gogh', { preset: 'indexName' })).toBe('van Gogh, Vincent');
+    expect(formatName('Johann van der Berg', { preset: 'indexName' })).toBe('van der Berg, Johann');
+    expect(formatName('Charles de Gaulle', { preset: 'indexName' })).toBe('de Gaulle, Charles');
+    expect(formatName('Ludwig von Beethoven', { preset: 'indexName' })).toBe('von Beethoven, Ludwig');
+  });
+
+  it('renders indexName with leading particles ignored when requested', () => {
+    expect(formatName('Vincent van Gogh', { preset: 'indexName', particleFiling: 'ignoreLeading' })).toBe('Gogh, Vincent van');
+    expect(formatName('Johann van der Berg', { preset: 'indexName', particleFiling: 'ignoreLeading' })).toBe('Berg, Johann van der');
+    expect(formatName('Charles de Gaulle', { preset: 'indexName', particleFiling: 'ignoreLeading' })).toBe('Gaulle, Charles de');
+    expect(formatName('Ludwig von Beethoven', { preset: 'indexName', particleFiling: 'ignoreLeading' })).toBe('Beethoven, Ludwig von');
   });
 });
 
 describe('formatName (arrays)', () => {
   it('renders lists (2)', () => {
     expect(formatName(['John Smith', 'Mary Jones'], { join: 'list' })).toBe(
-      `John${NBSP}Smith and Mary${NBSP}Jones`
+      'John Smith and Mary Jones'
     );
   });
 
   it('renders lists (3) with Oxford comma', () => {
     expect(
       formatName(['John Smith', 'Mary Jones', 'Pat Lee'], { join: 'list', oxfordComma: true })
-    ).toBe(`John${NBSP}Smith, Mary${NBSP}Jones, and Pat${NBSP}Lee`);
+    ).toBe('John Smith, Mary Jones, and Pat Lee');
   });
 
   it('renders couples (shared last name, display) as "given1 and given2 last" with smart glue to last', () => {
     expect(formatName(['John Smith', 'Mary Smith'], { join: 'couple' })).toBe(
-      `John and Mary${NBSP}Smith`
+      'John and Mary Smith'
     );
   });
 
   it('renders couples (different last names) as two full names', () => {
     expect(formatName(['John Smith', 'Mary Jones'], { join: 'couple' })).toBe(
-      `John${NBSP}Smith and Mary${NBSP}Jones`
+      'John Smith and Mary Jones'
     );
   });
 
@@ -172,7 +192,7 @@ describe('formatName (arrays)', () => {
         ],
         { join: 'couple', preset: 'formalFull' }
       )
-    ).toBe(`Mr. and Mrs.${NBSP}John and Mary${NBSP}Smith`);
+    ).toBe('Mr. and Mrs. John and Mary Smith');
   });
 
   it('throws on array input when join:"none"', () => {

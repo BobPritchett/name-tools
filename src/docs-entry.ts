@@ -7,5 +7,5 @@
 export * from './index';
 
 // Re-export gender module (using coverage95 for smaller bundle size)
-export { createGenderDB, GenderDB } from './gender/coverage95';
+export { createGenderDB, createGivenNameEvidenceProvider, GenderDB } from './gender/coverage95';
 export type { GenderResult, GenderNotFound, GenderLookupResult } from './gender/coverage95';

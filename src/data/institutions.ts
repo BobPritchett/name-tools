@@ -11,6 +11,11 @@ export interface InstitutionPhrase {
   strong: boolean;
 }
 
+export interface TerminalOrganizationNounMatch {
+  raw: string;
+  kind: string;
+}
+
 /**
  * Institution phrase patterns
  * These are checked against the full normalized string
@@ -57,6 +62,43 @@ export const INSTITUTION_PHRASES: readonly InstitutionPhrase[] = [
  */
 export const ORG_WEAK_KEYWORDS_RE = /\b(bank|trust|holdings|partners|group|company|co\.|associates|enterprises|services|solutions|consulting)\b/i;
 
+export const TERMINAL_ORGANIZATION_NOUNS = [
+  'Company',
+  'Co.',
+  'Laboratory',
+  'Laboratories',
+  'Institution',
+  'Institute',
+  'University',
+  'College',
+  'School',
+  'Museum',
+  'Library',
+  'Archive',
+  'Archives',
+  'Foundation',
+  'Association',
+  'Society',
+  'Department',
+  'Agency',
+  'Commission',
+  'Church',
+  'Hospital',
+  'Bank',
+  'Railroad',
+  'Railway',
+  'Press',
+  'Studio',
+  'Gallery',
+] as const;
+
+const TERMINAL_ORG_NOUN_RE = new RegExp(
+  `\\b(${TERMINAL_ORGANIZATION_NOUNS
+    .map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|')})\\.?$`,
+  'i'
+);
+
 /**
  * d/b/a (doing business as) pattern
  */
@@ -84,6 +126,19 @@ export function matchInstitutionPhrase(text: string): InstitutionPhrase | null {
  */
 export function hasWeakOrgKeyword(text: string): boolean {
   return ORG_WEAK_KEYWORDS_RE.test(text);
+}
+
+/**
+ * Match organization-like terminal nouns such as "Company", "Laboratories",
+ * or "Institution".
+ */
+export function matchTerminalOrganizationNoun(text: string): TerminalOrganizationNounMatch | null {
+  const match = text.trim().match(TERMINAL_ORG_NOUN_RE);
+  if (!match) return null;
+
+  const raw = match[0].trim();
+  const kind = raw.toLowerCase().replace(/\.$/, '');
+  return { raw, kind };
 }
 
 /**

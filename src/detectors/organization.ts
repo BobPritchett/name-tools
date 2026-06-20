@@ -6,6 +6,7 @@ import type { OrganizationName, ReasonCode, Confidence, ParseMeta } from '../typ
 import { hasLegalSuffix, extractLegalSuffix, COMMA_LEGAL_RE, matchLegalForm } from '../data/legal-forms';
 import {
   matchInstitutionPhrase,
+  matchTerminalOrganizationNoun,
   hasWeakOrgKeyword,
   hasDbaPattern,
   hasCareOfPattern,
@@ -29,6 +30,8 @@ export function detectOrganization(normalized: string, raw: string): OrgDetectio
   let baseName = normalized;
   let legalSuffixRaw: string | undefined;
   let legalForm: OrganizationName['legalForm'];
+  let organizationTermRaw: string | undefined;
+  let organizationTermKind: string | undefined;
   let aka: string[] | undefined;
 
   // Check for legal suffix (strongest signal)
@@ -58,6 +61,14 @@ export function detectOrganization(normalized: string, raw: string): OrgDetectio
     if (!legalForm) {
       legalForm = institutionMatch.legalForm;
     }
+  }
+
+  const terminalNounMatch = matchTerminalOrganizationNoun(normalized);
+  if (terminalNounMatch) {
+    reasons.push('ORG_TERMINAL_NOUN');
+    confidence = Math.max(confidence, 0.75) as Confidence;
+    organizationTermRaw = terminalNounMatch.raw;
+    organizationTermKind = terminalNounMatch.kind;
   }
 
   // Check for d/b/a pattern
@@ -91,6 +102,7 @@ export function detectOrganization(normalized: string, raw: string): OrgDetectio
   const isOrg = reasons.some(r =>
     r === 'ORG_LEGAL_SUFFIX' ||
     r === 'ORG_INSTITUTION_PHRASE' ||
+    r === 'ORG_TERMINAL_NOUN' ||
     r === 'ORG_DBA'
   );
 
@@ -107,6 +119,8 @@ export function detectOrganization(normalized: string, raw: string): OrgDetectio
       baseName: baseName || normalized,
       legalForm,
       legalSuffixRaw,
+      organizationTermRaw,
+      organizationTermKind,
       aka,
     },
   };
@@ -134,6 +148,8 @@ export function buildOrganizationEntity(
     baseName: result.entity?.baseName || normalized,
     legalForm: result.entity?.legalForm,
     legalSuffixRaw: result.entity?.legalSuffixRaw,
+    organizationTermRaw: result.entity?.organizationTermRaw,
+    organizationTermKind: result.entity?.organizationTermKind,
     aka: result.entity?.aka,
     meta,
   };

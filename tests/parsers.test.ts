@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { parseName, parsePersonName, getFirstName, getLastName, getNickname, entityToLegacy } from '../src/parsers';
 import { isPerson, isOrganization, isFamily, isCompound, isUnknown, isRejected } from '../src/classifier';
+import { formatName } from '../src/formatters';
 import examples from '../src/data/examples.json';
 
 // =============================================================================
@@ -265,6 +266,91 @@ describe('parseName (entity classification)', () => {
         expect(result.reversed).toBe(true);
       }
     });
+
+    it('should handle Unicode comma-inverted names', () => {
+      const result = parseName('Muñoz, Carlos');
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('Carlos');
+        expect(result.family).toBe('Muñoz');
+        expect(result.reversed).toBe(true);
+      }
+    });
+
+    it('should preserve comma-inverted compound family phrases', () => {
+      const result = parseName('García Márquez, Gabriel');
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('Gabriel');
+        expect(result.family).toBe('García Márquez');
+        expect(formatName(result, { preset: 'indexName' })).toBe('García Márquez, Gabriel');
+      }
+    });
+
+    it('should keep alternatives and preserve ambiguous middle-or-family tokens without evidence', () => {
+      const result = parseName('Gabriel Garcia Lopez');
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('Gabriel');
+        expect(result.middle).toBe('Garcia');
+        expect(result.family).toBe('Lopez');
+        expect(result.alternatives?.map(a => a.interpretation)).toEqual([
+          'given-additional-family',
+          'given-compound-family',
+        ]);
+        expect(result.meta.warningCodes).toContain('AMBIGUOUS_MIDDLE_OR_FAMILY');
+        expect(formatName(result)).toBe('Gabriel Garcia Lopez');
+        expect(formatName(result, { preset: 'alphabetical' })).toBe('Lopez, Gabriel Garcia');
+      }
+    });
+
+    it('should use given-name evidence conservatively for ambiguous names', () => {
+      const checkedTokens: string[] = [];
+      const result = parseName('Gabriel Garcia Lopez', {
+        givenNameEvidence: (token) => {
+          checkedTokens.push(token);
+          if (token === 'Gabriel') return { found: true, score: 1, source: 'test' };
+          return { found: false, score: 0, source: 'test' };
+        },
+      });
+
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('Gabriel');
+        expect(result.middle).toBeUndefined();
+        expect(result.family).toBe('Garcia Lopez');
+        expect(result.meta.warningCodes).toContain('GIVEN_NAME_EVIDENCE_USED');
+        expect(result.meta.warningCodes).toContain('AMBIGUOUS_MIDDLE_OR_FAMILY');
+        expect(checkedTokens).toEqual(['Garcia']);
+        expect(result.givenNameEvidence).toHaveLength(1);
+        expect(result.givenNameEvidence?.some(e => e.token === 'Garcia' && e.found === false)).toBe(true);
+        expect(formatName(result)).toBe('Gabriel Garcia Lopez');
+        expect(formatName(result, { preset: 'indexName' })).toBe('Garcia Lopez, Gabriel');
+      }
+    });
+
+    it('should check only the ambiguous interior token before selecting an accented compound family', () => {
+      const checkedTokens: string[] = [];
+      const result = parseName('Gabriel García Márquez', {
+        givenNameEvidence: (token) => {
+          checkedTokens.push(token);
+          return { found: false, score: 0, source: 'test' };
+        },
+      });
+
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('Gabriel');
+        expect(result.middle).toBeUndefined();
+        expect(result.family).toBe('García Márquez');
+        expect(checkedTokens).toEqual(['García']);
+        expect(result.givenNameEvidence).toEqual([
+          { token: 'García', index: 1, found: false, score: 0, source: 'test' },
+        ]);
+        expect(result.meta.warningCodes).toContain('GIVEN_NAME_EVIDENCE_USED');
+        expect(formatName(result, { preset: 'indexName' })).toBe('García Márquez, Gabriel');
+      }
+    });
   });
 
   describe('organization detection', () => {
@@ -309,6 +395,25 @@ describe('parseName (entity classification)', () => {
     it('should detect universities', () => {
       const result = parseName('University of Arizona');
       expect(result.kind).toBe('organization');
+    });
+
+    it('should detect terminal organization nouns with high confidence', () => {
+      const examples = [
+        ['Eastman Kodak Company', 'Company'],
+        ['Bell Telephone Laboratories', 'Laboratories'],
+        ['Smithsonian Institution', 'Institution'],
+      ] as const;
+
+      for (const [input, term] of examples) {
+        const result = parseName(input);
+        expect(result.kind).toBe('organization');
+        if (result.kind === 'organization') {
+          expect(result.meta.confidence).toBe(0.75);
+          expect(result.meta.reasons).toContain('ORG_TERMINAL_NOUN');
+          expect(result.organizationTermRaw).toBe(term);
+          expect(formatName(result)).toBe(input);
+        }
+      }
     });
   });
 

@@ -193,6 +193,35 @@ describe('parseNameList', () => {
       const result = parseNameList('John Smith <john@example.com>');
       expect(result[0].meta.reasons).toContain('HAS_EMAIL_OR_HANDLE');
     });
+
+    it('should pass given-name evidence through to display entity metadata', () => {
+      const withoutEvidence = parseNameList('Carlos Garcia Lopez');
+      const withoutEntity = withoutEvidence[0].display;
+      expect(withoutEntity?.kind).toBe('person');
+      if (withoutEntity?.kind === 'person') {
+        expect(withoutEntity.middle).toBe('Garcia');
+        expect(withoutEntity.family).toBe('Lopez');
+        expect(withoutEntity.meta.warningCodes).toContain('AMBIGUOUS_MIDDLE_OR_FAMILY');
+      }
+
+      const checkedTokens: string[] = [];
+      const withEvidence = parseNameList('Carlos Garcia Lopez', {
+        givenNameEvidence: (token) => {
+          checkedTokens.push(token);
+          if (token === 'Carlos') return { found: true, score: 1, source: 'test' };
+          return { found: false, score: 0, source: 'test' };
+        },
+      });
+      const withEntity = withEvidence[0].display;
+      expect(withEntity?.kind).toBe('person');
+      if (withEntity?.kind === 'person') {
+        expect(withEntity.middle).toBeUndefined();
+        expect(withEntity.family).toBe('Garcia Lopez');
+        expect(withEntity.meta.warningCodes).toContain('GIVEN_NAME_EVIDENCE_USED');
+        expect(checkedTokens).toEqual(['Garcia']);
+        expect(withEntity.givenNameEvidence?.some(e => e.token === 'Garcia' && e.found === false)).toBe(true);
+      }
+    });
   });
 
   describe('edge cases', () => {

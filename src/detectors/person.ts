@@ -2,8 +2,20 @@
  * Person detection module with reversed name support
  */
 
-import type { PersonName, ReasonCode, Confidence, ParseMeta } from '../types';
-import { tokenize, isNameLikeToken, extractParenContent, stripParenAnnotation } from '../normalize';
+import type {
+  PersonName,
+  ReasonCode,
+  Confidence,
+  ParseMeta,
+  ParseOptions,
+  WarningCode,
+  ParseWarning,
+  ConfidenceDetail,
+  GivenNameEvidenceMatch,
+  PersonNameAlternative,
+  NameToken,
+} from '../types';
+import { tokenize, isNameLikeToken, extractParenContent } from '../normalize';
 import { isParticle, isMultiWordParticle } from '../data/particles';
 
 /**
@@ -72,14 +84,114 @@ function looksLikeForwardNameWithCommaSuffix(parts: string[]): boolean {
 export interface PersonDetectionResult {
   isPerson: boolean;
   confidence: Confidence;
+  confidenceDetail?: ConfidenceDetail;
   reasons: ReasonCode[];
+  warnings?: string[];
+  warningCodes?: WarningCode[];
+  warningDetails?: ParseWarning[];
   entity?: Omit<PersonName, 'meta'>;
+}
+
+function makeWarning(code: WarningCode, message: string, token?: string, index?: number): ParseWarning {
+  return { code, message, token, index };
+}
+
+function detailsFromWarnings(warnings: ParseWarning[]): {
+  warnings?: string[];
+  warningCodes?: WarningCode[];
+  warningDetails?: ParseWarning[];
+} {
+  if (warnings.length === 0) return {};
+  return {
+    warnings: warnings.map(w => w.message),
+    warningCodes: Array.from(new Set(warnings.map(w => w.code))),
+    warningDetails: warnings,
+  };
+}
+
+function collectGivenNameEvidence(
+  tokens: string[],
+  raw: string,
+  options: ParseOptions,
+  candidateIndices: number[]
+): GivenNameEvidenceMatch[] | undefined {
+  if (!options.givenNameEvidence) return undefined;
+
+  const matches: GivenNameEvidenceMatch[] = [];
+  candidateIndices.forEach((index) => {
+    const token = tokens[index];
+    if (!token) return;
+    const evidence = options.givenNameEvidence?.(token, { raw, tokens, index });
+    if (!evidence) return;
+    matches.push({ ...evidence, token, index });
+  });
+
+  return matches.length > 0 ? matches : undefined;
+}
+
+function evidenceAt(
+  evidence: GivenNameEvidenceMatch[] | undefined,
+  index: number
+): GivenNameEvidenceMatch | undefined {
+  return evidence?.find(e => e.index === index);
+}
+
+function buildPersonTokens(parts: {
+  honorific?: string;
+  given?: string;
+  additionalGiven?: string;
+  family?: string;
+  suffix?: string;
+  nickname?: string;
+  particles?: string[];
+}): NameToken[] {
+  const tokens: NameToken[] = [];
+  if (parts.honorific) tokens.push({ type: 'prefix', value: parts.honorific });
+  if (parts.given) tokens.push({ type: 'given', value: parts.given });
+  if (parts.additionalGiven) {
+    for (const value of parts.additionalGiven.split(/\s+/).filter(Boolean)) {
+      tokens.push({ type: 'middle', value });
+    }
+  }
+  if (parts.family) {
+    const particleSet = new Set((parts.particles ?? []).map(p => p.toLowerCase()));
+    for (const value of parts.family.split(/\s+/).filter(Boolean)) {
+      tokens.push({
+        type: particleSet.has(value.toLowerCase()) ? 'particle' : 'family',
+        value,
+      });
+    }
+  }
+  if (parts.suffix) tokens.push({ type: 'suffix', value: parts.suffix });
+  if (parts.nickname) tokens.push({ type: 'nickname', value: parts.nickname });
+  return tokens;
+}
+
+function familyPartsFrom(family: string | undefined): string[] | undefined {
+  const parts = family?.split(/\s+/).filter(Boolean);
+  return parts && parts.length > 0 ? parts : undefined;
+}
+
+function findParticleSurnameStart(tokens: string[]): number | null {
+  let start: number | null = null;
+
+  for (let i = tokens.length - 2; i >= 1; i--) {
+    if (isParticle(tokens[i])) {
+      start = i;
+      continue;
+    }
+    if (start !== null) {
+      break;
+    }
+  }
+
+  return start;
 }
 
 /**
  * Try to parse as reversed name format: "Family, Given [Middle] [, Suffix]"
  */
-function tryParseReversed(normalized: string): PersonDetectionResult | null {
+function tryParseReversed(normalized: string, options: ParseOptions = {}): PersonDetectionResult | null {
   let text = normalized;
   let nickname: string | undefined;
 
@@ -153,21 +265,38 @@ function tryParseReversed(normalized: string): PersonDetectionResult | null {
 
   // Higher confidence if suffix detected
   const confidence: Confidence = suffix ? 1 : 0.75;
+  const additionalGiven = middle;
+  const tokens = buildPersonTokens({
+    given,
+    additionalGiven,
+    family,
+    suffix,
+    nickname,
+    particles,
+  });
 
   return {
     isPerson: true,
     confidence,
+    confidenceDetail: {
+      kind: confidence,
+      parse: suffix ? 0.98 : 0.9,
+      format: 1,
+    },
     reasons,
     entity: {
       kind: 'person',
       given,
       fullGiven,
-      middle,
+      middle: additionalGiven,
+      additionalGiven,
       family,
+      familyParts: familyPartsFrom(family),
       suffix,
       nickname,
       particles: particles.length > 0 ? particles : undefined,
       reversed: true,
+      tokens,
     },
   };
 }
@@ -197,9 +326,12 @@ function extractParticles(familyTokens: string[]): string[] {
 /**
  * Parse standard (forward) name format
  */
-function parseStandardFormat(normalized: string): PersonDetectionResult {
+function parseStandardFormat(normalized: string, options: ParseOptions = {}): PersonDetectionResult {
   const reasons: ReasonCode[] = [];
   let confidence: Confidence = 0.5;
+  let parseConfidence = 0.55;
+  let formatConfidence = 1;
+  const parseWarnings: ParseWarning[] = [];
 
   let text = normalized;
   let honorific: string | undefined;
@@ -269,33 +401,139 @@ function parseStandardFormat(normalized: string): PersonDetectionResult {
 
   let given: string | undefined;
   let middle: string | undefined;
+  let additionalGiven: string | undefined;
   let family: string | undefined;
+  let alternatives: PersonNameAlternative[] | undefined;
+  let givenNameEvidence: GivenNameEvidenceMatch[] | undefined;
+  let evidenceUsed = false;
 
   if (tokens.length === 1) {
     // Single token - treat as given name (could also be family, but we default to given)
     given = tokens[0];
     reasons.push('AMBIGUOUS_SHORT_NAME');
+    parseConfidence = 0.45;
   } else {
-    // First token is given, last token is family, middle are middle names
     given = tokens[0];
-    family = tokens[tokens.length - 1];
-    if (tokens.length > 2) {
-      middle = tokens.slice(1, -1).join(' ');
+
+    const particleStart = findParticleSurnameStart(tokens);
+    if (particleStart !== null) {
+      family = tokens.slice(particleStart).join(' ');
+      if (particleStart > 1) {
+        additionalGiven = tokens.slice(1, particleStart).join(' ');
+        middle = additionalGiven;
+      }
+      parseConfidence = 0.9;
+    } else if (tokens.length === 3) {
+      const interior = tokens[1];
+      const finalToken = tokens[2];
+      givenNameEvidence = collectGivenNameEvidence(tokens, normalized, options, [1]);
+      const interiorEvidence = evidenceAt(givenNameEvidence, 1);
+
+      alternatives = [
+        {
+          interpretation: 'given-additional-family',
+          given,
+          additionalGiven: interior,
+          family: finalToken,
+          confidence: interiorEvidence?.found ? 0.8 : 0.55,
+        },
+        {
+          interpretation: 'given-compound-family',
+          given,
+          family: `${interior} ${finalToken}`,
+          confidence: interiorEvidence?.found === false ? 0.75 : 0.45,
+        },
+      ];
+
+      if (interiorEvidence?.found) {
+        additionalGiven = interior;
+        middle = interior;
+        family = finalToken;
+        evidenceUsed = true;
+        parseConfidence = 0.75;
+      } else if (interiorEvidence?.found === false) {
+        family = `${interior} ${finalToken}`;
+        evidenceUsed = true;
+        parseConfidence = 0.7;
+        parseWarnings.push(makeWarning(
+          'AMBIGUOUS_MIDDLE_OR_FAMILY',
+          `Interpreted "${interior}" as possible family-name text because first-name evidence did not find it.`,
+          interior,
+          1
+        ));
+        parseWarnings.push(makeWarning(
+          'AMBIGUOUS_DOUBLE_SURNAME',
+          `The family name may contain both "${interior}" and "${finalToken}".`,
+          interior,
+          1
+        ));
+        parseWarnings.push(makeWarning(
+          'LOSSY_DISPLAY_RISK',
+          'Compact display should preserve this token unless a consumer override confirms it is additional-given text.',
+          interior,
+          1
+        ));
+      } else {
+        additionalGiven = interior;
+        middle = interior;
+        family = finalToken;
+        parseConfidence = 0.55;
+        formatConfidence = 0.85;
+        parseWarnings.push(makeWarning(
+          'AMBIGUOUS_MIDDLE_OR_FAMILY',
+          `Could not determine whether "${interior}" is an additional given name or part of the family name.`,
+          interior,
+          1
+        ));
+        parseWarnings.push(makeWarning(
+          'AMBIGUOUS_DOUBLE_SURNAME',
+          `The name may be interpreted with "${interior} ${finalToken}" as a compound family name.`,
+          interior,
+          1
+        ));
+        parseWarnings.push(makeWarning(
+          'LOSSY_DISPLAY_RISK',
+          'Compact display should preserve this token unless a consumer override confirms it is additional-given text.',
+          interior,
+          1
+        ));
+      }
+    } else {
+      const interiorTokens = tokens.slice(1, -1);
+      const interiorIndices = interiorTokens.map((_, offset) => offset + 1);
+      givenNameEvidence = collectGivenNameEvidence(tokens, normalized, options, interiorIndices);
+      const interiorEvidence = interiorTokens.map((_, offset) => evidenceAt(givenNameEvidence, offset + 1));
+      const allInteriorCheckedNotFound =
+        interiorEvidence.length > 0 && interiorEvidence.every(e => e?.found === false);
+
+      if (allInteriorCheckedNotFound) {
+        family = tokens.slice(1).join(' ');
+        evidenceUsed = true;
+        parseConfidence = 0.65;
+      } else {
+        additionalGiven = interiorTokens.join(' ') || undefined;
+        middle = additionalGiven;
+        family = tokens[tokens.length - 1];
+        parseConfidence = tokens.length > 3 ? 0.5 : 0.55;
+        formatConfidence = 0.85;
+        parseWarnings.push(makeWarning(
+          'AMBIGUOUS_MIDDLE_OR_FAMILY',
+          'Could not determine whether one or more interior tokens are additional given names or family-name text.',
+          interiorTokens.join(' ') || undefined,
+          1
+        ));
+        parseWarnings.push(makeWarning(
+          'LOSSY_DISPLAY_RISK',
+          'Compact display should preserve ambiguous interior tokens unless a consumer override confirms they are additional-given text.',
+          interiorTokens.join(' ') || undefined,
+          1
+        ));
+      }
     }
     confidence = Math.max(confidence, 0.75) as Confidence;
   }
 
-  // Extract particles from middle name tokens (e.g. "Ludwig van Beethoven" has "van" in middle)
   const particles: string[] = [];
-  if (middle) {
-    const middleTokens = middle.split(/\s+/);
-    for (const t of middleTokens) {
-      if (isParticle(t)) {
-        particles.push(t);
-      }
-    }
-  }
-  // Also check family name for particles (e.g. reversed parse put them there)
   if (family) {
     const famParticles = extractParticles(family.split(/\s+/));
     for (const p of famParticles) {
@@ -305,21 +543,50 @@ function parseStandardFormat(normalized: string): PersonDetectionResult {
     }
   }
 
+  if (evidenceUsed) {
+    parseWarnings.push(makeWarning(
+      'GIVEN_NAME_EVIDENCE_USED',
+      'Optional first-name evidence influenced the selected parse.'
+    ));
+  }
+
+  const warningData = detailsFromWarnings(parseWarnings);
+  const tokensOut = buildPersonTokens({
+    honorific,
+    given,
+    additionalGiven,
+    family,
+    suffix,
+    nickname,
+    particles,
+  });
+
   return {
     isPerson: true,
     confidence,
+    confidenceDetail: {
+      kind: confidence,
+      parse: parseConfidence,
+      format: formatConfidence,
+    },
     reasons,
+    ...warningData,
     entity: {
       kind: 'person',
       honorific,
       given,
       fullGiven,
       middle,
+      additionalGiven,
       family,
+      familyParts: familyPartsFrom(family),
       suffix,
       nickname,
       particles: particles.length > 0 ? particles : undefined,
       reversed: false,
+      tokens: tokensOut,
+      alternatives,
+      givenNameEvidence,
     },
   };
 }
@@ -327,15 +594,15 @@ function parseStandardFormat(normalized: string): PersonDetectionResult {
 /**
  * Detect if input is a person name
  */
-export function detectPerson(normalized: string): PersonDetectionResult {
+export function detectPerson(normalized: string, options: ParseOptions = {}): PersonDetectionResult {
   // First try reversed format
-  const reversedResult = tryParseReversed(normalized);
+  const reversedResult = tryParseReversed(normalized, options);
   if (reversedResult) {
     return reversedResult;
   }
 
   // Fall back to standard format
-  return parseStandardFormat(normalized);
+  return parseStandardFormat(normalized, options);
 }
 
 /**
@@ -351,7 +618,11 @@ export function buildPersonEntity(
     raw,
     normalized,
     confidence: result.confidence,
+    confidenceDetail: result.confidenceDetail,
     reasons: result.reasons,
+    warnings: result.warnings,
+    warningCodes: result.warningCodes,
+    warningDetails: result.warningDetails,
     locale,
   };
 
@@ -361,11 +632,16 @@ export function buildPersonEntity(
     given: result.entity?.given,
     fullGiven: result.entity?.fullGiven,
     middle: result.entity?.middle,
+    additionalGiven: result.entity?.additionalGiven,
     family: result.entity?.family,
+    familyParts: result.entity?.familyParts,
     suffix: result.entity?.suffix,
     nickname: result.entity?.nickname,
     particles: result.entity?.particles,
     reversed: result.entity?.reversed,
+    tokens: result.entity?.tokens,
+    alternatives: result.entity?.alternatives,
+    givenNameEvidence: result.entity?.givenNameEvidence,
     meta,
   };
 }

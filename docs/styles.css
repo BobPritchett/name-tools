@@ -434,6 +434,47 @@ footer a:hover {
     color: #636c76;
 }
 
+.confidence-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 13px;
+    color: #636c76;
+}
+
+.confidence-inline span {
+    padding: 3px 8px;
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 4px;
+}
+
+.review-summary {
+    margin-bottom: 12px;
+    padding: 12px;
+    background: #fff8c5;
+    border: 1px solid #d4a72c;
+    border-radius: 6px;
+    color: #3f2f00;
+    font-size: 12px;
+}
+
+.review-summary > div + div {
+    margin-top: 8px;
+}
+
+.warning-list {
+    margin: 6px 0 0 18px;
+}
+
+.warning-list.compact {
+    margin-top: 6px;
+}
+
+.warning-list li {
+    margin-bottom: 4px;
+}
+
 .entity-details {
     background: #f6f8fa;
     border: 1px solid #d0d7de;
@@ -477,6 +518,76 @@ footer a:hover {
     text-align: center;
     color: #636c76;
     font-size: 11px;
+}
+
+.confidence-stack {
+    display: grid;
+    gap: 2px;
+    min-width: 72px;
+}
+
+.confidence-stack div {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.confidence-stack span {
+    color: #636c76;
+}
+
+.confidence-stack strong {
+    color: #1f2328;
+}
+
+.review-cell {
+    min-width: 220px;
+    max-width: 360px;
+    font-size: 11px;
+}
+
+.review-signals {
+    display: grid;
+    gap: 4px;
+}
+
+.review-muted {
+    color: #afb8c1;
+}
+
+.selection-chip {
+    color: #1f2328;
+    font-weight: 600;
+}
+
+.warning-badges,
+.evidence-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.warning-code,
+.evidence-chips code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+}
+
+.warning-code {
+    background: #fff8c5;
+    color: #7d4e00;
+}
+
+.evidence-found {
+    background: #dafbe1;
+    color: #1a7f37;
+}
+
+.evidence-missing {
+    background: #ffebe9;
+    color: #cf222e;
 }
 
 .format-cell {
@@ -691,6 +802,13 @@ footer a:hover {
     font-size: 13px;
 }
 
+.evidence-options {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
 .format-options label {
     display: flex;
     align-items: center;
@@ -712,6 +830,21 @@ footer a:hover {
 
 .checkbox-label {
     cursor: pointer;
+}
+
+.evidence-help {
+    color: #636c76;
+    font-size: 12px;
+    line-height: 1.45;
+    max-width: 980px;
+    margin-left: 24px;
+}
+
+.evidence-help code {
+    background: rgba(175,184,193,0.2);
+    padding: 0.1em 0.3em;
+    border-radius: 4px;
+    font-size: 85%;
 }
 
 .round-trip-section {

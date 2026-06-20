@@ -88,7 +88,7 @@ export function classifyName(
   }
 
   // 4. Person detection
-  const personResult = detectPerson(normalized);
+  const personResult = detectPerson(normalized, options);
   if (personResult.isPerson) {
     const entity = buildPersonEntity(personResult, raw, normalized, locale);
     return applyStrict(entity, options);

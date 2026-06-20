@@ -20,12 +20,26 @@ export type NameKind =
 export type Confidence = 0 | 0.25 | 0.5 | 0.75 | 1;
 
 /**
+ * More precise confidence dimensions. The legacy `meta.confidence` field remains
+ * the coarse compatibility score.
+ */
+export interface ConfidenceDetail {
+  /** Confidence that the entity kind is correct */
+  kind: number;
+  /** Confidence that name parts were assigned correctly */
+  parse: number;
+  /** Confidence that the requested/generated format is non-lossy */
+  format: number;
+}
+
+/**
  * Machine-readable reason codes explaining classification decisions
  */
 export type ReasonCode =
   | 'ORG_LEGAL_SUFFIX'
   | 'ORG_COMMA_LEGAL'
   | 'ORG_INSTITUTION_PHRASE'
+  | 'ORG_TERMINAL_NOUN'
   | 'ORG_DBA'
   | 'ORG_CARE_OF'
   | 'ORG_WEAK_KEYWORD'
@@ -50,6 +64,46 @@ export type ReasonCode =
   | 'HAS_ROLE_OR_TITLE';
 
 /**
+ * Stable warning codes for parse/format ambiguity.
+ */
+export type WarningCode =
+  | 'AMBIGUOUS_MIDDLE_OR_FAMILY'
+  | 'AMBIGUOUS_DOUBLE_SURNAME'
+  | 'GIVEN_NAME_EVIDENCE_USED'
+  | 'LOSSY_DISPLAY_RISK'
+  | 'UNICODE_COMMA_PARSE';
+
+/**
+ * Structured warning suitable for UI review flows.
+ */
+export interface ParseWarning {
+  code: WarningCode;
+  message: string;
+  token?: string;
+  index?: number;
+}
+
+/**
+ * Optional first-name evidence hook. `undefined` means no opinion; `{ found:
+ * false }` means the provider checked and did not find the token.
+ */
+export type GivenNameEvidenceProvider = (
+  token: string,
+  context: { raw: string; tokens: string[]; index: number }
+) => GivenNameEvidence | undefined;
+
+export interface GivenNameEvidence {
+  found: boolean;
+  score?: number;
+  source?: string;
+}
+
+export interface GivenNameEvidenceMatch extends GivenNameEvidence {
+  token: string;
+  index: number;
+}
+
+/**
  * Metadata about the parsing process
  */
 export interface ParseMeta {
@@ -59,10 +113,16 @@ export interface ParseMeta {
   normalized: string;
   /** Overall confidence in classification */
   confidence: Confidence;
+  /** Detailed confidence scores */
+  confidenceDetail?: ConfidenceDetail;
   /** Reason codes explaining the classification */
   reasons: ReasonCode[];
   /** Human-readable warnings */
   warnings?: string[];
+  /** Stable machine-readable warning codes */
+  warningCodes?: WarningCode[];
+  /** Structured warning details */
+  warningDetails?: ParseWarning[];
   /** Locale hint (default: "en") */
   locale?: string;
 }
@@ -126,6 +186,10 @@ export interface OrganizationName extends BaseEntity {
   qualifiers?: string[];
   /** Alternate names (d/b/a) */
   aka?: string[];
+  /** Terminal organization noun as written, e.g. "Laboratories" */
+  organizationTermRaw?: string;
+  /** Normalized terminal organization noun key, e.g. "laboratories" */
+  organizationTermKind?: string;
 }
 
 /**
@@ -179,8 +243,12 @@ export interface PersonName extends BaseEntity {
   fullGiven?: string;
   /** Middle name(s) */
   middle?: string;
+  /** Additional given name(s); `middle` remains as a compatibility alias */
+  additionalGiven?: string;
   /** Family/last name */
   family?: string;
+  /** Family name parts as tokens/segments */
+  familyParts?: string[];
   /** Suffix (Jr., PhD, etc.) */
   suffix?: string;
   /** Nickname */
@@ -189,6 +257,20 @@ export interface PersonName extends BaseEntity {
   particles?: string[];
   /** Whether name was in reversed format */
   reversed?: boolean;
+  /** Optional token stream for richer consumers */
+  tokens?: NameToken[];
+  /** Alternate interpretations for ambiguous names */
+  alternatives?: PersonNameAlternative[];
+  /** Evidence returned by the optional given-name provider */
+  givenNameEvidence?: GivenNameEvidenceMatch[];
+}
+
+export interface PersonNameAlternative {
+  interpretation: 'given-additional-family' | 'given-compound-family';
+  given?: string;
+  additionalGiven?: string;
+  family?: string;
+  confidence: number;
 }
 
 /**
@@ -230,6 +312,8 @@ export interface ParseOptions {
   locale?: string;
   /** If set, reject non-person entities */
   strictKind?: 'person';
+  /** Optional first-name evidence provider */
+  givenNameEvidence?: GivenNameEvidenceProvider;
 }
 
 /**
@@ -247,8 +331,11 @@ export interface ParsedRecipient {
   /** Metadata about parsing */
   meta: {
     confidence: Confidence;
+    confidenceDetail?: ConfidenceDetail;
     reasons: ReasonCode[];
     warnings?: string[];
+    warningCodes?: WarningCode[];
+    warningDetails?: ParseWarning[];
   };
 }
 
@@ -313,6 +400,7 @@ export interface ParsedName {
   first?: string;
   fullGiven?: string;
   middle?: string;
+  additionalGiven?: string;
   last?: string;
   suffix?: string;
   nickname?: string;
@@ -325,6 +413,7 @@ export interface ParsedName {
   familyParts?: string[]; // remaining family name parts excluding particle (recommended minimal)
   familyParticle?: string; // e.g., "van", "de", "de la", "al"
   familyParticleBehavior?: 'attach' | 'separate' | 'localeDefault';
+  ambiguousMiddleOrFamily?: boolean;
 
   // preferred given name (optional; commonly derived from nickname)
   preferredGiven?: string;
@@ -341,6 +430,7 @@ export interface ParsedName {
 
 export type NamePreset =
   | 'display'
+  | 'indexName'
   | 'informal'
   | 'formalFull'
   | 'formalShort'
@@ -391,5 +481,6 @@ export type NameFormatOptions = {
   capitalization?: 'canonical' | 'preserve' | 'lower' | 'upper'; // default: "canonical"
   punctuation?: 'canonical' | 'strip' | 'preserve'; // default: "canonical"
   apostrophes?: 'canonical' | 'ascii' | 'preserve'; // default: "canonical"
+  particleFiling?: 'include' | 'ignoreLeading'; // default: "include"
 };
 

@@ -6,12 +6,44 @@ This document provides detailed instructions on how the name parsing algorithm w
 
 The `parseName()` function uses a multi-step algorithm to break down a full name string into its component parts: `prefix`, `first`, `middle`, `last`, `suffix`, and `nickname`. The parser processes names from both ends (prefixes from the left, suffixes from the right) and uses heuristics to determine where the surname boundary lies.
 
+For global names, the parser is conservative: ambiguous tokens are preserved and surfaced with warning metadata rather than silently discarded. Consumers should inspect `meta.warningCodes`, `meta.warningDetails`, `meta.confidenceDetail`, and `alternatives` when human review or overrides may be needed.
+
 In addition to the core display strings, the parser also attaches **typed affix tokens**:
 
 - `prefixTokens`: tokenized + classified prefix parts
 - `suffixTokens`: tokenized + classified suffix parts
 
 These tokens preserve the parsed substring as written (`value`) while also carrying a normalized matching key (`normalized`) and, when recognized, canonical display forms (`canonicalShort` / `canonicalLong`).
+
+## Optional Given-Name Evidence
+
+Raw strings cannot always distinguish a real middle/additional given name from the first element of a compound family name. `parseName()` accepts an optional evidence hook:
+
+```ts
+type GivenNameEvidenceProvider = (
+  token: string,
+  context: { raw: string; tokens: string[]; index: number }
+) => { found: boolean; score?: number; source?: string } | undefined;
+```
+
+`undefined` means no opinion. `{ found: false }` means the provider checked and did not find the token. This is evidence, not proof. Absence from a US first-name database is only a weak review signal for global names.
+
+The parser asks for evidence only on tokens whose role is ambiguous, such as `Garcia` in `Gabriel Garcia Lopez`. It does not ask about the given name or the final token that is already acting as the family-name anchor.
+
+The existing gender datasets can be adapted:
+
+```ts
+import { createGenderDB, createGivenNameEvidenceProvider } from "name-tools/gender/coverage95";
+
+const db = createGenderDB();
+const evidence = createGivenNameEvidenceProvider(db);
+
+parseName("Gabriel Garcia Lopez", {
+  givenNameEvidence: evidence,
+});
+```
+
+With no evidence, ambiguous names keep alternatives and warnings. With evidence, the provider may conservatively tip the selected parse, while warnings remain when the decision is still weak.
 
 ## Parsing Algorithm Steps
 
@@ -96,16 +128,25 @@ If a word is a known particle (van, von, de, da, af, y, etc.), the surname start
 "Johann Wolfgang von Goethe" → { first: "Johann", middle: "Wolfgang", last: "von Goethe" }
 ```
 
-**Case B: Compound Surnames**
-If a word is a common surname (but not a common first name) and there are words before it, it may indicate a compound surname:
+**Case B: Ambiguous Middle or Compound Surnames**
+If the parser cannot determine whether an interior token is an additional given name or part of the family phrase, it keeps alternatives and emits warning metadata:
 
 ```
-"Gabriel García Márquez" → { first: "Gabriel", last: "García Márquez" }
+"Gabriel Garcia Lopez" → possible "Gabriel" + "Garcia" + "Lopez"
+                       → possible "Gabriel" + "Garcia Lopez"
 ```
 
-The parser uses surname databases to identify likely compound surnames.
+Compact display and generated sorting should not silently drop these ambiguous tokens. Optional given-name evidence can help choose a primary parse, but consumers should still treat warnings as review signals.
 
-**Case C: Single Word**
+**Case C: Comma-Inverted Names**
+If a person name contains a comma, the parser treats everything before the first comma as the family phrase unless organization parsing has already handled the input:
+
+```
+"Muñoz, Carlos" → { first: "Carlos", last: "Muñoz", reversed: true }
+"García Márquez, Gabriel" → { first: "Gabriel", last: "García Márquez", reversed: true }
+```
+
+**Case D: Single Word**
 If only one word remains after prefix/suffix extraction, it's treated as the first name:
 
 ```
@@ -113,7 +154,7 @@ If only one word remains after prefix/suffix extraction, it's treated as the fir
 "Cher" → { first: "Cher" }
 ```
 
-**Case D: All Particles**
+**Case E: All Particles**
 If all remaining words are particles (e.g., "van Gogh"), the entire string becomes the last name:
 
 ```
@@ -169,7 +210,7 @@ Some names are inherently ambiguous and may be parsed differently than expected:
 
 1. **Middle names vs. compound surnames**: 
    - `"Mary Jane Watson"` could be interpreted as first+middle+last or first+compound-surname
-   - The parser uses surname databases to make educated guesses
+   - The parser preserves alternatives and emits warning metadata instead of relying on bundled surname databases
 
 2. **Single names**:
    - `"Madonna"` → treated as first name only
@@ -251,9 +292,55 @@ Because the parser emits `prefixTokens` / `suffixTokens`, `formatName()` can ren
 For example, with `suffix: "auto"` (the default behavior for most presets), `formatName()` preserves the full suffix tail and will render known entries canonically:
 
 ```javascript
-formatName("John Smith, phd") // "John Smith, Ph.D."
-formatName("John Smith, PMP") // "John Smith, PMP" (unknown credential preserved)
+formatName("John Smith, phd") // "John Smith, Ph.D."
+formatName("John Smith, PMP") // "John Smith, PMP" (unknown credential preserved)
 ```
+
+### Plain spaces and no-break typography
+
+By default, `formatName()` returns plain strings with normal spaces:
+
+```javascript
+formatName("Dr. John Smith Jr.") // "John Smith, Jr."
+```
+
+For display typography that uses non-breaking spaces, opt in explicitly:
+
+```javascript
+formatName("Dr. John Smith Jr.", {
+  typography: "ui",
+  noBreak: "smart",
+});
+```
+
+### Particle filing for index names
+
+Particles are always preserved in display and formal names. `particleFiling` only controls generated index/sort forms:
+
+```javascript
+formatName("Vincent van Gogh", { preset: "indexName" });
+// "van Gogh, Vincent"
+
+formatName("Vincent van Gogh", {
+  preset: "indexName",
+  particleFiling: "ignoreLeading",
+});
+// "Gogh, Vincent van"
+```
+
+## Organization Nouns
+
+Organization detection recognizes legal suffixes and terminal institution nouns such as `Company`, `Co.`, `Laboratory`, `Laboratories`, `Institution`, `Institute`, `University`, `College`, `School`, `Museum`, `Library`, `Archive`, `Archives`, `Foundation`, `Association`, `Society`, `Department`, `Agency`, `Commission`, `Church`, `Hospital`, `Bank`, `Railroad`, `Railway`, `Press`, `Studio`, and `Gallery`.
+
+Examples:
+
+```javascript
+parseName("Eastman Kodak Company").kind // "organization"
+parseName("Bell Telephone Laboratories").kind // "organization"
+parseName("Smithsonian Institution").kind // "organization"
+```
+
+These terms are recorded separately from legal forms as `organizationTermRaw` / `organizationTermKind` where available.
 
 ## Data Sources
 
@@ -261,8 +348,8 @@ The parser relies on several data sets:
 
 - **Affixes (prefixes + suffixes)**: Canonical affix entries with matching variants and render-ready short/long forms (see `src/data/affixes.ts`)
 - **Particles**: Surname particles (van, von, de, da, etc.)
-- **Surnames**: Database of common surnames for compound surname detection
-- **First Names**: Database of common first names to distinguish from surnames
+- **Compatibility name lists**: Common-name utility exports remain available for legacy helpers, but the safer parser path does not use bundled surname databases to resolve global middle-vs-family ambiguity
+- **Optional first-name evidence**: Existing gender datasets can be adapted with `createGivenNameEvidenceProvider(db)` when consumers explicitly opt in
 
 These data sets are extensible and can be customized for specific use cases.
 
