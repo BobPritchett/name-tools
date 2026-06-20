@@ -2,6 +2,7 @@ import {
     parseName,
     parseNameList,
     parsePersonName,
+    entityToLegacy,
     formatName,
     isPerson,
     isOrganization,
@@ -95,36 +96,8 @@ function updateResults() {
 
             // Only show parsed components table for person entities
             if (isPerson(entity)) {
-                const parsed = parsePersonName(entity.meta?.raw || recipient.raw);
-                html += `
-                    <div class="result-group">
-                        <h3>Parsed Components</h3>
-                        <table class="parsed-table">
-                            <thead>
-                                <tr>
-                                    <th>Prefix</th>
-                                    <th>First</th>
-                                    <th>Full Given</th>
-                                    <th>Nickname</th>
-                                    <th>Middle</th>
-                                    <th>Last</th>
-                                    <th>Suffix</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>${escapeHtml(parsed.prefix || '-')}</td>
-                                    <td>${escapeHtml(parsed.first || '-')}</td>
-                                    <td>${escapeHtml(parsed.fullGiven || '-')}</td>
-                                    <td>${escapeHtml(parsed.nickname || '-')}</td>
-                                    <td>${escapeHtml(parsed.middle || '-')}</td>
-                                    <td>${escapeHtml(parsed.last || '-')}</td>
-                                    <td>${escapeHtml(parsed.suffix || '-')}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                `;
+                const parsed = getParsedPersonComponents(entity, recipient.raw);
+                html += renderParsedComponentsSection([{ parsed }], false);
 
                 // Extended details for person
                 html += `
@@ -174,9 +147,14 @@ function updateResults() {
             `;
 
             const entities = [];
+            const componentRows = [];
             recipients.forEach((recipient) => {
                 const entity = recipient.display || parseName(recipient.raw);
                 entities.push(entity);
+                componentRows.push({
+                    input: recipient.raw,
+                    parsed: getParsedPersonComponents(entity, recipient.raw)
+                });
                 const tooltipText = getEntityTooltip(entity);
                 const genderDisplay = getGenderDisplay(entity);
                 html += `
@@ -198,6 +176,8 @@ function updateResults() {
                     </table>
                 </div>
             `;
+
+            html += renderParsedComponentsSection(componentRows, true);
 
             // Show combined formatting with options
             html += renderCombinedFormats(entities);
@@ -228,6 +208,50 @@ function getFormatOptions() {
     const conjunction = document.getElementById('optConjunction')?.value || 'and';
     const oxfordComma = document.getElementById('optOxford')?.checked ?? true;
     return { preset, join, conjunction, oxfordComma };
+}
+
+function getParsedPersonComponents(entity, fallbackRaw) {
+    if (!isPerson(entity)) return null;
+    return entityToLegacy(entity) || parsePersonName(entity.meta?.raw || fallbackRaw);
+}
+
+function renderParsedComponentsSection(rows, includeInput) {
+    const personRows = rows.filter(row => row.parsed);
+    if (personRows.length === 0) return '';
+
+    return `
+        <div class="result-group">
+            <h3>Parsed Components</h3>
+            <table class="parsed-table">
+                <thead>
+                    <tr>
+                        ${includeInput ? '<th>Input</th>' : ''}
+                        <th>Prefix</th>
+                        <th>First</th>
+                        <th>Full Given</th>
+                        <th>Nickname</th>
+                        <th>Middle</th>
+                        <th>Last</th>
+                        <th>Suffix</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${personRows.map(({ input, parsed }) => `
+                        <tr>
+                            ${includeInput ? `<td class="test-input">${escapeHtml(input || '-')}</td>` : ''}
+                            <td>${escapeHtml(parsed.prefix || '-')}</td>
+                            <td>${escapeHtml(parsed.first || '-')}</td>
+                            <td>${escapeHtml(parsed.fullGiven || '-')}</td>
+                            <td>${escapeHtml(parsed.nickname || '-')}</td>
+                            <td>${escapeHtml(parsed.middle || '-')}</td>
+                            <td>${escapeHtml(parsed.last || '-')}</td>
+                            <td>${escapeHtml(parsed.suffix || '-')}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
 function renderCombinedFormats(entities) {

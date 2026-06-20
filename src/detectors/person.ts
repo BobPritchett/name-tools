@@ -34,6 +34,41 @@ function isKnownSuffix(token: string): boolean {
   return SUFFIX_ALLOW_LIST.has(token.toLowerCase().replace(/\.$/, ''));
 }
 
+function looksLikeUnknownPostNominalChunk(value: string): boolean {
+  const v = value.trim().replace(/^[,;:\s]+/, '').replace(/[,;:\s]+$/, '');
+  if (!v) return false;
+  if (v.length > 18) return false;
+  if (/\d/.test(v)) return false;
+  if (/[^\p{L}.\-\s]/u.test(v)) return false;
+  if (!/[.]/.test(v) && !/[A-Z]/.test(v)) return false;
+
+  const lettersOnly = v
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[.\-\s]/g, '');
+  if (!/^[A-Za-z]+$/.test(lettersOnly)) return false;
+  if (lettersOnly.length < 2 || lettersOnly.length > 10) return false;
+
+  const upperCount = (lettersOnly.match(/[A-Z]/g) ?? []).length;
+  if (!/[.]/.test(v) && upperCount / lettersOnly.length < 0.7) return false;
+
+  return true;
+}
+
+function looksLikeSuffixChunk(value: string): boolean {
+  const firstWord = value.trim().split(/\s+/)[0];
+  return isKnownSuffix(firstWord) || looksLikeUnknownPostNominalChunk(value);
+}
+
+function looksLikeForwardNameWithCommaSuffix(parts: string[]): boolean {
+  if (parts.length !== 2 || !looksLikeSuffixChunk(parts[1])) {
+    return false;
+  }
+
+  const leftTokens = tokenize(parts[0]);
+  return leftTokens.length >= 2 && leftTokens.every(isNameLikeToken);
+}
+
 export interface PersonDetectionResult {
   isPerson: boolean;
   confidence: Confidence;
@@ -71,6 +106,10 @@ function tryParseReversed(normalized: string): PersonDetectionResult | null {
     return null;
   }
 
+  if (looksLikeForwardNameWithCommaSuffix(parts)) {
+    return null;
+  }
+
   const reasons: ReasonCode[] = [];
 
   // First part should be family name
@@ -92,7 +131,7 @@ function tryParseReversed(normalized: string): PersonDetectionResult | null {
 
   for (const part of remainingParts) {
     const firstWord = part.split(/\s+/)[0];
-    if (isKnownSuffix(firstWord)) {
+    if (isKnownSuffix(firstWord) || looksLikeUnknownPostNominalChunk(part)) {
       suffix = suffix ? `${suffix}, ${part}` : part;
       reasons.push('PERSON_HAS_SUFFIX');
     } else {
@@ -198,7 +237,7 @@ function parseStandardFormat(normalized: string): PersonDetectionResult {
   if (commaIdx > 0) {
     const afterComma = text.slice(commaIdx + 1).trim();
     const firstWord = afterComma.split(/\s+/)[0];
-    if (isKnownSuffix(firstWord)) {
+    if (isKnownSuffix(firstWord) || looksLikeUnknownPostNominalChunk(afterComma)) {
       suffix = afterComma;
       text = text.slice(0, commaIdx).trim();
       reasons.push('PERSON_HAS_SUFFIX');

@@ -5,6 +5,7 @@ package-lock.json
 # Build outputs
 dist/
 coverage/
+docs/docs-entry.mjs
 
 # System Files
 .DS_Store

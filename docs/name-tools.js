@@ -1,6 +1,7 @@
 // src/data/utils.ts
 function isInList(list, value) {
-  if (!value) return false;
+  if (!value)
+    return false;
   const cleanedValue = value.toLowerCase().replace(/\./g, "").trim();
   return list.some((item) => {
     const cleanedItem = item.toLowerCase().replace(/\./g, "").trim();
@@ -280,15 +281,21 @@ function normalizeAffixVariantForMatch(value) {
 function buildAffixVariantIndex(entries, ctx) {
   const map = /* @__PURE__ */ new Map();
   for (const e of entries) {
-    if (e.ctx !== "both" && e.ctx !== ctx) continue;
+    if (e.ctx !== "both" && e.ctx !== ctx)
+      continue;
     const candidates = [];
-    if (e.short) candidates.push(e.short);
-    if (e.long) candidates.push(e.long);
-    if (e.variants) candidates.push(...e.variants);
+    if (e.short)
+      candidates.push(e.short);
+    if (e.long)
+      candidates.push(e.long);
+    if (e.variants)
+      candidates.push(...e.variants);
     for (const v of candidates) {
       const k = normalizeAffixVariantForMatch(v);
-      if (!k) continue;
-      if (!map.has(k)) map.set(k, e);
+      if (!k)
+        continue;
+      if (!map.has(k))
+        map.set(k, e);
     }
   }
   return map;
@@ -759,32 +766,42 @@ var SPLITTABLE_WORDS = /* @__PURE__ */ new Set([
 ]);
 for (const entry of [...PREFIX_AFFIX_ENTRIES, ...SUFFIX_AFFIX_ENTRIES]) {
   const candidates = [];
-  if (entry.short) candidates.push(entry.short);
-  if (entry.long) candidates.push(entry.long);
-  if (entry.variants) candidates.push(...entry.variants);
+  if (entry.short)
+    candidates.push(entry.short);
+  if (entry.long)
+    candidates.push(entry.long);
+  if (entry.variants)
+    candidates.push(...entry.variants);
   for (const c of candidates) {
     const k = normalizeAffixVariantForMatch(c);
-    if (k && !k.includes(" ")) SPLITTABLE_WORDS.add(k);
+    if (k && !k.includes(" "))
+      SPLITTABLE_WORDS.add(k);
   }
 }
 var MULTIWORD_PREFIX_PHRASES = (() => {
   const phrases = [];
   const add = (s) => {
     const k = normalizeAffixVariantForMatch(s);
-    if (!k || !k.includes(" ")) return;
+    if (!k || !k.includes(" "))
+      return;
     const words = k.split(" ").filter(Boolean);
-    if (words.length >= 2) phrases.push({ words, len: words.length });
+    if (words.length >= 2)
+      phrases.push({ words, len: words.length });
   };
   for (const entry of PREFIX_AFFIX_ENTRIES) {
-    if (entry.short) add(entry.short);
-    if (entry.long) add(entry.long);
-    if (entry.variants) entry.variants.forEach(add);
+    if (entry.short)
+      add(entry.short);
+    if (entry.long)
+      add(entry.long);
+    if (entry.variants)
+      entry.variants.forEach(add);
   }
   phrases.sort((a, b) => b.len - a.len);
   const seen = /* @__PURE__ */ new Set();
   return phrases.filter((p) => {
     const key = p.words.join(" ");
-    if (seen.has(key)) return false;
+    if (seen.has(key))
+      return false;
     seen.add(key);
     return true;
   });
@@ -802,36 +819,55 @@ function normalizeAffix(value) {
   return { normalized, normalizedKey };
 }
 function looksAbbreviated(value, normalizedKey) {
-  if (/[.]/.test(value)) return true;
-  if (normalizedKey.includes(" ")) return false;
+  if (/[.]/.test(value))
+    return true;
+  if (normalizedKey.includes(" "))
+    return false;
   return /^[A-Z]{2,5}$/.test(normalizedKey);
 }
 function classifyType(normalizedKey, ctx) {
-  if (ROMAN_NUMERALS.has(normalizedKey) && ctx === "suffix") return "dynasticNumber";
-  if (/^(JR|SR)$/.test(normalizedKey)) return "generational";
-  if (NOBILITY_AND_ROYALTY.has(normalizedKey)) return "style";
-  if (EDUCATION.has(normalizedKey)) return "education";
-  if (PROFESSIONAL.has(normalizedKey)) return "professional";
-  if (POSTNOMINAL_HONOR.has(normalizedKey)) return "postnominalHonor";
-  if (MILITARY.has(normalizedKey)) return "military";
-  if (JUDICIAL.has(normalizedKey)) return "judicial";
-  if (normalizedKey === "SR" && ctx === "prefix") return "religious";
-  if (RELIGIOUS.has(normalizedKey)) return "religious";
-  if (HONORIFIC.has(normalizedKey)) return "honorific";
-  if (STYLE_PHRASES.has(normalizedKey)) return "style";
+  if (ROMAN_NUMERALS.has(normalizedKey) && ctx === "suffix")
+    return "dynasticNumber";
+  if (/^(JR|SR)$/.test(normalizedKey))
+    return "generational";
+  if (NOBILITY_AND_ROYALTY.has(normalizedKey))
+    return "style";
+  if (EDUCATION.has(normalizedKey))
+    return "education";
+  if (PROFESSIONAL.has(normalizedKey))
+    return "professional";
+  if (POSTNOMINAL_HONOR.has(normalizedKey))
+    return "postnominalHonor";
+  if (MILITARY.has(normalizedKey))
+    return "military";
+  if (JUDICIAL.has(normalizedKey))
+    return "judicial";
+  if (normalizedKey === "SR" && ctx === "prefix")
+    return "religious";
+  if (RELIGIOUS.has(normalizedKey))
+    return "religious";
+  if (HONORIFIC.has(normalizedKey))
+    return "honorific";
+  if (STYLE_PHRASES.has(normalizedKey))
+    return "style";
   if (ctx === "prefix" && normalizedKey.includes(" ")) {
     const k = normalizedKey;
-    if (k.includes("EXCELLENCY") || k.includes("HONOURABLE") || k.includes("HON")) return "style";
-    if (k.includes("JUDGE") || k.includes("JUSTICE")) return "judicial";
-    if (k.includes("RABBI") || k.includes("IMAM") || k.includes("REVEREND") || k.includes("SISTER") || k.includes("BROTHER") || k.includes("FATHER")) return "religious";
+    if (k.includes("EXCELLENCY") || k.includes("HONOURABLE") || k.includes("HON"))
+      return "style";
+    if (k.includes("JUDGE") || k.includes("JUSTICE"))
+      return "judicial";
+    if (k.includes("RABBI") || k.includes("IMAM") || k.includes("REVEREND") || k.includes("SISTER") || k.includes("BROTHER") || k.includes("FATHER"))
+      return "religious";
     if (k.includes("ADMIRAL") || k.includes("MARSHAL") || k.includes("GENERAL") || k.includes("COLONEL") || k.includes("CAPTAIN") || k.includes("LIEUTENANT") || k.includes("SERGEANT")) {
       return "military";
     }
   }
   if (ctx === "suffix" && normalizedKey.includes(" ")) {
     const k = normalizedKey;
-    if (k.includes("PHD") || k.includes("MBA") || k.includes("MD") || k.includes("JD")) return "education";
-    if (k.includes("ESQ") || k.includes("CPA") || k.includes("RN") || k.includes("PE")) return "professional";
+    if (k.includes("PHD") || k.includes("MBA") || k.includes("MD") || k.includes("JD"))
+      return "education";
+    if (k.includes("ESQ") || k.includes("CPA") || k.includes("RN") || k.includes("PE"))
+      return "professional";
   }
   return "other";
 }
@@ -856,9 +892,11 @@ function classifyAffixToken(value, ctx) {
 function matchKnownPrefixPhraseAt(words, startIdx) {
   const remaining = words.slice(startIdx);
   for (const p of MULTIWORD_PREFIX_PHRASES) {
-    if (remaining.length < p.len) continue;
+    if (remaining.length < p.len)
+      continue;
     const slice = remaining.slice(0, p.len).join(" ");
-    if (slice === p.words.join(" ")) return p.len;
+    if (slice === p.words.join(" "))
+      return p.len;
   }
   return 0;
 }
@@ -878,15 +916,18 @@ function matchStylePhraseAt(words, startIdx) {
     { phrase: ["HER", "GRACE"], len: 2 }
   ];
   for (const c of candidates) {
-    if (remaining.length < c.len) continue;
+    if (remaining.length < c.len)
+      continue;
     const slice = remaining.slice(0, c.len).join(" ");
-    if (slice === c.phrase.join(" ")) return c.len;
+    if (slice === c.phrase.join(" "))
+      return c.len;
   }
   return 0;
 }
 function splitAffixToAtomicParts(value, ctx) {
   const raw = collapseSpaces(value);
-  if (!raw) return [];
+  if (!raw)
+    return [];
   const delimiterSplit = raw.split(/[;,/]+/g).map((s) => s.trim()).filter(Boolean).flatMap((chunk) => {
     if (ctx === "suffix") {
       return chunk.split(/\band\b/gi).map((s) => s.trim()).filter(Boolean);
@@ -940,15 +981,18 @@ function splitAffixToAtomicParts(value, ctx) {
   return out.map(stripEdgePunctuation).map(collapseSpaces).filter(Boolean);
 }
 function buildAffixTokens(displayValue, ctx) {
-  if (!displayValue) return void 0;
+  if (!displayValue)
+    return void 0;
   const parts = splitAffixToAtomicParts(displayValue, ctx);
-  if (parts.length === 0) return void 0;
+  if (parts.length === 0)
+    return void 0;
   return parts.map((p) => classifyAffixToken(p, ctx));
 }
 
 // src/normalize.ts
 function normalizeInput(raw) {
-  if (!raw) return "";
+  if (!raw)
+    return "";
   let s = raw.trim();
   s = s.replace(/\s+/g, " ");
   s = s.replace(/[""]/g, '"');
@@ -962,7 +1006,8 @@ function tokenize(text) {
   return text.split(/\s+/).filter(Boolean);
 }
 function isNameLikeToken(token) {
-  if (/^([A-Z]\.?)+$/.test(token)) return true;
+  if (/^([A-Z]\.?)+$/.test(token))
+    return true;
   return /^[A-Z][a-zA-Z]*(?:['-][A-zA-Z]+)*$/.test(token);
 }
 function extractParenContent(text) {
@@ -1133,7 +1178,8 @@ function hasCareOfPattern(text) {
 }
 function extractDba(text) {
   const match = text.match(DBA_RE);
-  if (!match) return null;
+  if (!match)
+    return null;
   const idx = match.index;
   const primary = text.slice(0, idx).trim();
   const aka = text.slice(idx + match[0].length).trim();
@@ -1315,10 +1361,14 @@ function isSuffixToken(token) {
 }
 function getConnectorType(connector) {
   const lower = connector.toLowerCase().trim();
-  if (lower === "&") return "&";
-  if (lower === "and") return "and";
-  if (lower === "+") return "+";
-  if (lower === "et") return "et";
+  if (lower === "&")
+    return "&";
+  if (lower === "and")
+    return "and";
+  if (lower === "+")
+    return "+";
+  if (lower === "et")
+    return "et";
   return "unknown";
 }
 function detectPairedHonorifics(text) {
@@ -1331,7 +1381,8 @@ function detectPairedHonorifics(text) {
 }
 function detectPluralHonorific(text) {
   const tokens = tokenize(text);
-  if (tokens.length === 0) return null;
+  if (tokens.length === 0)
+    return null;
   const firstToken = tokens[0].toLowerCase();
   const singular = PLURAL_HONORIFICS[firstToken];
   if (singular) {
@@ -1809,6 +1860,39 @@ var HONORIFIC_RE = /^(mr|mrs|ms|miss|mx|dr|prof|sir|dame|rev|fr|rabbi|imam|pasto
 function isKnownSuffix(token) {
   return SUFFIX_ALLOW_LIST.has(token.toLowerCase().replace(/\.$/, ""));
 }
+function looksLikeUnknownPostNominalChunk(value) {
+  const v = value.trim().replace(/^[,;:\s]+/, "").replace(/[,;:\s]+$/, "");
+  if (!v)
+    return false;
+  if (v.length > 18)
+    return false;
+  if (/\d/.test(v))
+    return false;
+  if (/[^\p{L}.\-\s]/u.test(v))
+    return false;
+  if (!/[.]/.test(v) && !/[A-Z]/.test(v))
+    return false;
+  const lettersOnly = v.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[.\-\s]/g, "");
+  if (!/^[A-Za-z]+$/.test(lettersOnly))
+    return false;
+  if (lettersOnly.length < 2 || lettersOnly.length > 10)
+    return false;
+  const upperCount = (lettersOnly.match(/[A-Z]/g) ?? []).length;
+  if (!/[.]/.test(v) && upperCount / lettersOnly.length < 0.7)
+    return false;
+  return true;
+}
+function looksLikeSuffixChunk(value) {
+  const firstWord = value.trim().split(/\s+/)[0];
+  return isKnownSuffix(firstWord) || looksLikeUnknownPostNominalChunk(value);
+}
+function looksLikeForwardNameWithCommaSuffix(parts) {
+  if (parts.length !== 2 || !looksLikeSuffixChunk(parts[1])) {
+    return false;
+  }
+  const leftTokens = tokenize(parts[0]);
+  return leftTokens.length >= 2 && leftTokens.every(isNameLikeToken);
+}
 function tryParseReversed(normalized) {
   let text = normalized;
   let nickname;
@@ -1827,6 +1911,9 @@ function tryParseReversed(normalized) {
   if (parts.length < 2 || parts.length > 4) {
     return null;
   }
+  if (looksLikeForwardNameWithCommaSuffix(parts)) {
+    return null;
+  }
   const reasons = [];
   const familyPart = parts[0];
   if (!familyPart || !isNameLikeToken(familyPart.split(/\s+/)[0])) {
@@ -1841,7 +1928,7 @@ function tryParseReversed(normalized) {
   const remainingParts = parts.slice(2);
   for (const part of remainingParts) {
     const firstWord = part.split(/\s+/)[0];
-    if (isKnownSuffix(firstWord)) {
+    if (isKnownSuffix(firstWord) || looksLikeUnknownPostNominalChunk(part)) {
       suffix = suffix ? `${suffix}, ${part}` : part;
       reasons.push("PERSON_HAS_SUFFIX");
     } else {
@@ -1918,7 +2005,7 @@ function parseStandardFormat(normalized) {
   if (commaIdx > 0) {
     const afterComma = text.slice(commaIdx + 1).trim();
     const firstWord = afterComma.split(/\s+/)[0];
-    if (isKnownSuffix(firstWord)) {
+    if (isKnownSuffix(firstWord) || looksLikeUnknownPostNominalChunk(afterComma)) {
       suffix = afterComma;
       text = text.slice(0, commaIdx).trim();
       reasons.push("PERSON_HAS_SUFFIX");
@@ -2133,6 +2220,13 @@ function parsePersonName(fullName) {
   if (!fullName || typeof fullName !== "string") {
     throw new Error("Invalid name: expected non-empty string");
   }
+  const classified = classifyName(fullName, { strictKind: "person" });
+  if (isPerson(classified) && classified.reversed) {
+    const legacy = entityToLegacy(classified);
+    if (legacy) {
+      return legacy;
+    }
+  }
   let text = fullName.trim();
   const result = {};
   text = extractNickname(text, result);
@@ -2143,6 +2237,10 @@ function parsePersonName(fullName) {
   if (!result.first && !result.last) {
     throw new Error("Invalid name: no name parts found after parsing");
   }
+  finalizeParsedName(result);
+  return result;
+}
+function finalizeParsedName(result) {
   result.prefixTokens = buildAffixTokens(result.prefix, "prefix");
   result.suffixTokens = buildAffixTokens(result.suffix, "suffix");
   deriveFamilyParticle(result);
@@ -2171,25 +2269,33 @@ function extractSuffixes(text, result) {
     const tokens = buildAffixTokens(value, "suffix");
     return !!tokens && tokens.length > 0 && tokens.some((t) => t.type !== "other");
   };
-  const looksLikeUnknownPostNominalChunk = (value) => {
+  const looksLikeUnknownPostNominalChunk2 = (value) => {
     const v = value.trim().replace(/^[,;:\s]+/, "").replace(/[,;:\s]+$/, "");
-    if (!v) return false;
-    if (v.length > 18) return false;
-    if (/\d/.test(v)) return false;
-    if (/[^\p{L}.\-\s]/u.test(v)) return false;
-    if (!/[.]/.test(v) && !/[A-Z]/.test(v)) return false;
+    if (!v)
+      return false;
+    if (v.length > 18)
+      return false;
+    if (/\d/.test(v))
+      return false;
+    if (/[^\p{L}.\-\s]/u.test(v))
+      return false;
+    if (!/[.]/.test(v) && !/[A-Z]/.test(v))
+      return false;
     const lettersOnly = v.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[.\-\s]/g, "");
-    if (!/^[A-Za-z]+$/.test(lettersOnly)) return false;
-    if (lettersOnly.length < 2 || lettersOnly.length > 10) return false;
+    if (!/^[A-Za-z]+$/.test(lettersOnly))
+      return false;
+    if (lettersOnly.length < 2 || lettersOnly.length > 10)
+      return false;
     const upperCount = (lettersOnly.match(/[A-Z]/g) ?? []).length;
-    if (!/[.]/.test(v) && upperCount / lettersOnly.length < 0.7) return false;
+    if (!/[.]/.test(v) && upperCount / lettersOnly.length < 0.7)
+      return false;
     return true;
   };
   const parts = workingText.split(",");
   while (parts.length > 1) {
     const lastPart = parts[parts.length - 1].trim();
     const firstWordOfLast = lastPart.split(/\s+/)[0];
-    if (looksLikeKnownOrHeuristicSuffix(firstWordOfLast) || looksLikeKnownOrHeuristicSuffix(lastPart) || looksLikeUnknownPostNominalChunk(lastPart) || /queen|king|consort/i.test(lastPart)) {
+    if (looksLikeKnownOrHeuristicSuffix(firstWordOfLast) || looksLikeKnownOrHeuristicSuffix(lastPart) || looksLikeUnknownPostNominalChunk2(lastPart) || /queen|king|consort/i.test(lastPart)) {
       suffixesFound.unshift(lastPart);
       parts.pop();
     } else {
@@ -2243,7 +2349,8 @@ function extractPrefixes(parts, result) {
   return parts;
 }
 function assignNameParts(parts, result) {
-  if (parts.length === 0) return;
+  if (parts.length === 0)
+    return;
   if (parts.length === 1) {
     result.first = parts[0];
     return;
@@ -2294,19 +2401,24 @@ var FAMILY_PARTICLE_PHRASES = [
 ];
 function deriveFamilyParticle(result) {
   const last = result.last?.trim();
-  if (!last) return;
+  if (!last)
+    return;
   const words = last.split(/\s+/).filter(Boolean);
-  if (words.length < 2) return;
+  if (words.length < 2)
+    return;
   const lowerWords = words.map((w) => w.toLowerCase());
   const candidates = [...FAMILY_PARTICLE_PHRASES].sort((a, b) => b.split(" ").length - a.split(" ").length);
   for (const phrase of candidates) {
     const pWords = phrase.split(" ");
-    if (pWords.length >= words.length) continue;
+    if (pWords.length >= words.length)
+      continue;
     const matches = pWords.every((pw, idx) => lowerWords[idx] === pw);
-    if (!matches) continue;
+    if (!matches)
+      continue;
     const particleOriginal = words.slice(0, pWords.length).join(" ");
     const remainderWords = words.slice(pWords.length);
-    if (remainderWords.length === 0) return;
+    if (remainderWords.length === 0)
+      return;
     result.familyParticle = particleOriginal;
     result.familyParts = remainderWords;
     result.familyParticleBehavior = "localeDefault";
@@ -2314,9 +2426,11 @@ function deriveFamilyParticle(result) {
   }
 }
 function derivePreferredGiven(result) {
-  if (result.preferredGiven) return;
+  if (result.preferredGiven)
+    return;
   const nick = result.nickname?.trim();
-  if (!nick) return;
+  if (!nick)
+    return;
   result.preferredGiven = nick.replace(/^[\"'\(\[]+/, "").replace(/[\"'\)\]]+$/, "").trim() || void 0;
 }
 function deriveSortHelpers(result) {
@@ -2335,7 +2449,8 @@ function deriveSortHelpers(result) {
   if (display && identitySuffix) {
     display = `${display}, ${identitySuffix}`;
   }
-  if (!display) return;
+  if (!display)
+    return;
   const key = display.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
   result.sort = { display, key };
 }
@@ -2354,16 +2469,21 @@ function entityToLegacy(entity) {
   }
   const person = entity;
   const result = {};
-  if (person.honorific) result.prefix = person.honorific;
-  if (person.given) result.first = person.given;
-  if (person.fullGiven) result.fullGiven = person.fullGiven;
-  if (person.middle) result.middle = person.middle;
-  if (person.family) result.last = person.family;
-  if (person.suffix) result.suffix = person.suffix;
-  if (person.nickname) result.nickname = person.nickname;
-  result.prefixTokens = buildAffixTokens(result.prefix, "prefix");
-  result.suffixTokens = buildAffixTokens(result.suffix, "suffix");
-  return result;
+  if (person.honorific)
+    result.prefix = person.honorific;
+  if (person.given)
+    result.first = person.given;
+  if (person.fullGiven)
+    result.fullGiven = person.fullGiven;
+  if (person.middle)
+    result.middle = person.middle;
+  if (person.family)
+    result.last = person.family;
+  if (person.suffix)
+    result.suffix = person.suffix;
+  if (person.nickname)
+    result.nickname = person.nickname;
+  return finalizeParsedName(result);
 }
 
 // src/email-extractor.ts
@@ -2533,7 +2653,8 @@ var SUFFIX_PATTERN = /^(Jr\.?|Sr\.?|II|III|IV|V|VI|VII|VIII|Esq\.?|Ph\.?D\.?|M\.
 function isReversedNameComma(before, after) {
   const beforeTrimmed = before.trim();
   const afterTrimmed = after.trim();
-  if (!beforeTrimmed) return false;
+  if (!beforeTrimmed)
+    return false;
   const beforeTokens = beforeTrimmed.split(/[\s,]+/).filter(Boolean);
   if (hasEmail(afterTrimmed.split(/[,;\r\n]/)[0])) {
     return false;
@@ -2544,7 +2665,8 @@ function isReversedNameComma(before, after) {
   }
   const afterTokens = afterTrimmed.split(/[\s,;\r\n]+/).filter(Boolean);
   const firstAfter = afterTokens[0];
-  if (!firstAfter) return false;
+  if (!firstAfter)
+    return false;
   if (SUFFIX_PATTERN.test(firstAfter)) {
     return true;
   }
@@ -2674,7 +2796,8 @@ function escapeForHtml(value) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 function sanitizePart(value, output) {
-  if (!value) return value;
+  if (!value)
+    return value;
   return output === "html" ? escapeForHtml(value) : value;
 }
 function sanitizeParsedName(parsed) {
@@ -2722,7 +2845,8 @@ function toWords(value) {
 }
 function toInitial(word) {
   const w = word.trim();
-  if (!w) return void 0;
+  if (!w)
+    return void 0;
   return w.charAt(0).toUpperCase() + ".";
 }
 function resolveGiven(parsed, prefer) {
@@ -2730,28 +2854,37 @@ function resolveGiven(parsed, prefer) {
   const fullGiven = parsed.fullGiven ? normalizeTrim(parsed.fullGiven) : void 0;
   const nickname = parsed.nickname ? normalizeTrim(parsed.nickname) : void 0;
   const preferredGiven = parsed.preferredGiven ? normalizeTrim(parsed.preferredGiven) : void 0;
-  if (prefer === "nickname") return preferredGiven ?? nickname ?? first;
-  if (prefer === "fullGiven") return fullGiven ?? first ?? nickname;
-  if (prefer === "first") return first ?? nickname;
+  if (prefer === "nickname")
+    return preferredGiven ?? nickname ?? first;
+  if (prefer === "fullGiven")
+    return fullGiven ?? first ?? nickname;
+  if (prefer === "first")
+    return first ?? nickname;
   return first ?? nickname;
 }
 function resolvePrefix(parsed, prefixMode, o) {
-  if (prefixMode === "omit") return void 0;
+  if (prefixMode === "omit")
+    return void 0;
   const renderedFromTokens = renderAffixTokens(parsed.prefixTokens, "prefix", o);
-  if (renderedFromTokens) return renderedFromTokens;
+  if (renderedFromTokens)
+    return renderedFromTokens;
   const prefix = parsed.prefix ? normalizeCollapseSpaces(parsed.prefix) : void 0;
-  if (!prefix) return void 0;
-  if (prefixMode === "include") return prefix;
+  if (!prefix)
+    return void 0;
+  if (prefixMode === "include")
+    return prefix;
   return prefix;
 }
 function resolveLast(parsed) {
-  if (parsed.last == null) return void 0;
+  if (parsed.last == null)
+    return void 0;
   const last = normalizeTrim(parsed.last);
   return last.length > 0 ? last : void 0;
 }
 function resolveSuffix(parsed, suffixMode, o) {
   const suffix = parsed.suffix ? normalizeCollapseSpaces(parsed.suffix) : void 0;
-  if (suffixMode === "omit") return void 0;
+  if (suffixMode === "omit")
+    return void 0;
   if (suffixMode === "include") {
     return renderAffixTokens(parsed.suffixTokens, "suffix", o) ?? suffix;
   }
@@ -2761,20 +2894,25 @@ function resolveSuffix(parsed, suffixMode, o) {
   return suffix;
 }
 function applyPunctuation(value, mode) {
-  if (mode === "strip") return value.replace(/\./g, "");
+  if (mode === "strip")
+    return value.replace(/\./g, "");
   return value;
 }
 function applyApostrophes(value, mode) {
-  if (mode === "ascii") return value.replace(/[\u2019\u2018\u02BC]/g, "'");
+  if (mode === "ascii")
+    return value.replace(/[\u2019\u2018\u02BC]/g, "'");
   return value;
 }
 function applyCapitalization(value, mode) {
-  if (mode === "lower") return value.toLowerCase();
-  if (mode === "upper") return value.toUpperCase();
+  if (mode === "lower")
+    return value.toLowerCase();
+  if (mode === "upper")
+    return value.toUpperCase();
   return value;
 }
 function renderAffixTokens(tokens, ctx, o) {
-  if (!tokens || tokens.length === 0) return void 0;
+  if (!tokens || tokens.length === 0)
+    return void 0;
   const t = getSpaceTokens(o.output);
   const form = ctx === "prefix" ? o.prefixForm : o.suffixForm;
   const rendered = tokens.map((t2) => {
@@ -2784,14 +2922,16 @@ function renderAffixTokens(tokens, ctx, o) {
     let base = String(t2.value ?? "").trim();
     if (form !== "asInput") {
       const canonical = form === "long" ? t2.canonicalLong : t2.canonicalShort;
-      if (canonical) base = canonical;
+      if (canonical)
+        base = canonical;
     }
     base = applyApostrophes(base, o.apostrophes);
     base = applyPunctuation(base, o.punctuation);
     base = applyCapitalization(base, o.capitalization);
     return base.trim();
   }).filter((s) => s.length > 0);
-  if (rendered.length === 0) return void 0;
+  if (rendered.length === 0)
+    return void 0;
   if (ctx === "suffix") {
     const commaSep = "," + boundarySpace("commaSpace", o, t);
     return rendered.join(commaSep);
@@ -2822,24 +2962,32 @@ function boundarySpace(boundary, o, t) {
   }
 }
 function joinInitials(initials, o, t) {
-  if (initials.length === 0) return "";
-  if (initials.length === 1) return initials[0];
+  if (initials.length === 0)
+    return "";
+  if (initials.length === 1)
+    return initials[0];
   const sep = boundarySpace("initialTight", o, t);
   return initials.join(sep);
 }
 function renderMiddle(parsed, middleMode, o, t) {
-  if (!parsed.middle) return void 0;
+  if (!parsed.middle)
+    return void 0;
   const middle = normalizeTrim(parsed.middle);
-  if (!middle) return void 0;
-  if (middleMode === "none") return void 0;
-  if (middleMode === "full") return middle;
+  if (!middle)
+    return void 0;
+  if (middleMode === "none")
+    return void 0;
+  if (middleMode === "full")
+    return middle;
   const initials = toWords(middle).map(toInitial).filter(Boolean);
-  if (initials.length === 0) return void 0;
+  if (initials.length === 0)
+    return void 0;
   return joinInitials(initials, o, t);
 }
 function renderGivenPlusMiddle(parsed, o, t) {
   const given = resolveGiven(parsed, o.prefer);
-  if (!given) return { givenLikeText: void 0, finalGivenToken: void 0 };
+  if (!given)
+    return { givenLikeText: void 0, finalGivenToken: void 0 };
   if (o.preset === "initialed") {
     const firstInitial = toInitial(given);
     const middleInitials = parsed.middle ? toWords(normalizeTrim(parsed.middle)).map(toInitial).filter(Boolean) : [];
@@ -2883,12 +3031,17 @@ function renderSingle(parsed, o) {
   const { givenLikeText } = renderGivenPlusMiddle(safeParsed, o, t);
   if (o.preset === "formalShort") {
     const pieces = [];
-    if (prefixText) pieces.push(prefixText);
-    if (lastText) pieces.push(lastText);
+    if (prefixText)
+      pieces.push(prefixText);
+    if (lastText)
+      pieces.push(lastText);
     let base2 = "";
-    if (pieces.length === 0) base2 = "";
-    else if (pieces.length === 1) base2 = pieces[0];
-    else base2 = `${pieces[0]}${boundarySpace("prefixToNext", o, t)}${pieces[1]}`;
+    if (pieces.length === 0)
+      base2 = "";
+    else if (pieces.length === 1)
+      base2 = pieces[0];
+    else
+      base2 = `${pieces[0]}${boundarySpace("prefixToNext", o, t)}${pieces[1]}`;
     if (suffixText) {
       base2 += `,${boundarySpace("commaSpace", o, t)}${suffixText}`;
     }
@@ -2909,7 +3062,8 @@ function renderSingle(parsed, o) {
   }
   if (o.order === "family-given") {
     const pieces = [];
-    if (lastText) pieces.push(lastText);
+    if (lastText)
+      pieces.push(lastText);
     if (givenLikeText) {
       if (lastText) {
         const comma = ",";
@@ -2945,9 +3099,12 @@ function renderSingle(parsed, o) {
   }
   let base = "";
   const emitted = [];
-  if (prefixText) emitted.push(prefixText);
-  if (givenLikeText) emitted.push(givenLikeText);
-  if (lastText) emitted.push(lastText);
+  if (prefixText)
+    emitted.push(prefixText);
+  if (givenLikeText)
+    emitted.push(givenLikeText);
+  if (lastText)
+    emitted.push(lastText);
   if (emitted.length === 0) {
     base = "";
   } else if (emitted.length === 1) {
@@ -2972,22 +3129,28 @@ function renderSingle(parsed, o) {
   return { prefixText, givenText: givenLikeText, lastText, suffixText, fullText: base };
 }
 function normalizeCompareKey(value) {
-  if (!value) return void 0;
+  if (!value)
+    return void 0;
   return value.trim().replace(/\s+/g, " ").toLowerCase();
 }
 function joinList(items, o) {
   const n = items.length;
-  if (n === 0) return "";
-  if (n === 1) return items[0];
-  if (n === 2) return `${items[0]} ${o.conjunction} ${items[1]}`;
+  if (n === 0)
+    return "";
+  if (n === 1)
+    return items[0];
+  if (n === 2)
+    return `${items[0]} ${o.conjunction} ${items[1]}`;
   const head = items.slice(0, -1).join(", ");
   const tail = items[n - 1];
   const comma = o.oxfordComma ? "," : "";
   return `${head}${comma} ${o.conjunction} ${tail}`;
 }
 function shouldShare(mode, same) {
-  if (mode === "never") return false;
-  if (mode === "whenSame") return same;
+  if (mode === "never")
+    return false;
+  if (mode === "whenSame")
+    return same;
   return same;
 }
 function joinCouple(a, b, o) {
@@ -3040,13 +3203,20 @@ function isParsedNameEntity(input) {
 }
 function personEntityToLegacy(entity) {
   const result = {};
-  if (entity.honorific) result.prefix = entity.honorific;
-  if (entity.given) result.first = entity.given;
-  if (entity.fullGiven) result.fullGiven = entity.fullGiven;
-  if (entity.middle) result.middle = entity.middle;
-  if (entity.family) result.last = entity.family;
-  if (entity.suffix) result.suffix = entity.suffix;
-  if (entity.nickname) result.nickname = entity.nickname;
+  if (entity.honorific)
+    result.prefix = entity.honorific;
+  if (entity.given)
+    result.first = entity.given;
+  if (entity.fullGiven)
+    result.fullGiven = entity.fullGiven;
+  if (entity.middle)
+    result.middle = entity.middle;
+  if (entity.family)
+    result.last = entity.family;
+  if (entity.suffix)
+    result.suffix = entity.suffix;
+  if (entity.nickname)
+    result.nickname = entity.nickname;
   return result;
 }
 function formatOrganization(org, o) {
@@ -3393,10 +3563,14 @@ function normalizeSpec(spec) {
 }
 function deriveReflexive(subject) {
   const s = subject.toLowerCase();
-  if (s === "he") return "himself";
-  if (s === "she") return "herself";
-  if (s === "it") return "itself";
-  if (s === "they") return "themselves";
+  if (s === "he")
+    return "himself";
+  if (s === "she")
+    return "herself";
+  if (s === "it")
+    return "itself";
+  if (s === "they")
+    return "themselves";
   return subject + "self";
 }
 function parsePronounSpec(spec) {
@@ -3481,7 +3655,8 @@ function getPronounSet(input) {
 
 // src/pronouns/formatter.ts
 function applyCapitalization2(s, mode) {
-  if (!s) return s;
+  if (!s)
+    return s;
   switch (mode) {
     case "upper":
       return s.toUpperCase();
@@ -3495,7 +3670,8 @@ function applyCapitalization2(s, mode) {
 function formatPronoun(set, role, options = {}) {
   const { capitalization = "lower" } = options;
   const value = set[role] || "";
-  if (!value) return "";
+  if (!value)
+    return "";
   return applyCapitalization2(value, capitalization);
 }
 var TEMPLATE_PLACEHOLDERS = {
@@ -3531,7 +3707,8 @@ function fillPronounTemplateSmart(template, set) {
   const sentenceStartRe = /(^|[.!?]\s+)(\x00PRONOUN_\w+\x00)/g;
   result = result.replace(sentenceStartRe, (_, prefix, marker) => {
     const roleMatch = marker.match(/PRONOUN_(\w+)/);
-    if (!roleMatch) return prefix + marker;
+    if (!roleMatch)
+      return prefix + marker;
     const role = roleMatch[1];
     const value = set[role] || "";
     return prefix + applyCapitalization2(value, "title");
@@ -3670,9 +3847,11 @@ function extractPronouns(nameWithPronouns) {
   }
 }
 function hasPronouns(name) {
-  if (!name) return false;
+  if (!name)
+    return false;
   const match = name.match(PRONOUN_SUFFIX_RE);
-  if (!match) return false;
+  if (!match)
+    return false;
   return looksLikePronouns(match[1]);
 }
 function pronounsToGenderHint(rawSpec) {

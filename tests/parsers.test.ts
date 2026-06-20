@@ -52,6 +52,29 @@ describe('parsePersonName (legacy)', () => {
     });
     expect(result.sort?.display).toBe('van Beethoven, Ludwig');
   });
+
+  it('should parse reversed names with suffix into legacy components', () => {
+    const result = parsePersonName('Smith, John, Jr.');
+    expect(result).toMatchObject({
+      first: 'John',
+      last: 'Smith',
+      suffix: 'Jr.',
+    });
+    expect(result.sort?.display).toBe('Smith, John, Jr.');
+    expect(result.sort?.key).toBe('smith john jr');
+  });
+
+  it('should parse reversed names with middle, nickname, and suffix into legacy components', () => {
+    const result = parsePersonName('Kennedy, John F. "Jack", Jr.');
+    expect(result).toMatchObject({
+      first: 'John',
+      middle: 'F.',
+      last: 'Kennedy',
+      suffix: 'Jr.',
+      nickname: 'Jack',
+    });
+    expect(result.preferredGiven).toBe('Jack');
+  });
 });
 
 // =============================================================================
@@ -99,12 +122,34 @@ describe('parseName (entity classification)', () => {
       }
     });
 
+    it('should handle standard names with unknown post-nominal suffixes', () => {
+      const result = parseName('John Smith, PMP');
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('John');
+        expect(result.family).toBe('Smith');
+        expect(result.suffix).toBe('PMP');
+        expect(result.reversed).toBe(false);
+      }
+    });
+
     it('should handle reversed names', () => {
       const result = parseName('Smith, John');
       expect(result.kind).toBe('person');
       if (result.kind === 'person') {
         expect(result.given).toBe('John');
         expect(result.family).toBe('Smith');
+        expect(result.reversed).toBe(true);
+      }
+    });
+
+    it('should handle reversed names with unknown post-nominal suffixes', () => {
+      const result = parseName('Smith, John, PMP');
+      expect(result.kind).toBe('person');
+      if (result.kind === 'person') {
+        expect(result.given).toBe('John');
+        expect(result.family).toBe('Smith');
+        expect(result.suffix).toBe('PMP');
         expect(result.reversed).toBe(true);
       }
     });
@@ -593,6 +638,10 @@ describe('getFirstName', () => {
       expect(getFirstName(input)).toBe(firstName);
     });
   });
+
+  it('should extract first name from reversed format', () => {
+    expect(getFirstName('Smith, John, Jr.')).toBe('John');
+  });
 });
 
 describe('getLastName', () => {
@@ -601,6 +650,10 @@ describe('getLastName', () => {
     it(`should extract last name from "${input}"`, () => {
       expect(getLastName(input)).toBe(lastName);
     });
+  });
+
+  it('should extract last name from reversed format', () => {
+    expect(getLastName('Smith, John, Jr.')).toBe('Smith');
   });
 });
 
@@ -673,6 +726,18 @@ describe('entityToLegacy', () => {
     expect(legacy!.last).toBe('Smith');
     expect(legacy!.prefix).toBeUndefined();
     expect(legacy!.suffix).toBeUndefined();
+  });
+
+  it('should convert reversed person entities with derived metadata', () => {
+    const entity = parseName('Smith, John, Jr.');
+    const legacy = entityToLegacy(entity);
+    expect(legacy).not.toBeNull();
+    expect(legacy).toMatchObject({
+      first: 'John',
+      last: 'Smith',
+      suffix: 'Jr.',
+    });
+    expect(legacy!.sort?.display).toBe('Smith, John, Jr.');
   });
 });
 

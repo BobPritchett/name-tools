@@ -2,7 +2,7 @@
   "name": "name-tools",
   "version": "0.1.0",
   "description": "A utility library for parsing, formatting, and manipulating person names",
-  "packageManager": "pnpm@8.0.0",
+  "packageManager": "pnpm@11.0.0+sha512.5bd187500e49cc6c3d891d973b432c02b844a5eb7209172c90a517a3ef4f579ed5c23d409b699e6a9dc418ff7b2b1890e63f6d74f1d3fc49848f37779c89c84c",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -32,12 +32,12 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts && tsup src/gender/all.ts src/gender/coverage99.ts src/gender/coverage95.ts --format cjs,esm --dts --outDir dist/gender && tsup src/docs-entry.ts --format esm --outDir docs --no-dts && node -e \"const fs=require('fs'); if(fs.existsSync('docs/name-tools.js'))fs.unlinkSync('docs/name-tools.js'); fs.renameSync('docs/docs-entry.mjs', 'docs/name-tools.js'); fs.copyFileSync('src/data/examples.json', 'docs/examples.json')\"",
+    "build": "tsup src/index.ts --format cjs,esm --dts && tsup src/gender/all.ts src/gender/coverage99.ts src/gender/coverage95.ts --format cjs,esm --dts --outDir dist/gender && tsup src/docs-entry.ts --format esm --outDir docs --no-dts && node scripts/copy-docs.js",
     "build:gender": "node scripts/build-gender-data.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "pnpm run build",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch --onSuccess \"node -e \\\"require('fs').copyFileSync('dist/index.mjs', 'docs/name-tools.js'); require('fs').copyFileSync('src/data/examples.json', 'docs/examples.json')\\\"\""
+    "dev": "tsup src/docs-entry.ts --format esm --outDir docs --watch --onSuccess \"node scripts/copy-docs.js\""
   },
   "keywords": [
     "name",

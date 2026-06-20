@@ -42,6 +42,14 @@ export function parsePersonName(fullName: string): ParsedName {
     throw new Error('Invalid name: expected non-empty string');
   }
 
+  const classified = classifyName(fullName, { strictKind: 'person' });
+  if (isPerson(classified) && classified.reversed) {
+    const legacy = entityToLegacy(classified);
+    if (legacy) {
+      return legacy;
+    }
+  }
+
   let text = fullName.trim();
   const result: ParsedName = {};
 
@@ -62,7 +70,12 @@ export function parsePersonName(fullName: string): ParsedName {
     throw new Error('Invalid name: no name parts found after parsing');
   }
 
-  // Additive metadata (does not alter the original display strings)
+  finalizeParsedName(result);
+
+  return result;
+}
+
+function finalizeParsedName(result: ParsedName): ParsedName {
   result.prefixTokens = buildAffixTokens(result.prefix, 'prefix');
   result.suffixTokens = buildAffixTokens(result.suffix, 'suffix');
   deriveFamilyParticle(result);
@@ -409,9 +422,5 @@ export function entityToLegacy(entity: ParsedNameEntity): ParsedName | null {
   if (person.suffix) result.suffix = person.suffix;
   if (person.nickname) result.nickname = person.nickname;
 
-  // Build affix tokens
-  result.prefixTokens = buildAffixTokens(result.prefix, 'prefix');
-  result.suffixTokens = buildAffixTokens(result.suffix, 'suffix');
-
-  return result;
+  return finalizeParsedName(result);
 }
